@@ -1,0 +1,20 @@
+﻿services:
+
+  # You can connect to the db directly from Rider.
+  # 1. Choose connect to new datasoruce
+  # 2. Choose PostgreSQL
+  # 3. Choose Add data source manually
+  # 4. Fill in the User and Password
+  postgres_db:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: DbUser
+      POSTGRES_PASSWORD: 1Strong_Password!
+      POSTGRES_DB: HealthMonitor
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
