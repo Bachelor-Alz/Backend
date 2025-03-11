@@ -16,8 +16,5 @@ namespace HealthDevice.Data
         public DbSet<Max30102> Max30102Datas { get; set; }
         public DbSet<MPU6050> MPU6050Datas { get; set; }
         public DbSet<Neo_6m> Neo_6mDatas { get; set; }
-        public DbSet<Elder> Elders { get; set; }
-        public DbSet<Caregiver> Caregivers { get; set; }
-        public DbSet<User> Users { get; set; }
     }
 }
