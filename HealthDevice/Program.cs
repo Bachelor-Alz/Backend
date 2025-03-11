@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Identity;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();
 builder.Services.AddHttpClient<AIController>();
 
 // Configure PostgreSQL
@@ -33,6 +33,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "HealthDevice API", Version = "v1" });
@@ -57,13 +58,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 app.MapRazorPages();
 
-if (app.Environment.IsDevelopment())
-{
-    app.Run("http://0.0.0.0:5171");
-}
-else
-{
-    app.Run();
-}
+app.Run();

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HealthDevice.Controllers;
 
 [Authorize]
+[Route("api/[controller]")]
 [ApiController]
 public class UserController : ControllerBase
 {
@@ -38,9 +39,12 @@ public class UserController : ControllerBase
     }
     
     [AllowAnonymous]
-    [HttpPost("register")]
+    [Route("register")]
+    [HttpPost]
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO, ApplicationDbContext dBcontext)
     {
+        Console.Out.WriteLine(userRegisterDTO);
+        
         User user = new User
         {
             email = userRegisterDTO.Email,
@@ -57,13 +61,13 @@ public class UserController : ControllerBase
         }
         catch (Exception e)
         {
-            return BadRequest();
+            return BadRequest("Email already exists");
         }
         
         return Ok();
     }
     
-    [HttpPost("users")]
+    [HttpGet("users")]
     public async Task<ActionResult<List<User>>> GetUsers(ApplicationDbContext dBcontext)
     {
         List<User> users = await dBcontext.Users.ToListAsync();
@@ -71,6 +75,7 @@ public class UserController : ControllerBase
 
     }
     
+    [HttpGet("users/{email}")]
     public async Task<ActionResult<User>> GetUser(string email, ApplicationDbContext dBcontext)
     {
         User? user = await dBcontext.Users.FindAsync(email);
