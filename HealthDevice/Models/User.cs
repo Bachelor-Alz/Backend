@@ -1,8 +1,12 @@
-﻿namespace HealthDevice.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
-public class User
+namespace HealthDevice.Models;
+
+public class User : IdentityUser
 {
-    public required int id { get; set; }
+    [Key]
+    public required int Id { get; set; }
     public string name { get; set; }
     public string email { get; set; }
     public string password { get; set; }
