@@ -30,6 +30,9 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
 
+                    b.Property<int?>("Caregiverid")
+                        .HasColumnType("integer");
+
                     b.Property<int>("locationsid")
                         .HasColumnType("integer");
 
@@ -38,6 +41,8 @@ namespace HealthDevice.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("id");
+
+                    b.HasIndex("Caregiverid");
 
                     b.HasIndex("locationsid");
 
@@ -118,6 +123,120 @@ namespace HealthDevice.Migrations
                     b.ToTable("Locations");
                 });
 
+            modelBuilder.Entity("HealthDevice.Models.MPU6050", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<float>("AccelerationX")
+                        .HasColumnType("real");
+
+                    b.Property<float>("AccelerationY")
+                        .HasColumnType("real");
+
+                    b.Property<float>("AccelerationZ")
+                        .HasColumnType("real");
+
+                    b.Property<float>("GyroscopeX")
+                        .HasColumnType("real");
+
+                    b.Property<float>("GyroscopeY")
+                        .HasColumnType("real");
+
+                    b.Property<float>("GyroscopeZ")
+                        .HasColumnType("real");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<float>("temperature")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MPU6050Datas");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.Max30102", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<float?>("HeartRate")
+                        .HasColumnType("real");
+
+                    b.Property<int>("Infrared")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Red")
+                        .HasColumnType("integer");
+
+                    b.Property<float?>("SpO2")
+                        .HasColumnType("real");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Max30102Datas");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.Neo_6m", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<byte>("Checksum")
+                        .HasColumnType("smallint");
+
+                    b.Property<float>("Course")
+                        .HasColumnType("real");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<char>("LatitudeDirection")
+                        .HasColumnType("character(1)");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<char>("LongitudeDirection")
+                        .HasColumnType("character(1)");
+
+                    b.Property<char?>("MagneticDirection")
+                        .HasColumnType("character(1)");
+
+                    b.Property<float?>("MagneticVariation")
+                        .HasColumnType("real");
+
+                    b.Property<float>("SpeedKnots")
+                        .HasColumnType("real");
+
+                    b.Property<char>("Status")
+                        .HasColumnType("character(1)");
+
+                    b.Property<TimeSpan>("UtcTime")
+                        .HasColumnType("interval");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Neo_6mDatas");
+                });
+
             modelBuilder.Entity("HealthDevice.Models.User", b =>
                 {
                     b.Property<int>("id")
@@ -125,6 +244,11 @@ namespace HealthDevice.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)");
 
                     b.Property<string>("email")
                         .IsRequired()
@@ -145,10 +269,25 @@ namespace HealthDevice.Migrations
                     b.HasKey("id");
 
                     b.ToTable("Users");
+
+                    b.HasDiscriminator().HasValue("User");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
+                {
+                    b.HasBaseType("HealthDevice.Models.User");
+
+                    b.HasDiscriminator().HasValue("Caregiver");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
                 {
+                    b.HasOne("HealthDevice.Models.Caregiver", null)
+                        .WithMany("elders")
+                        .HasForeignKey("Caregiverid");
+
                     b.HasOne("HealthDevice.Models.Location", "locations")
                         .WithMany()
                         .HasForeignKey("locationsid")
@@ -179,6 +318,11 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
                 {
                     b.Navigation("heartrates");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
+                {
+                    b.Navigation("elders");
                 });
 #pragma warning restore 612, 618
         }
