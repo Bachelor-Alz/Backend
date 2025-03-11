@@ -1,7 +1,7 @@
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using MyApp.Namespace;
+using HealthDevice.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 

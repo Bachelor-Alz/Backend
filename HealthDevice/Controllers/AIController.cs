@@ -1,4 +1,4 @@
-﻿namespace MyApp.Namespace;
+﻿namespace HealthDevice.Controllers;
 
 using System.Net.Http;
 using System.Text;
