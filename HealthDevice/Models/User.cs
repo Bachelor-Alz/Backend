@@ -5,9 +5,8 @@ namespace HealthDevice.Models;
 
 public class User : IdentityUser
 {
-    [Key]
-    public required int Id { get; set; }
     public string name { get; set; }
+    [Key]
     public string email { get; set; }
     public string password { get; set; }
     public string role { get; set; }
