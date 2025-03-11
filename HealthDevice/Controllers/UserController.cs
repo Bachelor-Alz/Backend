@@ -1,9 +1,13 @@
-﻿using HealthDevice.Data;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace HealthDevice.Controllers;
 
@@ -39,20 +43,18 @@ public class UserController : ControllerBase
     }
     
     [AllowAnonymous]
-    [Route("register")]
-    [HttpPost]
+    [HttpPost("register")]
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO, ApplicationDbContext dBcontext)
     {
-        Console.Out.WriteLine(userRegisterDTO);
         
         User user = new User
         {
             email = userRegisterDTO.Email,
             name = userRegisterDTO.Name,
+            //need some hashing
+            password = userRegisterDTO.Password,
             role = userRegisterDTO.Role
         };
-        //Need some hashing here
-        user.password = userRegisterDTO.Password;
         
         dBcontext.Users.Add(user);
         try
@@ -61,11 +63,12 @@ public class UserController : ControllerBase
         }
         catch (Exception e)
         {
-            return BadRequest("Email already exists");
+            return BadRequest();
         }
         
         return Ok();
     }
+    
     
     [HttpGet("users")]
     public async Task<ActionResult<List<User>>> GetUsers(ApplicationDbContext dBcontext)
@@ -74,6 +77,7 @@ public class UserController : ControllerBase
         return users;
 
     }
+    
     
     [HttpGet("users/{email}")]
     public async Task<ActionResult<User>> GetUser(string email, ApplicationDbContext dBcontext)
@@ -89,7 +93,24 @@ public class UserController : ControllerBase
     //Need to implement JWT
     private string GenerateJWT(User user)
     {
-        return null;
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Your_32_Character_Long_Secret_Key_Here"));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("role", user.role) // Ensure correct claim name
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: "api.healthdevice.com",
+            audience: "user.healthdevice.com",
+            claims: claims,
+            expires: DateTime.Now.AddMinutes(30),
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
-    
+
 }

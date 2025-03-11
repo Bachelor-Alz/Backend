@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250311114210_InitialCreate")]
+    [Migration("20250311130507_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -243,7 +243,8 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.Models.User", b =>
                 {
                     b.Property<string>("email")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "userEmail");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");

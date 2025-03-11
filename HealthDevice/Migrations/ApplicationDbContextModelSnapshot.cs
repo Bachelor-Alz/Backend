@@ -240,7 +240,8 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.Models.User", b =>
                 {
                     b.Property<string>("email")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "userEmail");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
