@@ -12,19 +12,12 @@ namespace HealthDevice.Controllers;
 public class UserController : ControllerBase
 {
     
-    private readonly UserContext _context;
-    
-    public UserController(UserContext context)
-    {
-        _context = context;
-    }
-    
     
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO)
+    public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO, ApplicationDbContext dBcontext)
     {
-        User? user = await _context.Users.FindAsync(userLoginDTO.Email);
+        User? user = await dBcontext.Users.FindAsync(userLoginDTO.Email);
         
         if (user == null)
         {
@@ -46,7 +39,7 @@ public class UserController : ControllerBase
     
     [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO)
+    public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO, ApplicationDbContext dBcontext)
     {
         User user = new User
         {
@@ -57,10 +50,10 @@ public class UserController : ControllerBase
         //Need some hashing here
         user.password = userRegisterDTO.Password;
         
-        _context.Users.Add(user);
+        dBcontext.Users.Add(user);
         try
         {
-            await _context.SaveChangesAsync();
+            await dBcontext.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -71,16 +64,16 @@ public class UserController : ControllerBase
     }
     
     [HttpPost("users")]
-    public async Task<ActionResult<List<User>>> GetUsers()
+    public async Task<ActionResult<List<User>>> GetUsers(ApplicationDbContext dBcontext)
     {
-        List<User> users = await _context.Users.ToListAsync();
+        List<User> users = await dBcontext.Users.ToListAsync();
         return users;
 
     }
     
-    public async Task<ActionResult<User>> GetUser(string email)
+    public async Task<ActionResult<User>> GetUser(string email, ApplicationDbContext dBcontext)
     {
-        User? user = await _context.Users.FindAsync(email);
+        User? user = await dBcontext.Users.FindAsync(email);
         if (user == null)
         {
             return NotFound();

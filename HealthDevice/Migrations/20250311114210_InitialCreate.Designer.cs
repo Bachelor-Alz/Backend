@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250311104423_InitialCreate")]
+    [Migration("20250311114210_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -33,8 +33,8 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
 
-                    b.Property<int?>("Caregiverid")
-                        .HasColumnType("integer");
+                    b.Property<string>("Caregiveremail")
+                        .HasColumnType("text");
 
                     b.Property<int>("locationsid")
                         .HasColumnType("integer");
@@ -45,7 +45,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("id");
 
-                    b.HasIndex("Caregiverid");
+                    b.HasIndex("Caregiveremail");
 
                     b.HasIndex("locationsid");
 
@@ -242,11 +242,8 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.Models.User", b =>
                 {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
+                    b.Property<string>("email")
+                        .HasColumnType("text");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
@@ -266,7 +263,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Id")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("LockoutEnabled")
@@ -299,10 +295,6 @@ namespace HealthDevice.Migrations
                     b.Property<string>("UserName")
                         .HasColumnType("text");
 
-                    b.Property<string>("email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -315,7 +307,7 @@ namespace HealthDevice.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("id");
+                    b.HasKey("email");
 
                     b.ToTable("Users");
 
@@ -335,7 +327,7 @@ namespace HealthDevice.Migrations
                 {
                     b.HasOne("HealthDevice.Models.Caregiver", null)
                         .WithMany("elders")
-                        .HasForeignKey("Caregiverid");
+                        .HasForeignKey("Caregiveremail");
 
                     b.HasOne("HealthDevice.Models.Location", "locations")
                         .WithMany()
