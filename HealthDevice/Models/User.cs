@@ -1,10 +1,18 @@
-﻿namespace HealthDevice.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Identity;
 
-public class User
+namespace HealthDevice.Models
 {
-    public required int id { get; set; }
-    public string name { get; set; }
-    public string email { get; set; }
-    public string password { get; set; }
-    public string role { get; set; }
+    public class User : IdentityUser
+    {
+        public required string name { get; set; }
+
+        [Key]
+        [JsonPropertyName("userEmail")]
+        public required string email { get; set; }
+
+        public required string password { get; set; }
+        public required Roles Role { get; set; }
+    }
 }

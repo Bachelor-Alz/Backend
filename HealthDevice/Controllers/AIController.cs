@@ -1,4 +1,6 @@
-﻿namespace MyApp.Namespace;
+﻿using HealthDevice.Models;
+
+namespace HealthDevice.Controllers;
 
 using System.Net.Http;
 using System.Text;
@@ -18,15 +20,14 @@ public class AIController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task<IActionResult> Compute([FromBody] object data)
+    public async Task<IActionResult> Compute()
     {
-        var json = JsonSerializer.Serialize(data);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        return null;
+    }
 
-        var response = await _httpClient.PostAsync("http://localhost:5000/compute", content);
-        response.EnsureSuccessStatusCode();
-
-        var result = await response.Content.ReadAsStringAsync();
-        return Ok(result);
+    [HttpGet("fall")]
+    public async Task<IActionResult> Fall()
+    {
+        return null;
     }
 }
