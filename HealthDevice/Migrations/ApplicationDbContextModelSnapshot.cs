@@ -284,6 +284,9 @@ namespace HealthDevice.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
@@ -298,10 +301,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("password")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("role")
                         .IsRequired()
                         .HasColumnType("text");
 

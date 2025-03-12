@@ -13,6 +13,6 @@ namespace HealthDevice.Models
         public required string email { get; set; }
 
         public required string password { get; set; }
-        public required string role { get; set; }
+        public required Roles Role { get; set; }
     }
 }

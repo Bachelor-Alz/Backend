@@ -1,4 +1,6 @@
-﻿namespace HealthDevice.DTO;
+﻿using HealthDevice.Models;
+
+namespace HealthDevice.DTO;
 
 public class UserLoginDTO
 {
@@ -16,5 +18,5 @@ public class UserRegisterDTO
     public required string Name { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }
-    public required string Role { get; set; }
+    public required Roles Role { get; set; }
 }

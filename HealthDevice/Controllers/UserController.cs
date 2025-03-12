@@ -53,7 +53,7 @@ public class UserController : ControllerBase
             name = userRegisterDTO.Name,
             //need some hashing
             password = userRegisterDTO.Password,
-            role = userRegisterDTO.Role
+            Role = userRegisterDTO.Role
         };
         
         dBcontext.Users.Add(user);
@@ -100,7 +100,6 @@ public class UserController : ControllerBase
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("role", user.role) // Ensure correct claim name
         };
 
         var token = new JwtSecurityToken(
