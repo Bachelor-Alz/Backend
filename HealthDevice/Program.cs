@@ -4,6 +4,7 @@ using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using HealthDevice.Controllers;
+using HealthDevice.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<AIController>();
+
+// Register the PasswordHasher<User> service
+builder.Services.AddScoped<PasswordHasher<User>>();
 
 // Configure PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

@@ -88,16 +88,17 @@ namespace HealthDevice.Data
         entity.Property(e => e.MagneticDirection);
         entity.Property(e => e.Checksum).IsRequired();
     });
-
-    modelBuilder.Entity<Location>().ToTable("Locations", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<FallInfo>().ToTable("FallInfos", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<Max30102>().ToTable("Max30102Datas", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<MPU6050>().ToTable("MPU6050Datas", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<Neo_6m>().ToTable("Neo_6mDatas", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<User>().ToTable("Users", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<Elder>().ToTable("Elders", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<Caregiver>().ToTable("Caregivers", t => t.ExcludeFromMigrations());
-    modelBuilder.Entity<Heartrate>().ToTable("Heartrates", t => t.ExcludeFromMigrations());
+    
+    modelBuilder.Entity<User>(entity =>
+    {
+        entity.ToTable("Users");
+        entity.HasKey(e => e.email);
+        entity.Property(e => e.name).IsRequired();
+        entity.Property(e => e.password).IsRequired();
+        entity.Property(e => e.Role).IsRequired();
+        entity.HasDiscriminator<string>("Discriminator").HasValue("User");
+    });
+    
 }
     }
 } 

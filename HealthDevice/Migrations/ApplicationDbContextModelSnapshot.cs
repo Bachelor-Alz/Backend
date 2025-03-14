@@ -46,10 +46,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("locationsid");
 
-                    b.ToTable("Elders", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Elders");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
@@ -66,10 +63,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("id");
 
-                    b.ToTable("FallInfos", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("FallInfos", (string)null);
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
@@ -93,10 +87,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("Elderid");
 
-                    b.ToTable("Heartrates", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Heartrates");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Location", b =>
@@ -121,10 +112,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("id");
 
-                    b.ToTable("Locations", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Locations", (string)null);
                 });
 
             modelBuilder.Entity("HealthDevice.Models.MPU6050", b =>
@@ -161,10 +149,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MPU6050Datas", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("MPU6050Datas", (string)null);
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Max30102", b =>
@@ -192,10 +177,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Max30102Datas", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Max30102Datas", (string)null);
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Neo_6m", b =>
@@ -244,10 +226,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Neo_6mDatas", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Neo_6mDatas", (string)null);
                 });
 
             modelBuilder.Entity("HealthDevice.Models.User", b =>
@@ -261,6 +240,11 @@ namespace HealthDevice.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
@@ -314,22 +298,18 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("email");
 
-                    b.ToTable("Users", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Users", (string)null);
 
-                    b.UseTptMappingStrategy();
+                    b.HasDiscriminator().HasValue("User");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
                 {
                     b.HasBaseType("HealthDevice.Models.User");
 
-                    b.ToTable("Caregivers", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.HasDiscriminator().HasValue("Caregiver");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
@@ -363,15 +343,6 @@ namespace HealthDevice.Migrations
                     b.HasOne("HealthDevice.Models.Elder", null)
                         .WithMany("heartrates")
                         .HasForeignKey("Elderid");
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
-                {
-                    b.HasOne("HealthDevice.Models.User", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Caregiver", "email")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
