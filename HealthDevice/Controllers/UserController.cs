@@ -34,7 +34,6 @@ public class UserController : ControllerBase
         {
             return NotFound();
         }
-        
         if (_passwordHasher.VerifyHashedPassword(user, user.password, userLoginDTO.Password) == PasswordVerificationResult.Failed)
         {
             return BadRequest("Invalid password");

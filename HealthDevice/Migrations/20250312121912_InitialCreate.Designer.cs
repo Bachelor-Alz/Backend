@@ -3,6 +3,7 @@ using System;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250312121912_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,7 +69,10 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("id");
 
-                    b.ToTable("FallInfos", (string)null);
+                    b.ToTable("FallInfos", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
@@ -118,7 +124,10 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("id");
 
-                    b.ToTable("Locations", (string)null);
+                    b.ToTable("Locations", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("HealthDevice.Models.MPU6050", b =>
@@ -155,7 +164,10 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MPU6050Datas", (string)null);
+                    b.ToTable("MPU6050Datas", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Max30102", b =>
@@ -183,7 +195,10 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Max30102Datas", (string)null);
+                    b.ToTable("Max30102Datas", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Neo_6m", b =>
@@ -232,7 +247,10 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Neo_6mDatas", (string)null);
+                    b.ToTable("Neo_6mDatas", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("HealthDevice.Models.User", b =>
@@ -246,11 +264,6 @@ namespace HealthDevice.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
@@ -304,18 +317,22 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("email");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
 
-                    b.HasDiscriminator().HasValue("User");
-
-                    b.UseTphMappingStrategy();
+                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
                 {
                     b.HasBaseType("HealthDevice.Models.User");
 
-                    b.HasDiscriminator().HasValue("Caregiver");
+                    b.ToTable("Caregivers", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>

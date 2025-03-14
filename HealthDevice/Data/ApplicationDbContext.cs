@@ -88,7 +88,7 @@ namespace HealthDevice.Data
         entity.Property(e => e.MagneticDirection);
         entity.Property(e => e.Checksum).IsRequired();
     });
-    
+
     modelBuilder.Entity<User>(entity =>
     {
         entity.ToTable("Users");
