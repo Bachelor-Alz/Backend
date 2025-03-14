@@ -5,6 +5,7 @@ using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,20 +17,24 @@ namespace HealthDevice.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
-    
-    
+    private readonly PasswordHasher<User> _passwordHasher;
+
+    public UserController(PasswordHasher<User> passwordHasher)
+    {
+        _passwordHasher = passwordHasher;
+    }
+
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO, ApplicationDbContext dBcontext)
     {
-        User? user = await dBcontext.Users.FindAsync(userLoginDTO.Email);
+        User user = await dBcontext.Users.FindAsync(userLoginDTO.Email);
         
         if (user == null)
         {
             return NotFound();
         }
-        //Need some hashing here
-        if (user.password != userLoginDTO.Password)
+        if (_passwordHasher.VerifyHashedPassword(user, user.password, userLoginDTO.Password) == PasswordVerificationResult.Failed)
         {
             return BadRequest("Invalid password");
         }
@@ -46,15 +51,15 @@ public class UserController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO, ApplicationDbContext dBcontext)
     {
-        
         User user = new User
         {
             email = userRegisterDTO.Email,
             name = userRegisterDTO.Name,
-            //need some hashing
-            password = userRegisterDTO.Password,
+            password = "ASdwasdw",
             Role = userRegisterDTO.Role
         };
+        string hashedPassword = _passwordHasher.HashPassword(user, userRegisterDTO.Password);
+        user.password = hashedPassword;
         
         dBcontext.Users.Add(user);
         try

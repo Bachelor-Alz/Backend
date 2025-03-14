@@ -3,6 +3,7 @@ using System;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250314093514_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,10 +49,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("locationsid");
 
-                    b.ToTable("Elders", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Elders");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
@@ -90,10 +90,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("Elderid");
 
-                    b.ToTable("Heartrates", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("Heartrates");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Location", b =>
@@ -349,15 +346,6 @@ namespace HealthDevice.Migrations
                     b.HasOne("HealthDevice.Models.Elder", null)
                         .WithMany("heartrates")
                         .HasForeignKey("Elderid");
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
-                {
-                    b.HasOne("HealthDevice.Models.User", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Caregiver", "email")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
