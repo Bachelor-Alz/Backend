@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250314103514_InitialCreate")]
+    [Migration("20250314130401_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,7 +25,7 @@ namespace HealthDevice.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("HealthDevice.Models.Elder", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.Property<int>("id")
                         .ValueGeneratedOnAdd()
@@ -52,7 +52,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Elders");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
+            modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
                 {
                     b.Property<int>("id")
                         .HasColumnType("integer");
@@ -69,7 +69,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("FallInfos", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -93,7 +93,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Heartrates");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Location", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Location", b =>
                 {
                     b.Property<int>("id")
                         .ValueGeneratedOnAdd()
@@ -118,7 +118,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Locations", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.MPU6050", b =>
+            modelBuilder.Entity("HealthDevice.DTO.MPU6050", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -155,7 +155,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("MPU6050Datas", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Max30102", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -183,7 +183,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Max30102Datas", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Neo_6m", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Neo_6m", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -232,7 +232,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Neo_6mDatas", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.User", b =>
+            modelBuilder.Entity("HealthDevice.DTO.User", b =>
                 {
                     b.Property<string>("email")
                         .HasColumnType("text")
@@ -308,20 +308,20 @@ namespace HealthDevice.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
                 {
-                    b.HasBaseType("HealthDevice.Models.User");
+                    b.HasBaseType("HealthDevice.DTO.User");
 
                     b.HasDiscriminator().HasValue("Caregiver");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Elder", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
-                    b.HasOne("HealthDevice.Models.Caregiver", null)
+                    b.HasOne("HealthDevice.DTO.Caregiver", null)
                         .WithMany("elders")
                         .HasForeignKey("Caregiveremail");
 
-                    b.HasOne("HealthDevice.Models.Location", "locations")
+                    b.HasOne("HealthDevice.DTO.Location", "locations")
                         .WithMany()
                         .HasForeignKey("locationsid")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -330,9 +330,9 @@ namespace HealthDevice.Migrations
                     b.Navigation("locations");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
+            modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
                 {
-                    b.HasOne("HealthDevice.Models.Location", "location")
+                    b.HasOne("HealthDevice.DTO.Location", "location")
                         .WithMany()
                         .HasForeignKey("id")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -341,19 +341,19 @@ namespace HealthDevice.Migrations
                     b.Navigation("location");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
                 {
-                    b.HasOne("HealthDevice.Models.Elder", null)
+                    b.HasOne("HealthDevice.DTO.Elder", null)
                         .WithMany("heartrates")
                         .HasForeignKey("Elderid");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Elder", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.Navigation("heartrates");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
                 {
                     b.Navigation("elders");
                 });

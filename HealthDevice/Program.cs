@@ -1,10 +1,9 @@
-using System.Security.Claims;
 using System.Text;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using HealthDevice.Controllers;
-using HealthDevice.Models;
+using HealthDevice.DTO;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

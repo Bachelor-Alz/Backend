@@ -1,5 +1,5 @@
+using HealthDevice.DTO;
 using Microsoft.EntityFrameworkCore;
-using HealthDevice.Models;
 
 namespace HealthDevice.Data
 {
