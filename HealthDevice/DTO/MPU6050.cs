@@ -1,4 +1,4 @@
-﻿namespace HealthDevice.Models;
+﻿namespace HealthDevice.DTO;
 
 public class MPU6050
 {

@@ -1,6 +1,4 @@
-﻿using HealthDevice.Models;
-
-namespace HealthDevice.Controllers;
+﻿namespace HealthDevice.Controllers;
 
 using System.Net.Http;
 using System.Text;
