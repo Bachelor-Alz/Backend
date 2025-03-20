@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace HealthDevice.Utils
+﻿namespace HealthDevice.Utils
 {
     public static class CookieConfig
     {

@@ -1,14 +1,10 @@
-using System.Text;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 using HealthDevice.Controllers;
 using HealthDevice.DTO;
 using HealthDevice.Utils;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
