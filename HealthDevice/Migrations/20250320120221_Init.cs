@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -93,12 +93,10 @@ namespace HealthDevice.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    email = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<string>(type: "text", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
-                    password = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<int>(type: "integer", nullable: false),
                     Discriminator = table.Column<string>(type: "character varying(13)", maxLength: 13, nullable: false),
-                    Id = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "text", nullable: true),
                     NormalizedUserName = table.Column<string>(type: "text", nullable: true),
                     Email = table.Column<string>(type: "text", nullable: true),
@@ -116,7 +114,7 @@ namespace HealthDevice.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.email);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -146,7 +144,7 @@ namespace HealthDevice.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     name = table.Column<string>(type: "text", nullable: false),
                     locationsid = table.Column<int>(type: "integer", nullable: false),
-                    Caregiveremail = table.Column<string>(type: "text", nullable: true)
+                    CaregiverId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -158,10 +156,10 @@ namespace HealthDevice.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Elders_Users_Caregiveremail",
-                        column: x => x.Caregiveremail,
+                        name: "FK_Elders_Users_CaregiverId",
+                        column: x => x.CaregiverId,
                         principalTable: "Users",
-                        principalColumn: "email");
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -185,9 +183,9 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Elders_Caregiveremail",
+                name: "IX_Elders_CaregiverId",
                 table: "Elders",
-                column: "Caregiveremail");
+                column: "CaregiverId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Elders_locationsid",

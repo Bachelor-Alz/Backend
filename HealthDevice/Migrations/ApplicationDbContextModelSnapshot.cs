@@ -30,7 +30,7 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
 
-                    b.Property<string>("Caregiveremail")
+                    b.Property<string>("CaregiverId")
                         .HasColumnType("text");
 
                     b.Property<int>("locationsid")
@@ -42,7 +42,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("id");
 
-                    b.HasIndex("Caregiveremail");
+                    b.HasIndex("CaregiverId");
 
                     b.HasIndex("locationsid");
 
@@ -231,9 +231,8 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.User", b =>
                 {
-                    b.Property<string>("email")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "userEmail");
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
@@ -251,9 +250,6 @@ namespace HealthDevice.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -292,13 +288,9 @@ namespace HealthDevice.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("password")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.HasKey("Id");
 
-                    b.HasKey("email");
-
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
 
                     b.HasDiscriminator().HasValue("User");
 
@@ -316,7 +308,7 @@ namespace HealthDevice.Migrations
                 {
                     b.HasOne("HealthDevice.DTO.Caregiver", null)
                         .WithMany("elders")
-                        .HasForeignKey("Caregiveremail");
+                        .HasForeignKey("CaregiverId");
 
                     b.HasOne("HealthDevice.DTO.Location", "locations")
                         .WithMany()

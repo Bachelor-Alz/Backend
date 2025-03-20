@@ -7,12 +7,6 @@ namespace HealthDevice.DTO
     public class User : IdentityUser
     {
         public required string name { get; set; }
-
-        [Key]
-        [JsonPropertyName("userEmail")]
-        public required string email { get; set; }
-
-        public required string password { get; set; }
         public required Roles Role { get; set; }
     }
     public class UserLoginDTO

@@ -85,7 +85,7 @@ public class UserController : ControllerBase
         DateTime timestamp = DateTime.UtcNow;
         string email = userRegisterDTO.Email;
         
-        if(_userManager.FindByEmailAsync(email) != null)
+        if(await _userManager.FindByEmailAsync(email) != null)
         {
             _logger.LogWarning("Registration failed for email: {Email} from IP: {IpAddress} at {Timestamp} - Email already exists.", 
                                 email, 
@@ -96,12 +96,13 @@ public class UserController : ControllerBase
         
         User user = new User {
             name = userRegisterDTO.Name,
-            email = userRegisterDTO.Email,
-            password = userRegisterDTO.Password,
-            Role = userRegisterDTO.Role
+            Email = userRegisterDTO.Email,
+            Role = userRegisterDTO.Role,
+            UserName = userRegisterDTO.Email
         };
         
         var result = await _userManager.CreateAsync(user, userRegisterDTO.Password);
+        
         
         if(result.Succeeded)
         {
@@ -111,7 +112,7 @@ public class UserController : ControllerBase
                                 timestamp);
             return Ok();
         }
-        return BadRequest("Registration failed.");
+        return BadRequest(new { Message = "Registration failed.", Errors = result.Errors });
     }
     
     
@@ -143,7 +144,7 @@ public class UserController : ControllerBase
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.email),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 

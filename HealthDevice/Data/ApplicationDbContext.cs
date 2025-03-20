@@ -21,84 +21,73 @@ namespace HealthDevice.Data
         public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-{
-    base.OnModelCreating(modelBuilder);
+        {
+            base.OnModelCreating(modelBuilder);
 
-    modelBuilder.Entity<Location>(entity =>
-    {
-        entity.ToTable("Locations");
-        entity.HasKey(e => e.id);
-        entity.Property(e => e.latitude).IsRequired();
-        entity.Property(e => e.longitude).IsRequired();
-        entity.Property(e => e.altitude).IsRequired();
-        entity.Property(e => e.timestamp).IsRequired();
-    });
+            modelBuilder.Entity<Location>(entity =>
+            {
+                entity.ToTable("Locations");
+                entity.HasKey(e => e.id);
+                entity.Property(e => e.latitude).IsRequired();
+                entity.Property(e => e.longitude).IsRequired();
+                entity.Property(e => e.altitude).IsRequired();
+                entity.Property(e => e.timestamp).IsRequired();
+            });
 
-    modelBuilder.Entity<FallInfo>(entity =>
-    {
-        entity.ToTable("FallInfos");
-        entity.HasKey(e => e.id);
-        entity.Property(e => e.timestamp).IsRequired();
-        entity.Property(e => e.status).IsRequired();
-        entity.HasOne(e => e.location)
-            .WithMany()
-            .HasForeignKey(e => e.id)
-            .OnDelete(DeleteBehavior.Cascade);
-    });
+            modelBuilder.Entity<FallInfo>(entity =>
+            {
+                entity.ToTable("FallInfos");
+                entity.HasKey(e => e.id);
+                entity.Property(e => e.timestamp).IsRequired();
+                entity.Property(e => e.status).IsRequired();
+                entity.HasOne(e => e.location)
+                    .WithMany()
+                    .HasForeignKey(e => e.id)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-    modelBuilder.Entity<Max30102>(entity =>
-    {
-        entity.ToTable("Max30102Datas");
-        entity.HasKey(e => e.Id);
-        entity.Property(e => e.Red).IsRequired();
-        entity.Property(e => e.Infrared).IsRequired();
-        entity.Property(e => e.HeartRate);
-        entity.Property(e => e.SpO2);
-        entity.Property(e => e.Timestamp).IsRequired();
-    });
+            modelBuilder.Entity<Max30102>(entity =>
+            {
+                entity.ToTable("Max30102Datas");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Red).IsRequired();
+                entity.Property(e => e.Infrared).IsRequired();
+                entity.Property(e => e.HeartRate);
+                entity.Property(e => e.SpO2);
+                entity.Property(e => e.Timestamp).IsRequired();
+            });
 
-    modelBuilder.Entity<MPU6050>(entity =>
-    {
-        entity.ToTable("MPU6050Datas");
-        entity.HasKey(e => e.Id);
-        entity.Property(e => e.AccelerationX).IsRequired();
-        entity.Property(e => e.AccelerationY).IsRequired();
-        entity.Property(e => e.AccelerationZ).IsRequired();
-        entity.Property(e => e.GyroscopeX).IsRequired();
-        entity.Property(e => e.GyroscopeY).IsRequired();
-        entity.Property(e => e.GyroscopeZ).IsRequired();
-        entity.Property(e => e.Timestamp).IsRequired();
-        entity.Property(e => e.temperature).IsRequired();
-    });
+            modelBuilder.Entity<MPU6050>(entity =>
+            {
+                entity.ToTable("MPU6050Datas");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.AccelerationX).IsRequired();
+                entity.Property(e => e.AccelerationY).IsRequired();
+                entity.Property(e => e.AccelerationZ).IsRequired();
+                entity.Property(e => e.GyroscopeX).IsRequired();
+                entity.Property(e => e.GyroscopeY).IsRequired();
+                entity.Property(e => e.GyroscopeZ).IsRequired();
+                entity.Property(e => e.Timestamp).IsRequired();
+                entity.Property(e => e.temperature).IsRequired();
+            });
 
-    modelBuilder.Entity<Neo_6m>(entity =>
-    {
-        entity.ToTable("Neo_6mDatas");
-        entity.HasKey(e => e.Id);
-        entity.Property(e => e.UtcTime).IsRequired();
-        entity.Property(e => e.Status).IsRequired();
-        entity.Property(e => e.Latitude).IsRequired();
-        entity.Property(e => e.LatitudeDirection).IsRequired();
-        entity.Property(e => e.Longitude).IsRequired();
-        entity.Property(e => e.LongitudeDirection).IsRequired();
-        entity.Property(e => e.SpeedKnots).IsRequired();
-        entity.Property(e => e.Course).IsRequired();
-        entity.Property(e => e.Date).IsRequired();
-        entity.Property(e => e.MagneticVariation);
-        entity.Property(e => e.MagneticDirection);
-        entity.Property(e => e.Checksum).IsRequired();
-    });
-
-    modelBuilder.Entity<User>(entity =>
-    {
-        entity.ToTable("Users");
-        entity.HasKey(e => e.email);
-        entity.Property(e => e.name).IsRequired();
-        entity.Property(e => e.password).IsRequired();
-        entity.Property(e => e.Role).IsRequired();
-        entity.HasDiscriminator<string>("Discriminator").HasValue("User");
-    });
-    
-}
+            modelBuilder.Entity<Neo_6m>(entity =>
+            {
+                entity.ToTable("Neo_6mDatas");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UtcTime).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.Latitude).IsRequired();
+                entity.Property(e => e.LatitudeDirection).IsRequired();
+                entity.Property(e => e.Longitude).IsRequired();
+                entity.Property(e => e.LongitudeDirection).IsRequired();
+                entity.Property(e => e.SpeedKnots).IsRequired();
+                entity.Property(e => e.Course).IsRequired();
+                entity.Property(e => e.Date).IsRequired();
+                entity.Property(e => e.MagneticVariation);
+                entity.Property(e => e.MagneticDirection);
+                entity.Property(e => e.Checksum).IsRequired();
+            });
+        }
     }
-} 
+}
