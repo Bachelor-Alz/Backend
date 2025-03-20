@@ -16,28 +16,26 @@ namespace HealthDevice.Controllers;
 [ApiController]
 public class UserController : ControllerBase
 {
-    private readonly PasswordHasher<User> _passwordHasher;
-
-    public UserController(PasswordHasher<User> passwordHasher)
+    private readonly UserManager<User> _userManager;
+    
+    public UserController(UserManager<User> userManager)
     {
-        _passwordHasher = passwordHasher;
+        _userManager = userManager;
     }
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO, ApplicationDbContext dBcontext)
+    public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO)
     {
-        User user = await dBcontext.Users.FindAsync(userLoginDTO.Email);
-        
+        User user = await _userManager.FindByEmailAsync(userLoginDTO.Email);
         if (user == null)
         {
-            return NotFound();
+            return Unauthorized();
         }
-        if (_passwordHasher.VerifyHashedPassword(user, user.password, userLoginDTO.Password) == PasswordVerificationResult.Failed)
+        if (!await _userManager.CheckPasswordAsync(user, userLoginDTO.Password))
         {
-            return BadRequest("Invalid password");
+            return Unauthorized();
         }
-        
         //Need to implement JWT
         string token = GenerateJWT(user);
         return new LoginResponseDTO
@@ -48,45 +46,43 @@ public class UserController : ControllerBase
     
     [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO, ApplicationDbContext dBcontext)
+    public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO)
     {
-        User user = new User
-        {
-            email = userRegisterDTO.Email,
-            name = userRegisterDTO.Name,
-            password = "ASdwasdw",
-            Role = userRegisterDTO.Role
-        };
-        string hashedPassword = _passwordHasher.HashPassword(user, userRegisterDTO.Password);
-        user.password = hashedPassword;
-        
-        dBcontext.Users.Add(user);
-        try
-        {
-            await dBcontext.SaveChangesAsync();
-        }
-        catch (Exception e)
+        if (userRegisterDTO == null)
         {
             return BadRequest();
         }
         
-        return Ok();
+        User user = new User {
+            name = userRegisterDTO.Name,
+            email = userRegisterDTO.Email,
+            password = userRegisterDTO.Password,
+            Role = userRegisterDTO.Role
+        };
+        
+        var result = await _userManager.CreateAsync(user, userRegisterDTO.Password);
+        
+        if(result.Succeeded)
+        {
+            return Ok();
+        }
+        return BadRequest();
     }
     
     
     [HttpGet("users")]
-    public async Task<ActionResult<List<User>>> GetUsers(ApplicationDbContext dBcontext)
+    public async Task<ActionResult<List<User>>> GetUsers()
     {
-        List<User> users = await dBcontext.Users.ToListAsync();
+        List<User> users = await _userManager.Users.ToListAsync();
         return users;
 
     }
     
     
     [HttpGet("users/{email}")]
-    public async Task<ActionResult<User>> GetUser(string email, ApplicationDbContext dBcontext)
+    public async Task<ActionResult<User>> GetUser(string email)
     {
-        User? user = await dBcontext.Users.FindAsync(email);
+        User? user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {
             return NotFound();

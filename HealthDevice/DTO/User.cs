@@ -33,4 +33,11 @@ namespace HealthDevice.DTO
         public required string Password { get; set; }
         public required Roles Role { get; set; }
     }
+
+    public class UserTempDTO
+    {
+        public string Email { get; set; }
+        public string Name { get; set; }
+        public Roles Role { get; set; }
+    }
 }

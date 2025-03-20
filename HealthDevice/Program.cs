@@ -15,9 +15,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<AIController>();
 
-// Register the PasswordHasher<User> service
-builder.Services.AddScoped<PasswordHasher<User>>();
-
 // Configure PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -102,13 +99,9 @@ var requireAuthPolicy = new AuthorizationPolicyBuilder()
 builder.Services.AddAuthorizationBuilder()
     .SetDefaultPolicy(requireAuthPolicy);
 
-builder.Logging.AddConsole();
-
 var app = builder.Build();
 
-app.UseDeveloperExceptionPage();
 app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HealthDevice API v1"));
 
 app.UseStaticFiles();
 
