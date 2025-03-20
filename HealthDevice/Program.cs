@@ -8,18 +8,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<AIController>();
-
-// Configure PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add Identity services
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
         options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -37,7 +33,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddOpenApi();
-
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,8 +54,6 @@ builder.Services.AddAuthentication(options =>
 
 
 builder.Services.AddAuthorization();
-
-// Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -99,19 +92,20 @@ var requireAuthPolicy = new AuthorizationPolicyBuilder()
 builder.Services.AddAuthorizationBuilder()
     .SetDefaultPolicy(requireAuthPolicy);
 
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()  // Log only Info, Warning, and Error
+    .WriteTo.Console()  // Output logs to console
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+
 var app = builder.Build();
-
 app.UseSwagger();
-
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.MapRazorPages();
-
-
 app.Run();
