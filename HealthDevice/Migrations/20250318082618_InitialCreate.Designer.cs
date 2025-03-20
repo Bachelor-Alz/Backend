@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250314130401_InitialCreate")]
+    [Migration("20250318082618_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
