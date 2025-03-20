@@ -17,40 +17,81 @@ namespace HealthDevice.Controllers;
 public class UserController : ControllerBase
 {
     private readonly UserManager<User> _userManager;
+    private readonly ILogger<UserController> _logger;
     
-    public UserController(UserManager<User> userManager)
+    public UserController(UserManager<User> userManager, ILogger<UserController> logger)
     {
         _userManager = userManager;
+        _logger = logger;
     }
 
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO)
     {
-        User user = await _userManager.FindByEmailAsync(userLoginDTO.Email);
+
+        string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
+        DateTime timestamp = DateTime.UtcNow;
+        User? user = await _userManager.FindByEmailAsync(userLoginDTO.Email);
         if (user == null)
         {
-            return Unauthorized();
+            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp} - User not found.", 
+                                userLoginDTO.Email, 
+                                ipAddress, 
+                                timestamp);
+            return Unauthorized("User not found.");
         }
+
         if (!await _userManager.CheckPasswordAsync(user, userLoginDTO.Password))
         {
-            return Unauthorized();
+            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp} - Incorrect password.", 
+                                userLoginDTO.Email, 
+                                ipAddress, 
+                                timestamp);
+            return Unauthorized("Incorrect password.");
         }
-        //Need to implement JWT
+        
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp} - Account is locked out.", 
+                                userLoginDTO.Email, 
+                                ipAddress, 
+                                timestamp);
+            return Unauthorized("Account is locked out.");
+        }
+
+        // Log successful login
+        _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}. Generating JWT.", 
+                                userLoginDTO.Email, 
+                                ipAddress, 
+                                timestamp);
+
+        // Generate JWT
         string token = GenerateJWT(user);
+
         return new LoginResponseDTO
         {
             Token = token
         };
     }
+
+
     
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO)
     {
-        if (userRegisterDTO == null)
+        string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
+        DateTime timestamp = DateTime.UtcNow;
+        string email = userRegisterDTO.Email;
+        
+        if(_userManager.FindByEmailAsync(email) != null)
         {
-            return BadRequest();
+            _logger.LogWarning("Registration failed for email: {Email} from IP: {IpAddress} at {Timestamp} - Email already exists.", 
+                                email, 
+                                ipAddress, 
+                                timestamp);
+            return BadRequest("Email already exists.");
         }
         
         User user = new User {
@@ -64,9 +105,13 @@ public class UserController : ControllerBase
         
         if(result.Succeeded)
         {
+            _logger.LogInformation("Registration successful for email: {Email} from IP: {IpAddress} at {Timestamp}. Generating JWT.", 
+                                email, 
+                                ipAddress, 
+                                timestamp);
             return Ok();
         }
-        return BadRequest();
+        return BadRequest("Registration failed.");
     }
     
     
