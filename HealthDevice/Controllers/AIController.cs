@@ -1,8 +1,8 @@
-﻿namespace HealthDevice.Controllers;
+﻿using HealthDevice.DTO;
+
+namespace HealthDevice.Controllers;
 
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,14 +18,9 @@ public class AIController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task<IActionResult> Compute()
+    public async Task<ActionResult<FallInfo>> Compute()
     {
         return null;
     }
-
-    [HttpGet("fall")]
-    public async Task<IActionResult> Fall()
-    {
-        return null;
-    }
+    
 }
