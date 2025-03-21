@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.DTO
 {
@@ -26,12 +24,5 @@ namespace HealthDevice.DTO
         public required string Email { get; set; }
         public required string Password { get; set; }
         public required Roles Role { get; set; }
-    }
-
-    public class UserTempDTO
-    {
-        public string Email { get; set; }
-        public string Name { get; set; }
-        public Roles Role { get; set; }
     }
 }
