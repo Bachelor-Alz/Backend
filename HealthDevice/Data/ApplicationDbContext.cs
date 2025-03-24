@@ -18,7 +18,6 @@ namespace HealthDevice.Data
         public DbSet<Neo_6m> Neo_6mDatas { get; set; }
         public DbSet<Elder> Elders { get; set; }
         public DbSet<Caregiver> Caregivers { get; set; }
-        public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,12 +35,12 @@ namespace HealthDevice.Data
             modelBuilder.Entity<FallInfo>(entity =>
             {
                 entity.ToTable("FallInfos");
-                entity.HasKey(e => e.id);
+                entity.HasKey(e => e.Id);
                 entity.Property(e => e.timestamp).IsRequired();
                 entity.Property(e => e.status).IsRequired();
                 entity.HasOne(e => e.location)
                     .WithMany()
-                    .HasForeignKey(e => e.id)
+                    .HasForeignKey(e => e.Id)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

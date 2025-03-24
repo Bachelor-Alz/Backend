@@ -22,15 +22,110 @@ namespace HealthDevice.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
                 {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
+                    b.Property<string>("ConcurrencyStamp")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Caregivers");
+                });
+
+            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
 
                     b.Property<string>("CaregiverId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
                         .HasColumnType("text");
 
                     b.Property<int>("locationsid")
@@ -40,7 +135,7 @@ namespace HealthDevice.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("id");
+                    b.HasKey("Id");
 
                     b.HasIndex("CaregiverId");
 
@@ -51,7 +146,7 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
                 {
-                    b.Property<int>("id")
+                    b.Property<int>("Id")
                         .HasColumnType("integer");
 
                     b.Property<string>("status")
@@ -61,7 +156,7 @@ namespace HealthDevice.Migrations
                     b.Property<DateTime>("timestamp")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("id");
+                    b.HasKey("Id");
 
                     b.ToTable("FallInfos", (string)null);
                 });
@@ -74,8 +169,8 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("Elderid")
-                        .HasColumnType("integer");
+                    b.Property<string>("ElderId")
+                        .HasColumnType("text");
 
                     b.Property<int>("Rate")
                         .HasColumnType("integer");
@@ -85,7 +180,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Elderid");
+                    b.HasIndex("ElderId");
 
                     b.ToTable("Heartrates");
                 });
@@ -202,81 +297,6 @@ namespace HealthDevice.Migrations
                     b.ToTable("Neo_6mDatas", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.User", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasColumnType("text");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("UserName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users");
-
-                    b.HasDiscriminator().HasValue("User");
-
-                    b.UseTphMappingStrategy();
-                });
-
-            modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
-                {
-                    b.HasBaseType("HealthDevice.DTO.User");
-
-                    b.HasDiscriminator().HasValue("Caregiver");
-                });
-
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Caregiver", null)
@@ -296,7 +316,7 @@ namespace HealthDevice.Migrations
                 {
                     b.HasOne("HealthDevice.DTO.Location", "location")
                         .WithMany()
-                        .HasForeignKey("id")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -307,17 +327,17 @@ namespace HealthDevice.Migrations
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
                         .WithMany("heartrates")
-                        .HasForeignKey("Elderid");
-                });
-
-            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
-                {
-                    b.Navigation("heartrates");
+                        .HasForeignKey("ElderId");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
                 {
                     b.Navigation("elders");
+                });
+
+            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
+                {
+                    b.Navigation("heartrates");
                 });
 #pragma warning restore 612, 618
         }

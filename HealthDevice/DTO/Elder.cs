@@ -1,8 +1,9 @@
-﻿namespace HealthDevice.DTO;
+﻿using Microsoft.AspNetCore.Identity;
 
-public class Elder
+namespace HealthDevice.DTO;
+
+public class Elder : IdentityUser
 {
-    public required int id { get; set; }
     public required string name { get; set; }
     public List<Heartrate> heartrates { get; set; }
     public Location locations { get; set; }

@@ -1,10 +1,10 @@
 using HealthDevice.Data;
-using Microsoft.EntityFrameworkCore;
 using HealthDevice.Controllers;
 using HealthDevice.DTO;
 using HealthDevice.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,13 +13,33 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient<AIController>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddIdentity<User, IdentityRole>(options =>
-        options.SignIn.RequireConfirmedAccount = true)
+
+// Configure Identity services
+builder.Services.AddIdentityCore<Elder>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+    })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddIdentityCore<Caregiver>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+// Register UserManager and RoleManager for Elder
+builder.Services.AddScoped<UserManager<Elder>>();
+builder.Services.AddScoped<RoleManager<IdentityRole>>();
+
+// Register UserManager and RoleManager for Caregiver
+builder.Services.AddScoped<UserManager<Caregiver>>();
+builder.Services.AddScoped<RoleManager<IdentityRole>>();
+
 builder.Services.AddRazorPages();
-
-
 builder.Services.ConfigureApplicationCookie();
 
 builder.Services.AddOpenApi();
@@ -29,14 +49,12 @@ builder.Services.AddJwtAuthentication(
     "Your_32_Character_Long_Secret_Key_Here"
 );
 
-
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("Caregiver", policy => policy.RequireClaim("Caregiver"));
     options.AddPolicy("Elder", policy => policy.RequireClaim("Elder"));
 });
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerConfiguration();
 
 var requireAuthPolicy = new AuthorizationPolicyBuilder()
@@ -53,7 +71,6 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -63,7 +80,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapRazorPages();
-
 
 using (var scope = app.Services.CreateScope())
 {

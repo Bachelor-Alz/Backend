@@ -1,6 +1,9 @@
-﻿namespace HealthDevice.DTO;
+﻿using Microsoft.AspNetCore.Identity;
 
-public class Caregiver : User
+namespace HealthDevice.DTO;
+
+public class Caregiver : IdentityUser
 {
+    public required string name { get; set; }
     public List<Elder> elders { get; set; }
 }

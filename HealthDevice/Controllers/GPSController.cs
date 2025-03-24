@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Controllers;
-
+/*
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
@@ -77,4 +77,4 @@ public class GPSController : ControllerBase
         }
         
     }
-}
+} */
