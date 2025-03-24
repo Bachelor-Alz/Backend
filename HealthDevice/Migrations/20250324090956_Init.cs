@@ -20,7 +20,6 @@ namespace HealthDevice.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     latitude = table.Column<int>(type: "integer", nullable: false),
                     longitude = table.Column<int>(type: "integer", nullable: false),
-                    altitude = table.Column<int>(type: "integer", nullable: false),
                     timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -34,8 +33,6 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Red = table.Column<int>(type: "integer", nullable: false),
-                    Infrared = table.Column<int>(type: "integer", nullable: false),
                     HeartRate = table.Column<float>(type: "real", nullable: true),
                     SpO2 = table.Column<float>(type: "real", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -57,8 +54,7 @@ namespace HealthDevice.Migrations
                     GyroscopeX = table.Column<float>(type: "real", nullable: false),
                     GyroscopeY = table.Column<float>(type: "real", nullable: false),
                     GyroscopeZ = table.Column<float>(type: "real", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    temperature = table.Column<float>(type: "real", nullable: false)
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -72,17 +68,12 @@ namespace HealthDevice.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UtcTime = table.Column<TimeSpan>(type: "interval", nullable: false),
-                    Status = table.Column<char>(type: "character(1)", nullable: false),
                     Latitude = table.Column<double>(type: "double precision", nullable: false),
                     LatitudeDirection = table.Column<char>(type: "character(1)", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
                     LongitudeDirection = table.Column<char>(type: "character(1)", nullable: false),
-                    SpeedKnots = table.Column<float>(type: "real", nullable: false),
                     Course = table.Column<float>(type: "real", nullable: false),
-                    Date = table.Column<DateOnly>(type: "date", nullable: false),
-                    MagneticVariation = table.Column<float>(type: "real", nullable: true),
-                    MagneticDirection = table.Column<char>(type: "character(1)", nullable: true),
-                    Checksum = table.Column<byte>(type: "smallint", nullable: false)
+                    Date = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
                 {
