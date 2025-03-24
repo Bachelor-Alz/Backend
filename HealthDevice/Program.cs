@@ -40,6 +40,7 @@ builder.Services.AddScoped<UserManager<Caregiver>>();
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 builder.Services.AddRazorPages();
+
 builder.Services.ConfigureApplicationCookie();
 
 builder.Services.AddOpenApi();
