@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-
-namespace HealthDevice.DTO
+﻿namespace HealthDevice.DTO
 {
     public class UserLoginDTO
     {
