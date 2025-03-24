@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250320121415_Init")]
+    [Migration("20250324090956_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -101,9 +101,6 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
 
-                    b.Property<int>("altitude")
-                        .HasColumnType("integer");
-
                     b.Property<int>("latitude")
                         .HasColumnType("integer");
 
@@ -147,9 +144,6 @@ namespace HealthDevice.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<float>("temperature")
-                        .HasColumnType("real");
-
                     b.HasKey("Id");
 
                     b.ToTable("MPU6050Datas", (string)null);
@@ -165,12 +159,6 @@ namespace HealthDevice.Migrations
 
                     b.Property<float?>("HeartRate")
                         .HasColumnType("real");
-
-                    b.Property<int>("Infrared")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Red")
-                        .HasColumnType("integer");
 
                     b.Property<float?>("SpO2")
                         .HasColumnType("real");
@@ -191,9 +179,6 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<byte>("Checksum")
-                        .HasColumnType("smallint");
-
                     b.Property<float>("Course")
                         .HasColumnType("real");
 
@@ -210,18 +195,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("double precision");
 
                     b.Property<char>("LongitudeDirection")
-                        .HasColumnType("character(1)");
-
-                    b.Property<char?>("MagneticDirection")
-                        .HasColumnType("character(1)");
-
-                    b.Property<float?>("MagneticVariation")
-                        .HasColumnType("real");
-
-                    b.Property<float>("SpeedKnots")
-                        .HasColumnType("real");
-
-                    b.Property<char>("Status")
                         .HasColumnType("character(1)");
 
                     b.Property<TimeSpan>("UtcTime")

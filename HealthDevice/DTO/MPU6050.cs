@@ -10,5 +10,4 @@ public class MPU6050
     public float GyroscopeY { get; set; }
     public float GyroscopeZ { get; set; }
     public DateTime Timestamp { get; set; }
-    public float temperature { get; set; }
 }

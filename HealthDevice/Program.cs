@@ -19,6 +19,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     .AddDefaultTokenProviders();
 builder.Services.AddRazorPages();
 
+
 builder.Services.ConfigureApplicationCookie();
 
 builder.Services.AddOpenApi();
@@ -29,7 +30,11 @@ builder.Services.AddJwtAuthentication(
 );
 
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Caregiver", policy => policy.RequireClaim("Caregiver"));
+    options.AddPolicy("Elder", policy => policy.RequireClaim("Elder"));
+});
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerConfiguration();
