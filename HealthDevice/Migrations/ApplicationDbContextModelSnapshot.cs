@@ -260,16 +260,21 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<float?>("HeartRate")
-                        .HasColumnType("real");
+                    b.Property<string>("ElderId")
+                        .HasColumnType("text");
 
-                    b.Property<float?>("SpO2")
+                    b.Property<int>("HeartRate")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("SpO2")
                         .HasColumnType("real");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ElderId");
 
                     b.ToTable("Max30102Datas", (string)null);
                 });
@@ -329,6 +334,36 @@ namespace HealthDevice.Migrations
                     b.ToTable("Perimeter");
                 });
 
+            modelBuilder.Entity("HealthDevice.DTO.Spo2", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ElderId")
+                        .HasColumnType("text");
+
+                    b.Property<float>("MaxSpO2")
+                        .HasColumnType("real");
+
+                    b.Property<float>("MinSpO2")
+                        .HasColumnType("real");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<float>("spO2")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ElderId");
+
+                    b.ToTable("SpO2s");
+                });
+
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Caregiver", null)
@@ -366,7 +401,14 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
-                        .WithMany("heartrates")
+                        .WithMany("heartRates")
+                        .HasForeignKey("ElderId");
+                });
+
+            modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
+                {
+                    b.HasOne("HealthDevice.DTO.Elder", null)
+                        .WithMany("Max30102Datas")
                         .HasForeignKey("ElderId");
                 });
 
@@ -381,6 +423,13 @@ namespace HealthDevice.Migrations
                     b.Navigation("location");
                 });
 
+            modelBuilder.Entity("HealthDevice.DTO.Spo2", b =>
+                {
+                    b.HasOne("HealthDevice.DTO.Elder", null)
+                        .WithMany("spo2s")
+                        .HasForeignKey("ElderId");
+                });
+
             modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
                 {
                     b.Navigation("elders");
@@ -388,7 +437,11 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
-                    b.Navigation("heartrates");
+                    b.Navigation("Max30102Datas");
+
+                    b.Navigation("heartRates");
+
+                    b.Navigation("spo2s");
                 });
 #pragma warning restore 612, 618
         }

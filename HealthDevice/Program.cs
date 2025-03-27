@@ -42,6 +42,7 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 // Register UserService
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<HealthService>();
 
 builder.Services.AddRazorPages();
 
@@ -75,6 +76,8 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+builder.Services.AddHostedService<TimedHostedService>();
 
 var app = builder.Build();
 app.UseSwagger();

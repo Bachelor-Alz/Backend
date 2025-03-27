@@ -18,6 +18,7 @@ namespace HealthDevice.Data
         public DbSet<Neo_6m> Neo_6mDatas { get; set; }
         public DbSet<Elder> Elders { get; set; }
         public DbSet<Caregiver> Caregivers { get; set; }
+        public DbSet<Spo2> SpO2s { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

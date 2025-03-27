@@ -54,21 +54,6 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Max30102Datas",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    HeartRate = table.Column<float>(type: "real", nullable: true),
-                    SpO2 = table.Column<float>(type: "real", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Max30102Datas", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "MPU6050Datas",
                 columns: table => new
                 {
@@ -213,6 +198,49 @@ namespace HealthDevice.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Max30102Datas",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    HeartRate = table.Column<int>(type: "integer", nullable: false),
+                    SpO2 = table.Column<float>(type: "real", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Max30102Datas", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Max30102Datas_Elders_ElderId",
+                        column: x => x.ElderId,
+                        principalTable: "Elders",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SpO2s",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    spO2 = table.Column<float>(type: "real", nullable: false),
+                    MaxSpO2 = table.Column<float>(type: "real", nullable: false),
+                    MinSpO2 = table.Column<float>(type: "real", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SpO2s", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SpO2s_Elders_ElderId",
+                        column: x => x.ElderId,
+                        principalTable: "Elders",
+                        principalColumn: "Id");
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Elders_CaregiverId",
                 table: "Elders",
@@ -234,9 +262,19 @@ namespace HealthDevice.Migrations
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Max30102Datas_ElderId",
+                table: "Max30102Datas",
+                column: "ElderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Perimeter_locationid",
                 table: "Perimeter",
                 column: "locationid");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SpO2s_ElderId",
+                table: "SpO2s",
+                column: "ElderId");
         }
 
         /// <inheritdoc />
@@ -256,6 +294,9 @@ namespace HealthDevice.Migrations
 
             migrationBuilder.DropTable(
                 name: "Neo_6mDatas");
+
+            migrationBuilder.DropTable(
+                name: "SpO2s");
 
             migrationBuilder.DropTable(
                 name: "Elders");
