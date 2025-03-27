@@ -126,7 +126,7 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Perimiter",
+                name: "Perimeter",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -136,9 +136,9 @@ namespace HealthDevice.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Perimiter", x => x.Id);
+                    table.PrimaryKey("PK_Perimeter", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Perimiter_Locations_locationid",
+                        name: "FK_Perimeter_Locations_locationid",
                         column: x => x.locationid,
                         principalTable: "Locations",
                         principalColumn: "id",
@@ -184,9 +184,9 @@ namespace HealthDevice.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Elders_Perimiter_perimeterId",
+                        name: "FK_Elders_Perimeter_perimeterId",
                         column: x => x.perimeterId,
-                        principalTable: "Perimiter",
+                        principalTable: "Perimeter",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -234,8 +234,8 @@ namespace HealthDevice.Migrations
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Perimiter_locationid",
-                table: "Perimiter",
+                name: "IX_Perimeter_locationid",
+                table: "Perimeter",
                 column: "locationid");
         }
 
@@ -264,7 +264,7 @@ namespace HealthDevice.Migrations
                 name: "Caregivers");
 
             migrationBuilder.DropTable(
-                name: "Perimiter");
+                name: "Perimeter");
 
             migrationBuilder.DropTable(
                 name: "Locations");
