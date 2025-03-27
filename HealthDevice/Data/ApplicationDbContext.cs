@@ -13,9 +13,9 @@ namespace HealthDevice.Data
         public DbSet<Heartrate> Heartrates { get; set; }
         public DbSet<Location> Locations { get; set; }
         public DbSet<FallInfo> FallInfos { get; set; }
-        public DbSet<Max30102> Max30102Datas { get; set; }
-        public DbSet<MPU6050> MPU6050Datas { get; set; }
-        public DbSet<Neo_6m> Neo_6mDatas { get; set; }
+        public DbSet<Max30102> Max30102Data { get; set; }
+        public DbSet<IMU> Mpu6050Data { get; set; }
+        public DbSet<GPS> GpsData { get; set; }
         public DbSet<Elder> Elders { get; set; }
         public DbSet<Caregiver> Caregivers { get; set; }
 
@@ -46,38 +46,36 @@ namespace HealthDevice.Data
 
             modelBuilder.Entity<Max30102>(entity =>
             {
-                entity.ToTable("Max30102Datas");
+                entity.ToTable("Max30102Data");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.HeartRate);
-                entity.Property(e => e.SpO2);
                 entity.Property(e => e.Timestamp).IsRequired();
+                entity.Property(e => e.BPM).IsRequired();
+                entity.Property(e => e.SpO2).IsRequired();
             });
 
-            modelBuilder.Entity<MPU6050>(entity =>
+            modelBuilder.Entity<IMU>(entity =>
             {
-                entity.ToTable("MPU6050Datas");
+                entity.ToTable("IMU_Data");
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Timestamp).IsRequired();
                 entity.Property(e => e.AccelerationX).IsRequired();
                 entity.Property(e => e.AccelerationY).IsRequired();
                 entity.Property(e => e.AccelerationZ).IsRequired();
                 entity.Property(e => e.GyroscopeX).IsRequired();
                 entity.Property(e => e.GyroscopeY).IsRequired();
                 entity.Property(e => e.GyroscopeZ).IsRequired();
-                entity.Property(e => e.Timestamp).IsRequired();
             });
 
-            modelBuilder.Entity<Neo_6m>(entity =>
+            modelBuilder.Entity<GPS>(entity =>
             {
-                entity.ToTable("Neo_6mDatas");
+                entity.ToTable("GPS_Data");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.UtcTime).IsRequired();
+                entity.Property(e => e.Timestamp).IsRequired();
                 entity.Property(e => e.Latitude).IsRequired();
-                entity.Property(e => e.LatitudeDirection).IsRequired();
                 entity.Property(e => e.Longitude).IsRequired();
-                entity.Property(e => e.LongitudeDirection).IsRequired();
                 entity.Property(e => e.Course).IsRequired();
-                entity.Property(e => e.Date).IsRequired();
             });
+
         }
     }
 }

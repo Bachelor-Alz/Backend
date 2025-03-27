@@ -40,8 +40,9 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 builder.Services.AddScoped<UserManager<Caregiver>>();
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
-// Register UserService
+// Register UserService and ArduinoService
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ArduinoService>();
 
 builder.Services.AddRazorPages();
 
