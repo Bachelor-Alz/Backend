@@ -28,7 +28,7 @@ namespace HealthDevice.Controllers
             _healthService = healthService;
         }
 
-        [HttpGet("heartrate/all")]
+        [HttpGet("heartrate")]
         [Authorize]
         public async Task<ActionResult<List<Heartrate>>> GetAllHeartrate(string elderEmail)
         {
@@ -41,6 +41,7 @@ namespace HealthDevice.Controllers
             return elder.heartRates;
         }
         
+        [HttpGet("Spo2")]
         public async Task<ActionResult<List<Spo2>>> GetAllSpO2(string elderEmail)
         {
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
