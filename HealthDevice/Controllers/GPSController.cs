@@ -71,6 +71,7 @@ public class GPSController : ControllerBase
             }
             elder.perimeter = new Perimiter
             {
+                Id = 0,
                 location = location,
                 radius = radius,
             };

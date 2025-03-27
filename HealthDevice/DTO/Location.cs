@@ -12,4 +12,6 @@ public class Perimiter
 {
     public Location location { get; set; }
     public int radius { get; set; }
+
+    public required int Id { get; set; }
 }

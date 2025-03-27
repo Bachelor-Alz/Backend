@@ -107,13 +107,52 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FallInfos",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false),
+                    timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    status = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FallInfos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FallInfos_Locations_Id",
+                        column: x => x.Id,
+                        principalTable: "Locations",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Perimiter",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    locationid = table.Column<int>(type: "integer", nullable: false),
+                    radius = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Perimiter", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Perimiter_Locations_locationid",
+                        column: x => x.locationid,
+                        principalTable: "Locations",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Elders",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
-                    locationsid = table.Column<int>(type: "integer", nullable: false),
-                    Perrimiterid = table.Column<int>(type: "integer", nullable: false),
+                    locationid = table.Column<int>(type: "integer", nullable: false),
+                    perimeterId = table.Column<int>(type: "integer", nullable: false),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "text", nullable: true),
                     NormalizedUserName = table.Column<string>(type: "text", nullable: true),
@@ -139,35 +178,16 @@ namespace HealthDevice.Migrations
                         principalTable: "Caregivers",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Elders_Locations_Perrimiterid",
-                        column: x => x.Perrimiterid,
+                        name: "FK_Elders_Locations_locationid",
+                        column: x => x.locationid,
                         principalTable: "Locations",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Elders_Locations_locationsid",
-                        column: x => x.locationsid,
-                        principalTable: "Locations",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "FallInfos",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false),
-                    timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    status = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FallInfos", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_FallInfos_Locations_Id",
-                        column: x => x.Id,
-                        principalTable: "Locations",
-                        principalColumn: "id",
+                        name: "FK_Elders_Perimiter_perimeterId",
+                        column: x => x.perimeterId,
+                        principalTable: "Perimiter",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -177,7 +197,9 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Rate = table.Column<int>(type: "integer", nullable: false),
+                    MaxRate = table.Column<int>(type: "integer", nullable: false),
+                    MinRate = table.Column<int>(type: "integer", nullable: false),
+                    AvgRate = table.Column<int>(type: "integer", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true)
                 },
@@ -197,19 +219,24 @@ namespace HealthDevice.Migrations
                 column: "CaregiverId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Elders_locationsid",
+                name: "IX_Elders_locationid",
                 table: "Elders",
-                column: "locationsid");
+                column: "locationid");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Elders_Perrimiterid",
+                name: "IX_Elders_perimeterId",
                 table: "Elders",
-                column: "Perrimiterid");
+                column: "perimeterId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Heartrates_ElderId",
                 table: "Heartrates",
                 column: "ElderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Perimiter_locationid",
+                table: "Perimiter",
+                column: "locationid");
         }
 
         /// <inheritdoc />
@@ -235,6 +262,9 @@ namespace HealthDevice.Migrations
 
             migrationBuilder.DropTable(
                 name: "Caregivers");
+
+            migrationBuilder.DropTable(
+                name: "Perimiter");
 
             migrationBuilder.DropTable(
                 name: "Locations");

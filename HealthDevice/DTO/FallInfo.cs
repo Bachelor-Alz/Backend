@@ -7,3 +7,5 @@ public class FallInfo
     public Location location { get; set; }
     public string status { get; set; }
 }
+
+//We need to send when a fall is detected

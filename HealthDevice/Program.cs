@@ -1,6 +1,7 @@
 using HealthDevice.Data;
 using HealthDevice.Controllers;
 using HealthDevice.DTO;
+using HealthDevice.Services;
 using HealthDevice.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -38,6 +39,9 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 // Register UserManager and RoleManager for Caregiver
 builder.Services.AddScoped<UserManager<Caregiver>>();
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
+
+// Register UserService
+builder.Services.AddScoped<UserService>();
 
 builder.Services.AddRazorPages();
 
