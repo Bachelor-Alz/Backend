@@ -128,18 +128,23 @@ namespace HealthDevice.Migrations
                     b.Property<string>("UserName")
                         .HasColumnType("text");
 
-                    b.Property<int>("locationsid")
+                    b.Property<int>("locationid")
                         .HasColumnType("integer");
 
                     b.Property<string>("name")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("perimeterId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CaregiverId");
 
-                    b.HasIndex("locationsid");
+                    b.HasIndex("locationid");
+
+                    b.HasIndex("perimeterId");
 
                     b.ToTable("Elders");
                 });
@@ -169,10 +174,16 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AvgRate")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
 
-                    b.Property<int>("Rate")
+                    b.Property<int>("MaxRate")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinRate")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("Timestamp")
@@ -297,19 +308,48 @@ namespace HealthDevice.Migrations
                     b.ToTable("Neo_6mDatas", (string)null);
                 });
 
+            modelBuilder.Entity("HealthDevice.DTO.Perimiter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("locationid")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("radius")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("locationid");
+
+                    b.ToTable("Perimiter");
+                });
+
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Caregiver", null)
                         .WithMany("elders")
                         .HasForeignKey("CaregiverId");
 
-                    b.HasOne("HealthDevice.DTO.Location", "locations")
+                    b.HasOne("HealthDevice.DTO.Location", "location")
                         .WithMany()
-                        .HasForeignKey("locationsid")
+                        .HasForeignKey("locationid")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("locations");
+                    b.HasOne("HealthDevice.DTO.Perimiter", "perimeter")
+                        .WithMany()
+                        .HasForeignKey("perimeterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("location");
+
+                    b.Navigation("perimeter");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
@@ -328,6 +368,17 @@ namespace HealthDevice.Migrations
                     b.HasOne("HealthDevice.DTO.Elder", null)
                         .WithMany("heartrates")
                         .HasForeignKey("ElderId");
+                });
+
+            modelBuilder.Entity("HealthDevice.DTO.Perimiter", b =>
+                {
+                    b.HasOne("HealthDevice.DTO.Location", "location")
+                        .WithMany()
+                        .HasForeignKey("locationid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("location");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
