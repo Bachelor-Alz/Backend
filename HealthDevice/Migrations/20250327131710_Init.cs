@@ -39,6 +39,22 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Heartrates",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MaxRate = table.Column<int>(type: "integer", nullable: false),
+                    MinRate = table.Column<int>(type: "integer", nullable: false),
+                    AvgRate = table.Column<int>(type: "integer", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Heartrates", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Locations",
                 columns: table => new
                 {
@@ -51,21 +67,6 @@ namespace HealthDevice.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Locations", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Max30102Datas",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    HeartRate = table.Column<float>(type: "real", nullable: true),
-                    SpO2 = table.Column<float>(type: "real", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Max30102Datas", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -192,22 +193,21 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Heartrates",
+                name: "Max30102Datas",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    MaxRate = table.Column<int>(type: "integer", nullable: false),
-                    MinRate = table.Column<int>(type: "integer", nullable: false),
-                    AvgRate = table.Column<int>(type: "integer", nullable: false),
+                    HeartRate = table.Column<int>(type: "integer", nullable: false),
+                    SpO2 = table.Column<float>(type: "real", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Heartrates", x => x.Id);
+                    table.PrimaryKey("PK_Max30102Datas", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Heartrates_Elders_ElderId",
+                        name: "FK_Max30102Datas_Elders_ElderId",
                         column: x => x.ElderId,
                         principalTable: "Elders",
                         principalColumn: "Id");
@@ -229,8 +229,8 @@ namespace HealthDevice.Migrations
                 column: "perimeterId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Heartrates_ElderId",
-                table: "Heartrates",
+                name: "IX_Max30102Datas_ElderId",
+                table: "Max30102Datas",
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(

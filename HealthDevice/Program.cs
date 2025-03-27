@@ -42,6 +42,7 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 // Register UserService
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<HealthService>();
 
 builder.Services.AddRazorPages();
 

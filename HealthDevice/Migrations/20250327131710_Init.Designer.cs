@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250327111349_Init")]
+    [Migration("20250327131710_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -180,9 +180,6 @@ namespace HealthDevice.Migrations
                     b.Property<int>("AvgRate")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ElderId")
-                        .HasColumnType("text");
-
                     b.Property<int>("MaxRate")
                         .HasColumnType("integer");
 
@@ -193,8 +190,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ElderId");
 
                     b.ToTable("Heartrates");
                 });
@@ -263,16 +258,21 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<float?>("HeartRate")
-                        .HasColumnType("real");
+                    b.Property<string>("ElderId")
+                        .HasColumnType("text");
 
-                    b.Property<float?>("SpO2")
+                    b.Property<int>("HeartRate")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("SpO2")
                         .HasColumnType("real");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ElderId");
 
                     b.ToTable("Max30102Datas", (string)null);
                 });
@@ -366,10 +366,10 @@ namespace HealthDevice.Migrations
                     b.Navigation("location");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
-                        .WithMany("heartrates")
+                        .WithMany("Max30102Datas")
                         .HasForeignKey("ElderId");
                 });
 
@@ -391,7 +391,7 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
-                    b.Navigation("heartrates");
+                    b.Navigation("Max30102Datas");
                 });
 #pragma warning restore 612, 618
         }
