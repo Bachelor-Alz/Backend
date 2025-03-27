@@ -52,5 +52,33 @@ namespace HealthDevice.Controllers
             }
             return elder.spo2s;
         }
+        
+        [HttpGet("Heartrate/hour")]
+        public async Task<ActionResult<List<Heartrate>>> GetHeartrateHour(string elderEmail, DateTime date)
+        {
+            DateTime olDateTime = date - TimeSpan.FromHours(1);
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if(elder == null)
+            {
+                _logger.LogError("No elder found with email {email}", elderEmail);
+                return BadRequest();
+            }
+            List<Heartrate> heartrates = elder.heartRates.Where(d => d.Timestamp >= olDateTime && d.Timestamp <= date).ToList();
+            return heartrates;
+        }
+        
+        [HttpGet("Spo2/hour")]
+        public async Task<ActionResult<List<Spo2>>> GetSpo2Hour(string elderEmail, DateTime date)
+        {
+            DateTime olDateTime = date - TimeSpan.FromHours(1);
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if(elder == null)
+            {
+                _logger.LogError("No elder found with email {email}", elderEmail);
+                return BadRequest();
+            }
+            List<Spo2> spo2s = elder.spo2s.Where(d => d.Timestamp >= olDateTime && d.Timestamp <= date).ToList();
+            return spo2s;
+        }
 }
 }
