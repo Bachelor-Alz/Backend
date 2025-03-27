@@ -31,32 +31,83 @@ namespace HealthDevice.Controllers
 
         [HttpGet("heartrate")]
         [Authorize]
-        public async Task<ActionResult<Heartrate>> GetHeartrate(string elderEmail)
+        public async Task<ActionResult<Heartrate>> GetHeartrateHourly(string elderEmail)
         {
-            DateTime currenttime = DateTime.Now;
+            DateTime currentTime = DateTime.Now;
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
             
             if(elder == null)
             {
+                _logger.LogError("No elder found with email {email}", elderEmail);
                 return BadRequest();
             }
+            
+            Heartrate heartRate = await _healthService.CalculateHeartRate(currentTime, elder);
+            elder.heartRates.Add(heartRate);
 
-            return await _healthService.CalculateHeartRate(currenttime, elder);
+            try
+            {
+                await _elderManager.UpdateAsync(elder);
+                return heartRate;
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error updating elder with email {email}", elderEmail);
+                return BadRequest();
+            }
+            
+        }
+
+        [HttpGet("heartrate/all")]
+        [Authorize]
+        public async Task<ActionResult<List<Heartrate>>> GetAllHeartrate(string elderEmail)
+        {
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if(elder == null)
+            {
+                _logger.LogError("No elder found with email {email}", elderEmail);
+                return BadRequest();
+            }
+            return elder.heartRates;
         }
 
         [HttpGet("SpO2")]
         [Authorize]
-        public async Task<ActionResult<Spo2>> GetSpO2(string elderEmail)
+        public async Task<ActionResult<Spo2>> GetSpO2Hourly(string elderEmail)
         {
-            DateTime currenttime = DateTime.Now;
+            DateTime currentTime = DateTime.Now;
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
 
             if(elder == null)
             {
+                _logger.LogError("No elder found with email {email}", elderEmail);
                 return BadRequest();
             }
             
-            return await _healthService.CalculateSpo2(currenttime, elder);
+            Spo2 spo2 = await _healthService.CalculateSpo2(currentTime, elder);
+            elder.spo2s.Add(spo2);
+
+            try
+            {
+                await _elderManager.UpdateAsync(elder);
+                return spo2;
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error updating elder with email {email}", elderEmail);
+                return BadRequest();
+            }
+        }
+        
+        public async Task<ActionResult<List<Spo2>>> GetAllSpO2(string elderEmail)
+        {
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if(elder == null)
+            {
+                _logger.LogError("No elder found with email {email}", elderEmail);
+                return BadRequest();
+            }
+            return elder.spo2s;
         }
 }
 }

@@ -77,6 +77,8 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+builder.Services.AddHostedService<TimedHostedService>();
+
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();

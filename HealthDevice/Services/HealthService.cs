@@ -15,7 +15,7 @@ public class HealthService
         _db = db;
     }
 
-    public async Task<ActionResult<Heartrate>> CalculateHeartRate(DateTime currentDate, Elder elder)
+    public async Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
         DateTime earlierDate = currentDate.Date - TimeSpan.FromHours(1);
         List<Max30102> heartRates = elder.Max30102Datas.Where(c => c.Timestamp >= earlierDate && c.Timestamp <= currentDate).ToList();
@@ -31,7 +31,7 @@ public class HealthService
         };
     }
 
-    public async Task<ActionResult<Spo2>> CalculateSpo2(DateTime currentDate, Elder elder)
+    public async Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
         DateTime earlierDate = currentDate.Date - TimeSpan.FromHours(1);
         List<Max30102> Spo2s = elder.Max30102Datas.Where(c => c.Timestamp >= earlierDate && c.Timestamp <= currentDate).ToList();
