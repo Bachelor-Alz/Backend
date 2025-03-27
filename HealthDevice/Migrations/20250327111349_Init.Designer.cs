@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250327090824_Init")]
+    [Migration("20250327111349_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -311,7 +311,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Neo_6mDatas", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Perimiter", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -329,7 +329,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("locationid");
 
-                    b.ToTable("Perimiter");
+                    b.ToTable("Perimeter");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
@@ -344,7 +344,7 @@ namespace HealthDevice.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HealthDevice.DTO.Perimiter", "perimeter")
+                    b.HasOne("HealthDevice.DTO.Perimeter", "perimeter")
                         .WithMany()
                         .HasForeignKey("perimeterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -373,7 +373,7 @@ namespace HealthDevice.Migrations
                         .HasForeignKey("ElderId");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Perimiter", b =>
+            modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Location", "location")
                         .WithMany()
