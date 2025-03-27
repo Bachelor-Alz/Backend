@@ -1,6 +1,5 @@
 ﻿using HealthDevice.Data;
 using HealthDevice.DTO;
-using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
