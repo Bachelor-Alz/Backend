@@ -31,32 +31,32 @@ namespace HealthDevice.Controllers
 
         [HttpGet("heartrate")]
         [Authorize]
-        public async Task<Task<ActionResult<Heartrate>>> GetHeartrate(string elderEmail)
+        public async Task<ActionResult<Heartrate>> GetHeartrate(string elderEmail)
         {
             DateTime currenttime = DateTime.Now;
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
             
             if(elder == null)
             {
-                return Task.FromResult<ActionResult<Heartrate>>(BadRequest());
+                return BadRequest();
             }
 
-            return _healthService.CalculateHeartRate(currenttime, elder);
+            return await _healthService.CalculateHeartRate(currenttime, elder);
         }
 
         [HttpGet("SpO2")]
         [Authorize]
-        public async Task<Task<ActionResult<Spo2>>> GetSpO2(string elderEmail)
+        public async Task<ActionResult<Spo2>> GetSpO2(string elderEmail)
         {
             DateTime currenttime = DateTime.Now;
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
 
             if(elder == null)
             {
-                return Task.FromResult<ActionResult<Spo2>>(BadRequest());
+                return BadRequest();
             }
             
-            return _healthService.CalculateSpo2(currenttime, elder);
+            return await _healthService.CalculateSpo2(currenttime, elder);
         }
 }
 }
