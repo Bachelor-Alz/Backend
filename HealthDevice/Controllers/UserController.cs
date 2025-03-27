@@ -151,7 +151,7 @@ public class UserController : ControllerBase
                 name = userRegisterDTO.Name,
                 Email = userRegisterDTO.Email,
                 UserName = userRegisterDTO.Email,
-                locations = new Location
+                location = new Location
                 {
                     id = 0
                 },

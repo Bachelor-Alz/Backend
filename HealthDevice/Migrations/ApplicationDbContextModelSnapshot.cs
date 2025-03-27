@@ -113,6 +113,9 @@ namespace HealthDevice.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
 
+                    b.Property<int>("Perrimiterid")
+                        .HasColumnType("integer");
+
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text");
 
@@ -138,6 +141,8 @@ namespace HealthDevice.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CaregiverId");
+
+                    b.HasIndex("Perrimiterid");
 
                     b.HasIndex("locationsid");
 
@@ -303,11 +308,19 @@ namespace HealthDevice.Migrations
                         .WithMany("elders")
                         .HasForeignKey("CaregiverId");
 
+                    b.HasOne("HealthDevice.DTO.Location", "Perrimiter")
+                        .WithMany()
+                        .HasForeignKey("Perrimiterid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("HealthDevice.DTO.Location", "locations")
                         .WithMany()
                         .HasForeignKey("locationsid")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Perrimiter");
 
                     b.Navigation("locations");
                 });

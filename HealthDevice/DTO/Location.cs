@@ -7,3 +7,9 @@ public class Location
     public int longitude { get; set; }
     public DateTime timestamp { get; set; }
 }
+
+public class Perimiter
+{
+    public Location location { get; set; }
+    public int radius { get; set; }
+}

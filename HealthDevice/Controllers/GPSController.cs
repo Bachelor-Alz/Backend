@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Controllers;
 
-/*
 
 [Authorize]
 [Route("api/[controller]")]
@@ -15,13 +14,15 @@ namespace HealthDevice.Controllers;
 public class GPSController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    private readonly UserManager<User> _userManager; 
+    private readonly UserManager<Elder> _elderManager; 
+    private readonly UserManager<Caregiver> _caregiverManager;
     private readonly ILogger<GPSController> _logger;
     
-    public GPSController(ApplicationDbContext context, UserManager<User> userManager, ILogger<GPSController> logger)
+    public GPSController(ApplicationDbContext context, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager,ILogger<GPSController> logger)
     {
         _context = context;
-        _userManager = userManager;
+        _elderManager = elderManager;
+        _caregiverManager = caregiverManager;
         _logger = logger;
     }
     
@@ -33,14 +34,14 @@ public class GPSController : ControllerBase
             _logger.LogWarning("ElderLocationDTO is null.");
             return BadRequest();
         }
-        Elder? elder = await _context.Elders.FirstOrDefaultAsync(e => e.id == elderLocationDTO.id);
+        Elder? elder = await _elderManager.FindByNameAsync(elderLocationDTO.name);
         if(elder == null)
         {
             _logger.LogWarning("Elder not found.");
             return NotFound();
         }
         
-        Location? location = await _context.Locations.LastOrDefaultAsync(l => l.id == elder.locations.id);
+        Location? location = await _context.Locations.LastOrDefaultAsync(l => l.id == elder.location.id);
         if(location == null)
         {
             _logger.LogWarning("Location not found.");
@@ -51,7 +52,7 @@ public class GPSController : ControllerBase
     }
     
     [HttpPost("location/post")]
-    public async Task<ActionResult> PostLocation(Location location, int elderId)
+    public async Task<ActionResult> PostPerimeter(Location location, int radius, string elderMail)
     {
         if(location == null)
         {
@@ -62,13 +63,17 @@ public class GPSController : ControllerBase
         try
         {
             await _context.Locations.AddAsync(location);
-            Elder? elder = await _context.Elders.FirstOrDefaultAsync(e => e.id == elderId);
+            Elder? elder = await _elderManager.FindByEmailAsync(elderMail);
             if(elder == null)
             {
                 _logger.LogWarning("Elder not found.");
                 return NotFound();
             }
-            elder.locations = location;
+            elder.perimeter = new Perimiter
+            {
+                location = location,
+                radius = radius,
+            };
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -79,5 +84,5 @@ public class GPSController : ControllerBase
         }
         
     }
-} */
+} 
 

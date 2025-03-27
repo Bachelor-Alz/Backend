@@ -6,7 +6,8 @@ public class Elder : IdentityUser
 {
     public required string name { get; set; }
     public List<Heartrate> heartrates { get; set; }
-    public Location locations { get; set; }
+    public Location location { get; set; }
+    public Perimiter perimeter { get; set; }
 }
 
 public class ElderLocationDTO
