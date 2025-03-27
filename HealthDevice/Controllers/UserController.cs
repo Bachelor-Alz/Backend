@@ -41,7 +41,7 @@ public class UserController : ControllerBase
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO)
     {
         return userRegisterDTO.Role == Roles.Elder 
-            ? await _userService.HandleRegister(_elderManager, userRegisterDTO, new Elder { name = userRegisterDTO.Name, Email = userRegisterDTO.Email, UserName = userRegisterDTO.Email, location = new Location { id = 0 }, heartrates = new List<Heartrate>() }, HttpContext)
+            ? await _userService.HandleRegister(_elderManager, userRegisterDTO, new Elder { name = userRegisterDTO.Name, Email = userRegisterDTO.Email, UserName = userRegisterDTO.Email, location = new Location { id = 0 }, heartrates = new List<Heartrate>(), perimeter = new Perimiter {Id = 0, location = new Location{id = -1}}}, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, new Caregiver { name = userRegisterDTO.Name, Email = userRegisterDTO.Email, UserName = userRegisterDTO.Email, elders = new List<Elder>() }, HttpContext);
     }
 
@@ -54,11 +54,62 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult> PutElder(string ElderEmail)
     {
-        Caregiver caregiver = await _caregiverManager.FindByEmailAsync(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        if(caregiver == null)
+        var userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+
+        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+        if (caregiver == null)
         {
             _logger.LogError("Caregiver not found.");
-            return BadRequest();
+            return BadRequest("Caregiver not found.");
+        }
+
+        Elder? elder = await _elderManager.FindByEmailAsync(ElderEmail);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound("Elder not found.");
+        }
+
+        if (caregiver.elders == null)
+        {
+            caregiver.elders = new List<Elder>();
+        }
+
+        caregiver.elders.Add(elder);
+        try
+        {
+            await _caregiverManager.UpdateAsync(caregiver);
+            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.name}.", elder.Email, caregiver.name);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update caregiver.");
+            return BadRequest("Failed to update caregiver.");
+        }
+    }
+
+    [HttpDelete("users/elder")]
+    [Authorize(Roles = "Caregiver")]
+    public async Task<ActionResult> RemoveElder(string ElderEmail)
+    {
+        var userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+
+        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
         }
         Elder? elder = await _elderManager.FindByEmailAsync(ElderEmail);
         if(elder == null)
@@ -66,12 +117,12 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound();
         }
-        
-        caregiver.elders.Add(elder);
+
+        caregiver.elders.Remove(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
-            _logger.LogInformation("{elder.Email} add to Caregiver {caregiver.name}.", elder.Email, caregiver.name);
+            _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.name);
             return Ok();
         }
         catch
