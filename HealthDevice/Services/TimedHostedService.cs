@@ -1,13 +1,5 @@
-﻿// TimedHostedService.cs
-using HealthDevice.DTO;
+﻿using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace HealthDevice.Services
 {
@@ -32,21 +24,18 @@ namespace HealthDevice.Services
                 {
                     var elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
                     var healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
-                    var elders = elderManager.Users.ToList();
+                    List<Elder> elders = elderManager.Users.ToList();
 
-                    foreach (var elder in elders)
+                    foreach (Elder elder in elders)
                     {
                         DateTime currentTime = DateTime.Now;
-
-                        // Update heart rate
-                        var heartRate = await healthService.CalculateHeartRate(currentTime, elder);
+                        
+                        Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
                         elder.heartRates.Add(heartRate);
-
-                        // Update SpO2
-                        var spo2 = await healthService.CalculateSpo2(currentTime, elder);
+                        
+                        Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
                         elder.spo2s.Add(spo2);
-
-                        // Update the elder in the database
+                        
                         await elderManager.UpdateAsync(elder);
                     }
                 }
