@@ -41,7 +41,7 @@ public class UserController : ControllerBase
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO)
     {
         return userRegisterDTO.Role == Roles.Elder 
-            ? await _userService.HandleRegister(_elderManager, userRegisterDTO, new Elder { name = userRegisterDTO.Name, Email = userRegisterDTO.Email, UserName = userRegisterDTO.Email, location = new Location { id = 0 }, heartrates = new List<Heartrate>(), perimeter = new Perimiter {Id = 0, location = new Location{id = -1}}}, HttpContext)
+            ? await _userService.HandleRegister(_elderManager, userRegisterDTO, new Elder { name = userRegisterDTO.Name, Email = userRegisterDTO.Email, UserName = userRegisterDTO.Email, location = new Location { id = 0 }, heartrates = new List<Heartrate>(), perimeter = new Perimeter {Id = 0, location = new Location{id = -1}}}, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, new Caregiver { name = userRegisterDTO.Name, Email = userRegisterDTO.Email, UserName = userRegisterDTO.Email, elders = new List<Elder>() }, HttpContext);
     }
 
