@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250328110158_Init")]
+    [Migration("20250328112406_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -132,7 +132,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("arduino")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("locationid")

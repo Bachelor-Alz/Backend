@@ -129,7 +129,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("arduino")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("locationid")

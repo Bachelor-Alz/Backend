@@ -51,7 +51,9 @@ public class UserController : ControllerBase
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
                                                     Max30102Datas = new List<Max30102>(), 
-                                                    gpsData = new List<GPS>()
+                                                    gpsData = new List<GPS>(),
+                                                    location = new Location(),
+                                                    perimeter = new Perimeter{location = new Location()},
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, 
                                                 new Caregiver
@@ -72,7 +74,7 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult> PutElder(string ElderEmail)
     {
-        var userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
@@ -116,7 +118,7 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult> RemoveElder(string ElderEmail)
     {
-        var userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");

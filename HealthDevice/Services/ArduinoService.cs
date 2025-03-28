@@ -32,7 +32,7 @@ public class ArduinoService
         
         Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
 
-        foreach (var gps in data)
+        foreach (GPS gps in data)
         {
             gps.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(gps.EpochTimestamp).UtcDateTime;
         }
@@ -79,7 +79,7 @@ public class ArduinoService
         
         Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
 
-        foreach (var entry in data)
+        foreach (Max30102 entry in data)
         {
             entry.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(entry.EpochTimestamp).UtcDateTime;
         }

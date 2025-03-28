@@ -100,7 +100,7 @@ namespace HealthDevice.Migrations
                     name = table.Column<string>(type: "text", nullable: false),
                     locationid = table.Column<int>(type: "integer", nullable: false),
                     perimeterId = table.Column<int>(type: "integer", nullable: false),
-                    arduino = table.Column<string>(type: "text", nullable: false),
+                    arduino = table.Column<string>(type: "text", nullable: true),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "text", nullable: true),
                     NormalizedUserName = table.Column<string>(type: "text", nullable: true),

@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Services;
 
 namespace HealthDevice.Controllers;
 
@@ -10,17 +11,26 @@ using Microsoft.AspNetCore.Mvc;
 [Route("[controller]")]
 public class AIController : ControllerBase
 {
-    private readonly HttpClient _httpClient;
-
-    public AIController(HttpClient httpClient)
+    private readonly ILogger<AIController> _logger;
+    private readonly AIService _aiService;
+    
+    public AIController(ILogger<AIController> logger, AIService aiService)
     {
-        _httpClient = httpClient;
+        _logger = logger;
+        _aiService = aiService;
     }
 
     [HttpPost("compute")]
-    public async Task<ActionResult<FallInfo>> Compute()
+    public async Task<ActionResult> Compute(List<int> data)
     {
-        return null;
+        if (data == null)
+        {
+            return BadRequest();
+        }
+
+        _aiService.HandleAIRequest(data);
+        
+        return Ok();
     }
     
 }

@@ -20,10 +20,10 @@ namespace HealthDevice.Services
             {
                 _logger.LogInformation("Timed Hosted Service is working.");
 
-                using (var scope = _serviceProvider.CreateScope())
+                using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
-                    var elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
-                    var healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
+                    UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
+                    HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
                     List<Elder> elders = elderManager.Users.ToList();
 
                     foreach (Elder elder in elders)
