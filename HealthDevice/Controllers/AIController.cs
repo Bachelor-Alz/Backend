@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using System.Runtime.InteropServices.JavaScript;
+using HealthDevice.DTO;
 using HealthDevice.Services;
 
 namespace HealthDevice.Controllers;
@@ -21,15 +22,13 @@ public class AIController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task<ActionResult> Compute(List<int> data)
+    public async Task<ActionResult> Compute([FromBody] List<int> data)
     {
         if (data == null)
         {
             return BadRequest();
         }
-
-        _aiService.HandleAIRequest(data);
-        
+        await _aiService.HandleAIRequest(data);
         return Ok();
     }
     

@@ -16,6 +16,8 @@
       context: .
       dockerfile: Dockerfile
     container_name: healthdevice_app
+    volumes:
+      - ./HealthDevice:/app/HealthDevice
     ports:
       - "5171:5171"
     depends_on:
@@ -23,6 +25,12 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=postgres_db;Database=HealthMonitor;Username=DbUser;Password=1Strong_Password!
+
+  fall_detection_ml:
+    container_name: fall_detection_ml
+    image: ghcr.io/bachelor-alz/fall_detection:latest
+    ports:
+      - "9999:9999"
 
 volumes:
   pgdata:

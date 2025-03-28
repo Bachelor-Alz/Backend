@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250328112406_Init")]
+    [Migration("20250328121517_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -134,6 +134,9 @@ namespace HealthDevice.Migrations
                     b.Property<string>("arduino")
                         .HasColumnType("text");
 
+                    b.Property<int?>("fallInfoId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("locationid")
                         .HasColumnType("integer");
 
@@ -148,6 +151,8 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("CaregiverId");
 
+                    b.HasIndex("fallInfoId");
+
                     b.HasIndex("locationid");
 
                     b.HasIndex("perimeterId");
@@ -158,18 +163,22 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<string>("status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("locationid")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("timestamp")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("FallInfos", (string)null);
+                    b.HasIndex("locationid");
+
+                    b.ToTable("FallInfos");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.GPS", b =>
@@ -346,6 +355,10 @@ namespace HealthDevice.Migrations
                         .WithMany("elders")
                         .HasForeignKey("CaregiverId");
 
+                    b.HasOne("HealthDevice.DTO.FallInfo", "fallInfo")
+                        .WithMany()
+                        .HasForeignKey("fallInfoId");
+
                     b.HasOne("HealthDevice.DTO.Location", "location")
                         .WithMany()
                         .HasForeignKey("locationid")
@@ -358,6 +371,8 @@ namespace HealthDevice.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("fallInfo");
+
                     b.Navigation("location");
 
                     b.Navigation("perimeter");
@@ -367,7 +382,7 @@ namespace HealthDevice.Migrations
                 {
                     b.HasOne("HealthDevice.DTO.Location", "location")
                         .WithMany()
-                        .HasForeignKey("Id")
+                        .HasForeignKey("locationid")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

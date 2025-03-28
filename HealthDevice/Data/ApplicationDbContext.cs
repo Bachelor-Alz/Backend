@@ -32,18 +32,6 @@ namespace HealthDevice.Data
                 entity.Property(e => e.timestamp).IsRequired();
             });
 
-            modelBuilder.Entity<FallInfo>(entity =>
-            {
-                entity.ToTable("FallInfos");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.timestamp).IsRequired();
-                entity.Property(e => e.status).IsRequired();
-                entity.HasOne(e => e.location)
-                    .WithMany()
-                    .HasForeignKey(e => e.Id)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
             modelBuilder.Entity<Max30102>(entity =>
             {
                 entity.ToTable("Max30102Data");
