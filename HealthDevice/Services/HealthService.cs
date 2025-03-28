@@ -1,17 +1,18 @@
 ﻿using HealthDevice.Data;
 using HealthDevice.DTO;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
 public class HealthService
 {
     private readonly ILogger<HealthService> _logger;
-    private readonly ApplicationDbContext _db;
     
-    public HealthService(ILogger<HealthService> logger, ApplicationDbContext db)
+    public HealthService(ILogger<HealthService> logger)
     {
         _logger = logger;
-        _db = db;
     }
 
     public async Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
@@ -44,6 +45,28 @@ public class HealthService
             spO2 = Spo2Values.Average(),
             Timestamp = currentDate,
         };
+    }
+    
+    public async Task<ActionResult<List<T>>> GetHealthData<T>(string elderEmail, Period period, DateTime date, Func<Elder, List<T>> selector, UserManager<Elder> _elderManager) where T : class
+    {
+        DateTime olDateTime = period switch
+        {
+            Period.Hour => date - TimeSpan.FromHours(1),
+            Period.Day => date - TimeSpan.FromDays(1),
+            Period.Week => date - TimeSpan.FromDays(7),
+            Period.Month => date - TimeSpan.FromDays(30),
+            _ => throw new ArgumentException("Invalid period specified")
+        };
+
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        if (elder == null)
+        {
+            _logger.LogError("No elder found with email {email}", elderEmail);
+            return new BadRequestResult();
+        }
+
+        List<T> data = selector(elder).Where(d => ((dynamic)d).Timestamp >= olDateTime && ((dynamic)d).Timestamp <= date).ToList();
+        return data;
     }
     
     
