@@ -23,13 +23,14 @@ public class ArduinoService
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
         
         if (data.Count == 0)
         {
             _logger.LogWarning("{Timestamp}: GPS data was empty from IP: {IP}.", receivedAt, ip);
             return new BadRequestObjectResult("GPS data is empty.");
         }
+        
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
 
         foreach (var gps in data)
         {
@@ -69,14 +70,14 @@ public class ArduinoService
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
-        
         
         if (data.Count == 0)
         {
             _logger.LogWarning("{Timestamp}: MAX30102 data was empty from IP: {IP}.", receivedAt, ip);
             return new BadRequestObjectResult("MAX30102 data is empty.");
         }
+        
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
 
         foreach (var entry in data)
         {
