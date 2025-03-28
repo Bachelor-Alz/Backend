@@ -166,6 +166,31 @@ namespace HealthDevice.Migrations
                     b.ToTable("FallInfos", (string)null);
                 });
 
+            modelBuilder.Entity("HealthDevice.DTO.GPS", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<float>("Course")
+                        .HasColumnType("real");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GPS_Data", (string)null);
+                });
+
             modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
                 {
                     b.Property<int>("Id")
@@ -218,40 +243,6 @@ namespace HealthDevice.Migrations
                     b.ToTable("Locations", (string)null);
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.MPU6050", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<float>("AccelerationX")
-                        .HasColumnType("real");
-
-                    b.Property<float>("AccelerationY")
-                        .HasColumnType("real");
-
-                    b.Property<float>("AccelerationZ")
-                        .HasColumnType("real");
-
-                    b.Property<float>("GyroscopeX")
-                        .HasColumnType("real");
-
-                    b.Property<float>("GyroscopeY")
-                        .HasColumnType("real");
-
-                    b.Property<float>("GyroscopeZ")
-                        .HasColumnType("real");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MPU6050Datas", (string)null);
-                });
-
             modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
                 {
                     b.Property<int>("Id")
@@ -276,41 +267,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("ElderId");
 
-                    b.ToTable("Max30102Datas", (string)null);
-                });
-
-            modelBuilder.Entity("HealthDevice.DTO.Neo_6m", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<float>("Course")
-                        .HasColumnType("real");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<char>("LatitudeDirection")
-                        .HasColumnType("character(1)");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<char>("LongitudeDirection")
-                        .HasColumnType("character(1)");
-
-                    b.Property<TimeSpan>("UtcTime")
-                        .HasColumnType("interval");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Neo_6mDatas", (string)null);
+                    b.ToTable("Max30102Data", (string)null);
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
