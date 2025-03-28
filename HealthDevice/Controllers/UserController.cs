@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -17,14 +18,16 @@ public class UserController : ControllerBase
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly UserService _userService;
     private readonly ILogger<UserController> _logger;
+    private readonly ApplicationDbContext _dbContext;
     
     public UserController(UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager,
-        UserService userService, ILogger<UserController> logger)
+        UserService userService, ILogger<UserController> logger, ApplicationDbContext dbContext)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _userService = userService;
         _logger = logger;
+        _dbContext = dbContext;
     }
     
     [AllowAnonymous]
@@ -158,5 +161,39 @@ public class UserController : ControllerBase
     {
         Elder? user = await _elderManager.FindByEmailAsync(email);
         return user == null ? NotFound() : user;
+    }
+
+    [HttpGet("users/arduino")]
+    public async Task<ActionResult<List<string>>> GetUnusedArdudino()
+    {
+        //Get a list of all Max30102 address that has not an elder associated with it
+        List<string> Address = await _dbContext.Max30102Data.Select(a => a.Address).Distinct().ToListAsync();
+        List<string> AddressNotAssociated = Address.Except(_elderManager.Users.Select(e => e.arduino)).ToList();
+        
+        return AddressNotAssociated;
+    }
+    
+    [HttpPost("users/arduino")]
+    public async Task<ActionResult> SetArduino(string email, string address)
+    {
+        Elder? elder = await _elderManager.FindByEmailAsync(email);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+
+        elder.arduino = address;
+        try
+        {
+            await _elderManager.UpdateAsync(elder);
+            _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update elder.");
+            return BadRequest();
+        }
     }
 }

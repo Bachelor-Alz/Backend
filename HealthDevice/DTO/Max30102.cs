@@ -9,5 +9,6 @@ public class Max30102
     public long EpochTimestamp { get; set; } 
     public DateTime Timestamp { get; set; }
     public int HeartRate { get; set; }     
-    public float SpO2 { get; set; }       
+    public float SpO2 { get; set; }     
+    public string Address { get; set; }
 }
