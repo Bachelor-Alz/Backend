@@ -50,13 +50,8 @@ public class UserController : ControllerBase
                                                     name = userRegisterDTO.Name,
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
-                                                    location = new Location { id = 0 }, 
                                                     Max30102Datas = new List<Max30102>(), 
-                                                    perimeter = new Perimeter
-                                                    {
-                                                        Id = 0, 
-                                                        location = new Location{id = -1}
-                                                    }
+                                                    gpsData = new List<GPS>()
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, 
                                                 new Caregiver
