@@ -14,30 +14,6 @@ public class ArduinoService
         _logger = logger;
     }
 
-    public async Task<ActionResult> HandleSensorData(List<IMU> data, HttpContext httpContext)
-    {
-        string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        DateTime receivedAt = DateTime.UtcNow;
-
-        if (data.Count == 0)
-        {
-            _logger.LogWarning("{Timestamp}: IMU data was empty from IP: {IP}.", receivedAt, ip);
-            return new BadRequestObjectResult("IMU data is empty.");
-        }
-
-        foreach (var imu in data)
-        {
-            Console.WriteLine($"Epoch: {imu.EpochTimestamp}");
-            imu.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(imu.EpochTimestamp).UtcDateTime;
-        }
-
-        _context.Mpu6050Data.AddRange(data);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("{Timestamp}: Saved {Count} IMU entries from IP: {IP}.", receivedAt, data.Count, ip);
-        return new OkResult();
-    }
-
     public async Task<ActionResult> HandleSensorData(List<GPS> data, HttpContext httpContext)
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";

@@ -15,12 +15,6 @@ public class ArduinoController : ControllerBase
         _arduinoService = arduinoService;
     }
 
-    [HttpPost("imu")]
-    public async Task<ActionResult> PostImu([FromBody] List<IMU> data)
-    {
-        return await _arduinoService.HandleSensorData(data, HttpContext);
-    }
-
     [HttpPost("gps")]
     public async Task<ActionResult> PostGps([FromBody] List<GPS> data)
     {
