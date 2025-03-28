@@ -69,7 +69,7 @@ public class GPSController : ControllerBase
                 _logger.LogWarning("Elder not found.");
                 return NotFound();
             }
-            elder.perimeter = new Perimiter
+            elder.perimeter = new Perimeter
             {
                 Id = 0,
                 location = location,

@@ -15,6 +15,7 @@
    ```
 3. Restart the project:
    ```sh
+   docker-compose down -v
    docker-compose up --build
    ```
 

@@ -40,9 +40,10 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 builder.Services.AddScoped<UserManager<Caregiver>>();
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
-// Register UserService and ArduinoService
+// Register UserService, ArduinoService, and HealthService
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ArduinoService>();
+builder.Services.AddScoped<HealthService>();
 
 builder.Services.AddRazorPages();
 
@@ -76,6 +77,8 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+builder.Services.AddHostedService<TimedHostedService>();
 
 var app = builder.Build();
 app.UseSwagger();

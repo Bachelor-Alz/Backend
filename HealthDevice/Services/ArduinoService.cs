@@ -27,6 +27,7 @@ public class ArduinoService
 
         foreach (var imu in data)
         {
+            Console.WriteLine($"Epoch: {imu.EpochTimestamp}");
             imu.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(imu.EpochTimestamp).UtcDateTime;
         }
 

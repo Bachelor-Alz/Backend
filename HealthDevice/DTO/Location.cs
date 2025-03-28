@@ -8,7 +8,7 @@ public class Location
     public DateTime timestamp { get; set; }
 }
 
-public class Perimiter
+public class Perimeter
 {
     public Location location { get; set; }
     public int radius { get; set; }

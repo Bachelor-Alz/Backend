@@ -18,6 +18,7 @@ namespace HealthDevice.Data
         public DbSet<GPS> GpsData { get; set; }
         public DbSet<Elder> Elders { get; set; }
         public DbSet<Caregiver> Caregivers { get; set; }
+        public DbSet<Spo2> SpO2s { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,7 +50,7 @@ namespace HealthDevice.Data
                 entity.ToTable("Max30102Data");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Timestamp).IsRequired();
-                entity.Property(e => e.BPM).IsRequired();
+                entity.Property(e => e.HeartRate).IsRequired();
                 entity.Property(e => e.SpO2).IsRequired();
             });
 
