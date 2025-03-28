@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -36,22 +36,6 @@ namespace HealthDevice.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Caregivers", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "GPS_Data",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Latitude = table.Column<double>(type: "double precision", nullable: false),
-                    Longitude = table.Column<double>(type: "double precision", nullable: false),
-                    Course = table.Column<float>(type: "real", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_GPS_Data", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -116,6 +100,7 @@ namespace HealthDevice.Migrations
                     name = table.Column<string>(type: "text", nullable: false),
                     locationid = table.Column<int>(type: "integer", nullable: false),
                     perimeterId = table.Column<int>(type: "integer", nullable: false),
+                    arduino = table.Column<string>(type: "text", nullable: false),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "text", nullable: true),
                     NormalizedUserName = table.Column<string>(type: "text", nullable: true),
@@ -155,6 +140,29 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GPS_Data",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Latitude = table.Column<double>(type: "double precision", nullable: false),
+                    Longitude = table.Column<double>(type: "double precision", nullable: false),
+                    Course = table.Column<float>(type: "real", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GPS_Data", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GPS_Data_Elders_ElderId",
+                        column: x => x.ElderId,
+                        principalTable: "Elders",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Heartrates",
                 columns: table => new
                 {
@@ -185,6 +193,7 @@ namespace HealthDevice.Migrations
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     HeartRate = table.Column<int>(type: "integer", nullable: false),
                     SpO2 = table.Column<float>(type: "real", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
@@ -233,6 +242,11 @@ namespace HealthDevice.Migrations
                 name: "IX_Elders_perimeterId",
                 table: "Elders",
                 column: "perimeterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GPS_Data_ElderId",
+                table: "GPS_Data",
+                column: "ElderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Heartrates_ElderId",
