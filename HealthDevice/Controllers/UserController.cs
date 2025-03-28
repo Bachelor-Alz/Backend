@@ -156,7 +156,7 @@ public class UserController : ControllerBase
     }
     
     [HttpGet("users/arduino")]
-    public async Task<ActionResult<List<string>>> GetUnusedArdudino()
+    public async Task<ActionResult<List<string>>> GetUnusedArduino()
     {
         //Get a list of all Max30102 address that has not an elder associated with it
         List<string> Address = await _dbContext.Max30102Data.Select(a => a.Address).Distinct().ToListAsync();
