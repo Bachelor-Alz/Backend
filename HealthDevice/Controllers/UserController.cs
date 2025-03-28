@@ -72,7 +72,7 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult> PutElder(string ElderEmail)
     {
-        var userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
@@ -116,7 +116,7 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult> RemoveElder(string ElderEmail)
     {
-        var userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");

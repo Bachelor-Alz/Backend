@@ -18,7 +18,7 @@ public class AIController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task<ActionResult<FallInfo>> Compute()
+    public async Task<ActionResult<List<int>>> Compute()
     {
         return null;
     }

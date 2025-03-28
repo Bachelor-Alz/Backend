@@ -50,7 +50,7 @@ public class UserService
             return new BadRequestObjectResult("Email already exists.");
         }
 
-        var result = await userManager.CreateAsync(user, userRegisterDTO.Password);
+        IdentityResult result = await userManager.CreateAsync(user, userRegisterDTO.Password);
         if (result.Succeeded)
         {
             _logger.LogInformation("{timestamp}: Registration successful for email: {Email} from IP: {IpAddress}.", userRegisterDTO.Email, ipAddress, timestamp);
@@ -61,17 +61,17 @@ public class UserService
 
     private string GenerateJWT<T>(T user, string role) where T : IdentityUser
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Your_32_Character_Long_Secret_Key_Here"));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        SymmetricSecurityKey? securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Your_32_Character_Long_Secret_Key_Here"));
+        SigningCredentials? credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        Claim[] claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.Role, role)
         };
 
-        var token = new JwtSecurityToken(
+        JwtSecurityToken? token = new JwtSecurityToken(
             issuer: "api.healthdevice.com",
             audience: "user.healthdevice.com",
             claims: claims,
