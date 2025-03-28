@@ -7,6 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Controllers
 {
+    public enum Period
+    {
+        Hour,
+        Day,
+        Week,
+        Month
+    }
+    
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -28,57 +36,38 @@ namespace HealthDevice.Controllers
             _healthService = healthService;
         }
 
-        [HttpGet("heartrate")]
-        [Authorize]
-        public async Task<ActionResult<List<Heartrate>>> GetAllHeartrate(string elderEmail)
+        [HttpGet("Heartrate")]
+        public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period = Period.Hour)
         {
-            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-            if(elder == null)
-            {
-                _logger.LogError("No elder found with email {email}", elderEmail);
-                return BadRequest();
-            }
-            return elder.heartRates;
+            return await GetHealthData<Heartrate>(elderEmail, period, date, e => e.heartRates);
         }
-        
+
         [HttpGet("Spo2")]
-        public async Task<ActionResult<List<Spo2>>> GetAllSpO2(string elderEmail)
+        public async Task<ActionResult<List<Spo2>>> GetSpo2(string elderEmail, DateTime date, Period period = Period.Hour)
         {
+            return await GetHealthData<Spo2>(elderEmail, period, date, e => e.spo2s);
+        }
+
+        private async Task<ActionResult<List<T>>> GetHealthData<T>(string elderEmail, Period period, DateTime date, Func<Elder, List<T>> selector) where T : class
+        {
+            DateTime olDateTime = period switch
+            {
+                Period.Hour => date - TimeSpan.FromHours(1),
+                Period.Day => date - TimeSpan.FromDays(1),
+                Period.Week => date - TimeSpan.FromDays(7),
+                Period.Month => date - TimeSpan.FromDays(30),
+                _ => throw new ArgumentException("Invalid period specified")
+            };
+
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-            if(elder == null)
+            if (elder == null)
             {
                 _logger.LogError("No elder found with email {email}", elderEmail);
                 return BadRequest();
             }
-            return elder.spo2s;
+
+            List<T> data = selector(elder).Where(d => ((dynamic)d).Timestamp >= olDateTime && ((dynamic)d).Timestamp <= date).ToList();
+            return data;
         }
-        
-        [HttpGet("Heartrate/hour")]
-        public async Task<ActionResult<List<Heartrate>>> GetHeartrateHour(string elderEmail, DateTime date)
-        {
-            DateTime olDateTime = date - TimeSpan.FromHours(1);
-            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-            if(elder == null)
-            {
-                _logger.LogError("No elder found with email {email}", elderEmail);
-                return BadRequest();
-            }
-            List<Heartrate> heartrates = elder.heartRates.Where(d => d.Timestamp >= olDateTime && d.Timestamp <= date).ToList();
-            return heartrates;
-        }
-        
-        [HttpGet("Spo2/hour")]
-        public async Task<ActionResult<List<Spo2>>> GetSpo2Hour(string elderEmail, DateTime date)
-        {
-            DateTime olDateTime = date - TimeSpan.FromHours(1);
-            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-            if(elder == null)
-            {
-                _logger.LogError("No elder found with email {email}", elderEmail);
-                return BadRequest();
-            }
-            List<Spo2> spo2s = elder.spo2s.Where(d => d.Timestamp >= olDateTime && d.Timestamp <= date).ToList();
-            return spo2s;
-        }
-}
+    }
 }
