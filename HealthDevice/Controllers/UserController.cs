@@ -68,7 +68,7 @@ public class UserController : ControllerBase
                                                 }, HttpContext);
     }
 
-    [HttpGet("users")]
+    [HttpGet("elder")]
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<Elder>>> GetUsers() => await _elderManager.Users.ToListAsync();
 
@@ -155,14 +155,6 @@ public class UserController : ControllerBase
         }
     }
     
-    [HttpGet("users/{email}")]
-    [Authorize(Roles = "Elder")]
-    public async Task<ActionResult<Elder>> GetUser(string email)
-    {
-        Elder? user = await _elderManager.FindByEmailAsync(email);
-        return user == null ? NotFound() : user;
-    }
-
     [HttpGet("users/arduino")]
     public async Task<ActionResult<List<string>>> GetUnusedArdudino()
     {
