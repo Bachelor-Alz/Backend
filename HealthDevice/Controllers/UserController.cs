@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -17,14 +18,16 @@ public class UserController : ControllerBase
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly UserService _userService;
     private readonly ILogger<UserController> _logger;
+    private readonly ApplicationDbContext _dbContext;
     
     public UserController(UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager,
-        UserService userService, ILogger<UserController> logger)
+        UserService userService, ILogger<UserController> logger, ApplicationDbContext dbContext)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _userService = userService;
         _logger = logger;
+        _dbContext = dbContext;
     }
     
     [AllowAnonymous]
@@ -47,13 +50,8 @@ public class UserController : ControllerBase
                                                     name = userRegisterDTO.Name,
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
-                                                    location = new Location { id = 0 }, 
                                                     Max30102Datas = new List<Max30102>(), 
-                                                    perimeter = new Perimeter
-                                                    {
-                                                        Id = 0, 
-                                                        location = new Location{id = -1}
-                                                    }
+                                                    gpsData = new List<GPS>()
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, 
                                                 new Caregiver
@@ -65,7 +63,7 @@ public class UserController : ControllerBase
                                                 }, HttpContext);
     }
 
-    [HttpGet("users")]
+    [HttpGet("elder")]
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<Elder>>> GetUsers() => await _elderManager.Users.ToListAsync();
 
@@ -152,11 +150,38 @@ public class UserController : ControllerBase
         }
     }
     
-    [HttpGet("users/{email}")]
-    [Authorize(Roles = "Elder")]
-    public async Task<ActionResult<Elder>> GetUser(string email)
+    [HttpGet("users/arduino")]
+    public async Task<ActionResult<List<string>>> GetUnusedArduino()
     {
-        Elder? user = await _elderManager.FindByEmailAsync(email);
-        return user == null ? NotFound() : user;
+        //Get a list of all Max30102 address that has not an elder associated with it
+        List<string> Address = await _dbContext.Max30102Data.Select(a => a.Address).Distinct().ToListAsync();
+        List<string> AddressNotAssociated = Address.Except(_elderManager.Users.Select(e => e.arduino)).ToList();
+        
+        return AddressNotAssociated;
+    }
+    
+    [HttpPost("users/arduino")]
+    public async Task<ActionResult> SetArduino(string email, string address)
+    {
+        Elder? elder = await _elderManager.FindByEmailAsync(email);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+
+        elder.Max30102Datas = await _dbContext.Max30102Data.Where(m => m.Address == address).ToListAsync();
+        elder.gpsData = await _dbContext.GpsData.Where(m => m.Address == address).ToListAsync();
+        try
+        {
+            await _elderManager.UpdateAsync(elder);
+            _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update elder.");
+            return BadRequest();
+        }
     }
 }

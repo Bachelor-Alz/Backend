@@ -128,6 +128,10 @@ namespace HealthDevice.Migrations
                     b.Property<string>("UserName")
                         .HasColumnType("text");
 
+                    b.Property<string>("arduino")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("locationid")
                         .HasColumnType("integer");
 
@@ -174,8 +178,15 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<float>("Course")
                         .HasColumnType("real");
+
+                    b.Property<string>("ElderId")
+                        .HasColumnType("text");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");
@@ -187,6 +198,8 @@ namespace HealthDevice.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ElderId");
 
                     b.ToTable("GPS_Data", (string)null);
                 });
@@ -250,6 +263,10 @@ namespace HealthDevice.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
@@ -355,6 +372,13 @@ namespace HealthDevice.Migrations
                     b.Navigation("location");
                 });
 
+            modelBuilder.Entity("HealthDevice.DTO.GPS", b =>
+                {
+                    b.HasOne("HealthDevice.DTO.Elder", null)
+                        .WithMany("gpsData")
+                        .HasForeignKey("ElderId");
+                });
+
             modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
@@ -395,6 +419,8 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.Navigation("Max30102Datas");
+
+                    b.Navigation("gpsData");
 
                     b.Navigation("heartRates");
 
