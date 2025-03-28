@@ -44,6 +44,7 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ArduinoService>();
 builder.Services.AddScoped<HealthService>();
+builder.Services.AddScoped<AIService>();
 
 builder.Services.AddRazorPages();
 

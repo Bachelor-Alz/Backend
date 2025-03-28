@@ -12,6 +12,7 @@ public class Elder : IdentityUser
     public Location location { get; set; }
     public Perimeter perimeter { get; set; }
     public string? arduino { get; set; }
+    public FallInfo? fallInfo { get; set; }
 }
 
 public class ElderLocationDTO
