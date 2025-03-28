@@ -183,7 +183,8 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        elder.arduino = address;
+        elder.Max30102Datas = await _dbContext.Max30102Data.Where(m => m.Address == address).ToListAsync();
+        elder.gpsData = await _dbContext.GpsData.Where(m => m.Address == address).ToListAsync();
         try
         {
             await _elderManager.UpdateAsync(elder);
