@@ -47,7 +47,7 @@ public class HealthService
     
     public async Task<ActionResult<List<T>>> GetHealthData<T>(string elderEmail, Period period, DateTime date, Func<Elder, List<T>> selector, UserManager<Elder> _elderManager) where T : class
     {
-        DateTime olDateTime = period switch
+        DateTime earlierDate = period switch
         {
             Period.Hour => date - TimeSpan.FromHours(1),
             Period.Day => date - TimeSpan.FromDays(1),
@@ -63,7 +63,7 @@ public class HealthService
             return new BadRequestResult();
         }
 
-        List<T> data = selector(elder).Where(d => ((dynamic)d).Timestamp >= olDateTime && ((dynamic)d).Timestamp <= date).ToList();
+        List<T> data = selector(elder).Where(d => ((dynamic)d).Timestamp >= earlierDate && ((dynamic)d).Timestamp <= date).ToList();
         return data;
     }
     
