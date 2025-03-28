@@ -92,7 +92,7 @@ public class ArduinoService
             try
             {
                 await _dbContext.SaveChangesAsync();
-                _logger.LogInformation("{receivedAt}: Saved {Count} MAX30102 entries from IP: {IP}.", receivedAt, data.Count, ip);
+                _logger.LogInformation("{Timestamp}: Saved {Count} MAX30102 entries from IP: {IP}.", receivedAt, data.Count, ip);
                 return new OkResult();
             }
             catch (Exception e)
