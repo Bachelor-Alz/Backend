@@ -11,6 +11,7 @@ public class Elder : IdentityUser
     public List<Spo2> spo2s { get; set; }
     public Location location { get; set; }
     public Perimeter perimeter { get; set; }
+    public List<Kilometer> distance { get; set; }
     public string? arduino { get; set; }
     public FallInfo? fallInfo { get; set; }
 }

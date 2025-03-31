@@ -35,8 +35,14 @@ namespace HealthDevice.Services
                         
                         Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
                         elder.spo2s.Add(spo2);
+
+                        Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
+                        elder.distance.Add(distance);
                         
                         await elderManager.UpdateAsync(elder);
+                        
+                        await healthService.DeleteMax30102Data(currentTime, elder);
+                        await healthService.DeleteGPSData(currentTime, elder);
                     }
                 }
 
