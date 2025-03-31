@@ -10,7 +10,7 @@ public class Elder : IdentityUser
     public List<GPS> GPSData { get; set; }
     public List<Spo2> SpO2 { get; set; }
     public Location Location { get; set; }
-    public Perimeter Perimeter { get; set; }
+    public Perimeter? Perimeter { get; set; }
     public List<Kilometer> Distance { get; set; }
     public string? Arduino { get; set; }
     public FallInfo? FallInfo { get; set; }

@@ -75,7 +75,7 @@ public class HealthService(ILogger<HealthService> logger)
         return data;
     }
     
-    public static Task DeleteMax30102Data(DateTime currentDate, Elder elder)
+    public Task DeleteMax30102Data(DateTime currentDate, Elder elder)
     {
         List<Max30102> max30102S = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         
@@ -87,7 +87,7 @@ public class HealthService(ILogger<HealthService> logger)
         return Task.CompletedTask;
     }
     
-    public static Task DeleteGpsData(DateTime currentDate, Elder elder)
+    public Task DeleteGpsData(DateTime currentDate, Elder elder)
     {
         List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         
@@ -97,5 +97,39 @@ public class HealthService(ILogger<HealthService> logger)
         }
 
         return Task.CompletedTask;
+    }
+
+    public Task ComputeOutOfPerimeter(Elder elder)
+    {
+        Perimeter? perimeter = elder.Perimeter;
+        if(perimeter == null)
+        {
+            return Task.CompletedTask;
+        }
+        Location lastLocation = elder.Location;
+
+        double distance = Math.Sqrt(Math.Pow(lastLocation.Latitude - perimeter.Location.Latitude, 2) + Math.Pow(lastLocation.Longitude - perimeter.Location.Longitude, 2));
+        if (distance > perimeter.Radius)
+        {
+            // Elder is out of the perimeter
+            // Add your logic here
+        }
+        return Task.CompletedTask;
+    }
+    
+    public Task<Location> GetLocation(DateTime currentTime, Elder elder)
+    {
+        GPS gps = elder.GPSData.FirstOrDefault(g => g.Timestamp <= currentTime);
+        if (gps == null)
+        {
+            logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
+            return Task.FromResult(new Location());
+        }
+        return Task.FromResult(new Location
+        {
+            Latitude = gps.Latitude,
+            Longitude = gps.Longitude,
+            Timestamp = gps.Timestamp
+        });
     }
 }

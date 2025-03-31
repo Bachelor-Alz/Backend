@@ -3,7 +3,6 @@ using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-// ReSharper disable All
 
 namespace HealthDevice.Services;
 

@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services
 {
-    public class TimedHostedService(ILogger<TimedHostedService> logger, IServiceProvider serviceProvider)
+    public class TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider)
         : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                logger.LogInformation("Timed Hosted Service is working.");
+                logger.LogInformation("Timed GPS Service is working.");
 
                 using (IServiceScope scope = serviceProvider.CreateScope())
                 {
@@ -22,23 +22,15 @@ namespace HealthDevice.Services
                     {
                         DateTime currentTime = DateTime.Now;
                         
-                        Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
-                        elder.Heartrate.Add(heartRate);
-                        
-                        Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
-                        elder.SpO2.Add(spo2);
-
-                        Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
-                        elder.Distance.Add(distance);
-                        
-                        await healthService.DeleteMax30102Data(currentTime, elder);
-                        await healthService.DeleteGpsData(currentTime, elder);
+                        Location location = await healthService.GetLocation(currentTime, elder);
+                        elder.Location = location;
                         
                         await elderManager.UpdateAsync(elder);
+                        await healthService.ComputeOutOfPerimeter(elder);
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
     }

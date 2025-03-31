@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250331120026_Init")]
+    [Migration("20250331151020_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -129,7 +129,7 @@ namespace HealthDevice.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
 
-                    b.Property<int>("PerimeterId")
+                    b.Property<int?>("PerimeterId")
                         .HasColumnType("integer");
 
                     b.Property<string>("PhoneNumber")
@@ -199,8 +199,8 @@ namespace HealthDevice.Migrations
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
 
-                    b.Property<long>("EpochTimestamp")
-                        .HasColumnType("bigint");
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
 
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
@@ -277,11 +277,11 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Latitude")
-                        .HasColumnType("integer");
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
 
-                    b.Property<int>("Longitude")
-                        .HasColumnType("integer");
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -306,8 +306,8 @@ namespace HealthDevice.Migrations
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
 
-                    b.Property<long>("EpochTimestamp")
-                        .HasColumnType("bigint");
+                    b.Property<int>("Heartrate")
+                        .HasColumnType("integer");
 
                     b.Property<float>("SpO2")
                         .HasColumnType("real");
@@ -319,7 +319,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("ElderId");
 
-                    b.ToTable("Max30102Data");
+                    b.ToTable("MAX30102Data");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
@@ -415,9 +415,7 @@ namespace HealthDevice.Migrations
 
                     b.HasOne("HealthDevice.DTO.Perimeter", "Perimeter")
                         .WithMany()
-                        .HasForeignKey("PerimeterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PerimeterId");
 
                     b.Navigation("FallInfo");
 
@@ -461,7 +459,7 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
-                        .WithMany("Max30102Data")
+                        .WithMany("MAX30102Data")
                         .HasForeignKey("ElderId");
                 });
 
@@ -503,7 +501,7 @@ namespace HealthDevice.Migrations
 
                     b.Navigation("Heartrate");
 
-                    b.Navigation("Max30102Data");
+                    b.Navigation("MAX30102Data");
 
                     b.Navigation("SpO2");
 
