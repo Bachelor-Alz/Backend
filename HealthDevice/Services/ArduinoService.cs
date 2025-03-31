@@ -19,101 +19,50 @@ public class ArduinoService
         _dbContext = dbContext;
     }
 
-    public async Task<ActionResult> HandleSensorData(List<GPS> data, HttpContext httpContext)
+    public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
         
-        if (data.Count == 0)
+        if (!data.Any())
         {
-            _logger.LogWarning("{Timestamp}: GPS data was empty from IP: {IP}.", receivedAt, ip);
-            return new BadRequestObjectResult("GPS data is empty.");
+            _logger.LogWarning("{Timestamp}: {SensorType} data was empty from IP: {IP}.", receivedAt, typeof(T).Name, ip);
+            return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
         
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
-
-        foreach (GPS gps in data)
-        {
-            gps.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(gps.EpochTimestamp).UtcDateTime;
-        }
-        if (elder == null)
-        {
-            _dbContext.GpsData.AddRange(data);
-            try
-            {
-                await _dbContext.SaveChangesAsync();
-                _logger.LogInformation("{Timestamp}: Saved {Count} GPS entries from IP: {IP}.", receivedAt, data.Count, ip);
-                return new OkResult();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("{Timestamp}: Error saving GPS entries from IP: {IP}.", receivedAt, ip);
-                return new BadRequestObjectResult("Error saving GPS entries.");
-            }
-        }
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.First().Address);
         
-        elder.gpsData.AddRange(data);
-        try
-        {
-            await _elderManager.UpdateAsync(elder);
-            _logger.LogInformation("{Timestamp}: Saved {Count} GPS entries from IP: {IP}.", receivedAt, data.Count, ip);
-            return new OkResult();
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("{Timestamp}: Error saving GPS entries from IP: {IP}.", receivedAt, ip);
-            return new BadRequestObjectResult("Error saving GPS entries.");
-        }
-    }
-
-    public async Task<ActionResult> HandleSensorData(List<Max30102> data, HttpContext httpContext)
-    {
-        string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        DateTime receivedAt = DateTime.UtcNow;
-        
-        if (data.Count == 0)
-        {
-            _logger.LogWarning("{Timestamp}: MAX30102 data was empty from IP: {IP}.", receivedAt, ip);
-            return new BadRequestObjectResult("MAX30102 data is empty.");
-        }
-        
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
-
-        foreach (Max30102 entry in data)
+        foreach (var entry in data)
         {
             entry.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(entry.EpochTimestamp).UtcDateTime;
         }
-
         
         if (elder == null)
         {
-            _dbContext.Max30102Data.AddRange(data);
-
-            try
+            _dbContext.Set<T>().AddRange(data);
+        }
+        else
+        {
+            if (typeof(Elder).GetProperty(typeof(T).Name)?.GetValue(elder) is List<T> elderDataList)
             {
-                await _dbContext.SaveChangesAsync();
-                _logger.LogInformation("{Timestamp}: Saved {Count} MAX30102 entries from IP: {IP}.", receivedAt, data.Count, ip);
-                return new OkResult();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("{receivedAt}: Error saving MAX30102 entries from IP: {IP}.", receivedAt, ip);
-                return new BadRequestObjectResult("Error saving MAX30102 entries.");
+                elderDataList.AddRange(data);
             }
         }
-        
-        elder.Max30102Datas.AddRange(data);
 
         try
         {
-            await _elderManager.UpdateAsync(elder);
-            _logger.LogInformation("{receivedAt}: Saved {Count} MAX30102 entries from IP: {IP}.", receivedAt, data.Count, ip);
+            if (elder == null)
+                await _dbContext.SaveChangesAsync();
+            else
+                await _elderManager.UpdateAsync(elder);
+            
+            _logger.LogInformation("{Timestamp}: Saved {Count} {SensorType} entries from IP: {IP}.", receivedAt, data.Count, typeof(T).Name, ip);
             return new OkResult();
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            _logger.LogError("{receivedAt}: Error saving MAX30102 entries from IP: {IP}.", receivedAt, ip);
-            return new BadRequestObjectResult("Error saving MAX30102 entries.");
+            _logger.LogError("{Timestamp}: Error saving {SensorType} entries from IP: {IP}.", receivedAt, typeof(T).Name, ip);
+            return new BadRequestObjectResult($"Error saving {typeof(T).Name} entries.");
         }
     }
 }

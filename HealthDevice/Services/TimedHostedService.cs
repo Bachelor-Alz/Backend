@@ -31,13 +31,13 @@ namespace HealthDevice.Services
                         DateTime currentTime = DateTime.Now;
                         
                         Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
-                        elder.heartRates.Add(heartRate);
+                        elder.Heartrate.Add(heartRate);
                         
                         Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
-                        elder.spo2s.Add(spo2);
+                        elder.SpO2.Add(spo2);
 
                         Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
-                        elder.distance.Add(distance);
+                        elder.Distance.Add(distance);
                         
                         await healthService.DeleteMax30102Data(currentTime, elder);
                         await healthService.DeleteGPSData(currentTime, elder);

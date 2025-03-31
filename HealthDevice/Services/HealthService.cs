@@ -14,22 +14,21 @@ public class HealthService
     }
     public async Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
-        List<Max30102> heartRates = elder.Max30102Datas.Where(c => c.Timestamp <= currentDate).ToList();
-        List<int> heartRateValues = heartRates.Select(h => h.HeartRate).ToList();
+        List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<int> heartRateValues = heartRates.Select(h => h.Heartrate).ToList();
 
         return new Heartrate
         {
-            AvgRate = (int)heartRateValues.Average(),
-            MaxRate = heartRateValues.Max(),
-            MinRate = heartRateValues.Min(),
+            Avgrate = (int)heartRateValues.Average(),
+            Maxrate = heartRateValues.Max(),
+            Minrate = heartRateValues.Min(),
             Timestamp = currentDate,
-            Id = -1
         };
     }
     
     public async Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
-        List<Max30102> Spo2s = elder.Max30102Datas.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> Spo2s = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         List<float> Spo2Values = Spo2s.Select(s => s.SpO2).ToList();
 
         return new Spo2
@@ -37,13 +36,13 @@ public class HealthService
             Id = -1,
             MinSpO2 = Spo2Values.Min(),
             MaxSpO2 = Spo2Values.Max(),
-            spO2 = Spo2Values.Average(),
+            SpO2 = Spo2Values.Average(),
             Timestamp = currentDate,
         };
     }
     public async Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, Elder elder)
     {
-        List<GPS> gpsData = elder.gpsData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
 
         //Math for distance calculation
         double d = 0;
@@ -56,8 +55,8 @@ public class HealthService
         
         return new Kilometer
         {
-            distance = d,
-            timestamp = currentDate
+            Distance = d,
+            Timestamp = currentDate
         };
     }
     
@@ -84,21 +83,21 @@ public class HealthService
     
     public async Task DeleteMax30102Data(DateTime currentDate, Elder elder)
     {
-        List<Max30102> max30102s = elder.Max30102Datas.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> max30102s = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (Max30102 max30102 in max30102s)
         {
-            elder.Max30102Datas.Remove(max30102);
+            elder.MAX30102Data.Remove(max30102);
         }
     }
     
     public async Task DeleteGPSData(DateTime currentDate, Elder elder)
     {
-        List<GPS> gpsData = elder.gpsData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (GPS gps in gpsData)
         {
-            elder.gpsData.Remove(gps);
+            elder.GPSData.Remove(gps);
         }
     }
 }

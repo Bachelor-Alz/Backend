@@ -33,8 +33,8 @@ public class AIService
         
         FallInfo fallInfo = new FallInfo()
         {
-            timestamp = DateTime.Now,
-            location = new Location(),
+            Timestamp = DateTime.Now,
+            Location = new Location(),
         };
     }
 }
