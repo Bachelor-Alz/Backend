@@ -22,7 +22,7 @@ public class AIService
        _logger.LogInformation("HandleAIRequest {request}", request);
        if (request.Contains(1))
        {
-           //HandleFall();
+           HandleFall();
        }
        
        return Task.FromResult<ActionResult>(new OkResult());
