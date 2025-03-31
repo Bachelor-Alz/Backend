@@ -29,7 +29,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await _healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.heartRates, _elderManager);
+            return await _healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.heartRate, _elderManager);
         }
 
         [HttpGet("Spo2")]

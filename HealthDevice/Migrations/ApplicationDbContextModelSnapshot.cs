@@ -196,6 +196,9 @@ namespace HealthDevice.Migrations
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
 
+                    b.Property<long>("EpochTimestamp")
+                        .HasColumnType("bigint");
+
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");
 
@@ -302,6 +305,9 @@ namespace HealthDevice.Migrations
 
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
+
+                    b.Property<long>("EpochTimestamp")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("HeartRate")
                         .HasColumnType("integer");
@@ -437,14 +443,14 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.GPS", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
-                        .WithMany("gpsData")
+                        .WithMany("GpsData")
                         .HasForeignKey("ElderId");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
-                        .WithMany("heartRates")
+                        .WithMany("heartRate")
                         .HasForeignKey("ElderId");
                 });
 
@@ -458,7 +464,7 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
                 {
                     b.HasOne("HealthDevice.DTO.Elder", null)
-                        .WithMany("Max30102Datas")
+                        .WithMany("Max30102Data")
                         .HasForeignKey("ElderId");
                 });
 
@@ -494,13 +500,13 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
-                    b.Navigation("Max30102Datas");
+                    b.Navigation("GpsData");
+
+                    b.Navigation("Max30102Data");
 
                     b.Navigation("distance");
 
-                    b.Navigation("gpsData");
-
-                    b.Navigation("heartRates");
+                    b.Navigation("heartRate");
 
                     b.Navigation("spo2s");
 

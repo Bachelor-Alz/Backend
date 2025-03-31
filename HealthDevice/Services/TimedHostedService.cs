@@ -31,7 +31,7 @@ namespace HealthDevice.Services
                         DateTime currentTime = DateTime.Now;
                         
                         Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
-                        elder.heartRates.Add(heartRate);
+                        elder.heartRate.Add(heartRate);
                         
                         Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
                         elder.spo2s.Add(spo2);

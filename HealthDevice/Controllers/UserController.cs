@@ -50,8 +50,8 @@ public class UserController : ControllerBase
                                                     name = userRegisterDTO.Name,
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
-                                                    Max30102Datas = new List<Max30102>(), 
-                                                    gpsData = new List<GPS>(),
+                                                    Max30102Data = new List<Max30102>(), 
+                                                    GpsData = new List<GPS>(),
                                                     location = new Location(),
                                                     perimeter = new Perimeter{location = new Location()},
                                                 }, HttpContext)
@@ -172,8 +172,8 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        elder.Max30102Datas = await _dbContext.Max30102Data.Where(m => m.Address == address).ToListAsync();
-        elder.gpsData = await _dbContext.GpsData.Where(m => m.Address == address).ToListAsync();
+        elder.Max30102Data = await _dbContext.Max30102Data.Where(m => m.Address == address).ToListAsync();
+        elder.GpsData = await _dbContext.GpsData.Where(m => m.Address == address).ToListAsync();
         try
         {
             await _elderManager.UpdateAsync(elder);

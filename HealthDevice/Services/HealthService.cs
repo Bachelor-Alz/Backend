@@ -14,7 +14,7 @@ public class HealthService
     }
     public async Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
-        List<Max30102> heartRates = elder.Max30102Datas.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> heartRates = elder.Max30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         List<int> heartRateValues = heartRates.Select(h => h.HeartRate).ToList();
 
         return new Heartrate
@@ -29,7 +29,7 @@ public class HealthService
     
     public async Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
-        List<Max30102> Spo2s = elder.Max30102Datas.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> Spo2s = elder.Max30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         List<float> Spo2Values = Spo2s.Select(s => s.SpO2).ToList();
 
         return new Spo2
@@ -43,7 +43,7 @@ public class HealthService
     }
     public async Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, Elder elder)
     {
-        List<GPS> gpsData = elder.gpsData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GpsData.Where(c => c.Timestamp <= currentDate).ToList();
 
         //Math for distance calculation
         double d = 0;
@@ -84,21 +84,21 @@ public class HealthService
     
     public async Task DeleteMax30102Data(DateTime currentDate, Elder elder)
     {
-        List<Max30102> max30102s = elder.Max30102Datas.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> max30102s = elder.Max30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (Max30102 max30102 in max30102s)
         {
-            elder.Max30102Datas.Remove(max30102);
+            elder.Max30102Data.Remove(max30102);
         }
     }
     
     public async Task DeleteGPSData(DateTime currentDate, Elder elder)
     {
-        List<GPS> gpsData = elder.gpsData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GpsData.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (GPS gps in gpsData)
         {
-            elder.gpsData.Remove(gps);
+            elder.GpsData.Remove(gps);
         }
     }
 }

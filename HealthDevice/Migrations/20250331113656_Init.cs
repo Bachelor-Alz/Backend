@@ -152,12 +152,13 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
                     Course = table.Column<float>(type: "real", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true),
                     Address = table.Column<string>(type: "text", nullable: false),
-                    ElderId = table.Column<string>(type: "text", nullable: true)
+                    EpochTimestamp = table.Column<long>(type: "bigint", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -217,11 +218,12 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     HeartRate = table.Column<int>(type: "integer", nullable: false),
                     SpO2 = table.Column<float>(type: "real", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true),
                     Address = table.Column<string>(type: "text", nullable: false),
-                    ElderId = table.Column<string>(type: "text", nullable: true)
+                    EpochTimestamp = table.Column<long>(type: "bigint", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
