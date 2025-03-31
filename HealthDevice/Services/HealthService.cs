@@ -52,7 +52,6 @@ public class HealthService
             Period.Hour => date - TimeSpan.FromHours(1),
             Period.Day => date - TimeSpan.FromDays(1),
             Period.Week => date - TimeSpan.FromDays(7),
-            Period.Month => date - TimeSpan.FromDays(30),
             _ => throw new ArgumentException("Invalid period specified")
         };
 
