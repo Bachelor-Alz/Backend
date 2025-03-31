@@ -12,177 +12,162 @@ namespace HealthDevice.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class UserController : ControllerBase
+public class UserController(
+    UserManager<Elder> elderManager,
+    UserManager<Caregiver> caregiverManager,
+    UserService userService,
+    ILogger<UserController> logger,
+    ApplicationDbContext dbContext)
+    : ControllerBase
 {
-    private readonly UserManager<Elder> _elderManager;
-    private readonly UserManager<Caregiver> _caregiverManager;
-    private readonly UserService _userService;
-    private readonly ILogger<UserController> _logger;
-    private readonly ApplicationDbContext _dbContext;
-    
-    public UserController(UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager,
-        UserService userService, ILogger<UserController> logger, ApplicationDbContext dbContext)
-    {
-        _elderManager = elderManager;
-        _caregiverManager = caregiverManager;
-        _userService = userService;
-        _logger = logger;
-        _dbContext = dbContext;
-    }
-    
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDTO)
+    public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDto)
     {
-        return userLoginDTO.Role == Roles.Elder 
-            ? await _userService.HandleLogin(_elderManager, userLoginDTO, "Elder", HttpContext) 
-            : await _userService.HandleLogin(_caregiverManager, userLoginDTO, "Caregiver", HttpContext);
+        return userLoginDto.Role == Roles.Elder 
+            ? await userService.HandleLogin(elderManager, userLoginDto, "Elder", HttpContext) 
+            : await userService.HandleLogin(caregiverManager, userLoginDto, "Caregiver", HttpContext);
     }
 
     [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<ActionResult> Register(UserRegisterDTO userRegisterDTO)
+    public async Task<ActionResult> Register(UserRegisterDTO userRegisterDto)
     {
-        return userRegisterDTO.Role == Roles.Elder 
-            ? await _userService.HandleRegister(_elderManager, userRegisterDTO, 
+        return userRegisterDto.Role == Roles.Elder 
+            ? await userService.HandleRegister(elderManager, userRegisterDto, 
                                                 new Elder
                                                 {
-                                                    Name = userRegisterDTO.Name,
-                                                    Email = userRegisterDTO.Email, 
-                                                    UserName = userRegisterDTO.Email, 
+                                                    Name = userRegisterDto.Name,
+                                                    Email = userRegisterDto.Email, 
+                                                    UserName = userRegisterDto.Email, 
                                                     MAX30102Data = new List<Max30102>(), 
                                                     GPSData = new List<GPS>(),
                                                     Location = new Location(),
                                                     Perimeter = new Perimeter{Location = new Location()},
                                                 }, HttpContext)
-            : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, 
+            : await userService.HandleRegister(caregiverManager, userRegisterDto, 
                                                 new Caregiver
                                                 {
-                                                    Name = userRegisterDTO.Name, 
-                                                    Email = userRegisterDTO.Email, 
-                                                    UserName = userRegisterDTO.Email, 
+                                                    Name = userRegisterDto.Name, 
+                                                    Email = userRegisterDto.Email, 
+                                                    UserName = userRegisterDto.Email, 
                                                     Elders = new List<Elder>()
                                                 }, HttpContext);
     }
 
     [HttpGet("elder")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult<List<Elder>>> GetUsers() => await _elderManager.Users.ToListAsync();
+    public async Task<ActionResult<List<Elder>>> GetUsers() => await elderManager.Users.ToListAsync();
 
 
     [HttpPost("users/elder")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> PutElder(string ElderEmail)
+    public async Task<ActionResult> PutElder(string elderEmail)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
-            _logger.LogError("User claim is null or empty.");
+            logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+        Caregiver? caregiver = await caregiverManager.FindByEmailAsync(userClaim.Value);
         if (caregiver == null)
         {
-            _logger.LogError("Caregiver not found.");
+            logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
 
-        Elder? elder = await _elderManager.FindByEmailAsync(ElderEmail);
+        Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
         if (elder == null)
         {
-            _logger.LogError("Elder not found.");
+            logger.LogError("Elder not found.");
             return NotFound("Elder not found.");
-        }
-
-        if (caregiver.Elders == null)
-        {
-            caregiver.Elders = new List<Elder>();
         }
 
         caregiver.Elders.Add(elder);
         try
         {
-            await _caregiverManager.UpdateAsync(caregiver);
-            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
+            await caregiverManager.UpdateAsync(caregiver);
+            logger.LogInformation("{elder.Email} added to Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
             return Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update caregiver.");
+            logger.LogError(ex, "Failed to update caregiver.");
             return BadRequest("Failed to update caregiver.");
         }
     }
 
     [HttpDelete("users/elder")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> RemoveElder(string ElderEmail)
+    public async Task<ActionResult> RemoveElder(string elderEmail)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
-            _logger.LogError("User claim is null or empty.");
+            logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+        Caregiver? caregiver = await caregiverManager.FindByEmailAsync(userClaim.Value);
         if (caregiver == null)
         {
-            _logger.LogError("Caregiver not found.");
+            logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
-        Elder? elder = await _elderManager.FindByEmailAsync(ElderEmail);
+        Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
         if(elder == null)
         {
-            _logger.LogError("Elder not found.");
+            logger.LogError("Elder not found.");
             return NotFound();
         }
 
         caregiver.Elders.Remove(elder);
         try
         {
-            await _caregiverManager.UpdateAsync(caregiver);
-            _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
+            await caregiverManager.UpdateAsync(caregiver);
+            logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
             return Ok();
         }
         catch
         {
-            _logger.LogError("Failed to update caregiver.");
+            logger.LogError("Failed to update caregiver.");
             return BadRequest();
         }
     }
     
     [HttpGet("users/arduino")]
-    public async Task<ActionResult<List<string>>> GetUnusedArduino()
+    public async Task<ActionResult<List<string?>>> GetUnusedArduino()
     {
         //Get a list of all Max30102 address that has not an elder associated with it
-        List<string> Address = await _dbContext.MAX30102Data.Select(a => a.Address).Distinct().ToListAsync();
-        List<string> AddressNotAssociated = Address.Except(_elderManager.Users.Select(e => e.Arduino)).ToList();
+        List<string> address = await dbContext.MAX30102Data.Select(a => a.Address).Distinct().ToListAsync();
+        List<string?> addressNotAssociated = address.Except(elderManager.Users.Select(e => e.Arduino)).ToList();
         
-        return AddressNotAssociated;
+        return addressNotAssociated;
     }
     
     [HttpPost("users/arduino")]
     public async Task<ActionResult> SetArduino(string email, string address)
     {
-        Elder? elder = await _elderManager.FindByEmailAsync(email);
+        Elder? elder = await elderManager.FindByEmailAsync(email);
         if (elder == null)
         {
-            _logger.LogError("Elder not found.");
+            logger.LogError("Elder not found.");
             return NotFound();
         }
 
-        elder.MAX30102Data = await _dbContext.MAX30102Data.Where(m => m.Address == address).ToListAsync();
-        elder.GPSData = await _dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
+        elder.MAX30102Data = await dbContext.MAX30102Data.Where(m => m.Address == address).ToListAsync();
+        elder.GPSData = await dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
         try
         {
-            await _elderManager.UpdateAsync(elder);
-            _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
+            await elderManager.UpdateAsync(elder);
+            logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
             return Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update elder.");
+            logger.LogError(ex, "Failed to update elder.");
             return BadRequest();
         }
     }
