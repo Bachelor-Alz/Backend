@@ -3,7 +3,6 @@ using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Extensions;
 using Period = HealthDevice.DTO.Period;
 
 namespace HealthDevice.Controllers

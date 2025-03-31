@@ -7,12 +7,10 @@ namespace HealthDevice.Services;
 public class HealthService
 {
     private readonly ILogger<HealthService> _logger;
-    private readonly UserManager<Elder> _elderManager;
     
-    public HealthService(ILogger<HealthService> logger, UserManager<Elder> elderManager)
+    public HealthService(ILogger<HealthService> logger)
     {
         _logger = logger;
-        _elderManager = elderManager;
     }
     public async Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
@@ -58,7 +56,6 @@ public class HealthService
         
         return new Kilometer
         {
-            Id = -1,
             distance = d,
             timestamp = currentDate
         };
