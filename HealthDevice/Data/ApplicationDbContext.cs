@@ -13,7 +13,7 @@ namespace HealthDevice.Data
         public DbSet<Heartrate> Heartrate { get; set; }
         public DbSet<Location> Location { get; set; }
         public DbSet<FallInfo> FallInfo { get; set; }
-        public DbSet<Max30102> Max30102Data { get; set; }
+        public DbSet<Max30102> MAX30102Data { get; set; }
         public DbSet<GPS> GPSData { get; set; }
         public DbSet<Elder> Elder { get; set; }
         public DbSet<Caregiver> Caregiver { get; set; }

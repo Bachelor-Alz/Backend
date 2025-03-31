@@ -14,7 +14,7 @@ public class HealthService
     }
     public async Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
-        List<Max30102> heartRates = elder.Max30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         List<int> heartRateValues = heartRates.Select(h => h.Heartrate).ToList();
 
         return new Heartrate
@@ -28,7 +28,7 @@ public class HealthService
     
     public async Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
-        List<Max30102> Spo2s = elder.Max30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> Spo2s = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         List<float> Spo2Values = Spo2s.Select(s => s.SpO2).ToList();
 
         return new Spo2
@@ -83,11 +83,11 @@ public class HealthService
     
     public async Task DeleteMax30102Data(DateTime currentDate, Elder elder)
     {
-        List<Max30102> max30102s = elder.Max30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> max30102s = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (Max30102 max30102 in max30102s)
         {
-            elder.Max30102Data.Remove(max30102);
+            elder.MAX30102Data.Remove(max30102);
         }
     }
     

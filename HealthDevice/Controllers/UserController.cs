@@ -50,7 +50,7 @@ public class UserController : ControllerBase
                                                     Name = userRegisterDTO.Name,
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
-                                                    Max30102Data = new List<Max30102>(), 
+                                                    MAX30102Data = new List<Max30102>(), 
                                                     GPSData = new List<GPS>(),
                                                     Location = new Location(),
                                                     Perimeter = new Perimeter{Location = new Location()},
@@ -156,7 +156,7 @@ public class UserController : ControllerBase
     public async Task<ActionResult<List<string>>> GetUnusedArduino()
     {
         //Get a list of all Max30102 address that has not an elder associated with it
-        List<string> Address = await _dbContext.Max30102Data.Select(a => a.Address).Distinct().ToListAsync();
+        List<string> Address = await _dbContext.MAX30102Data.Select(a => a.Address).Distinct().ToListAsync();
         List<string> AddressNotAssociated = Address.Except(_elderManager.Users.Select(e => e.Arduino)).ToList();
         
         return AddressNotAssociated;
@@ -172,7 +172,7 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        elder.Max30102Data = await _dbContext.Max30102Data.Where(m => m.Address == address).ToListAsync();
+        elder.MAX30102Data = await _dbContext.MAX30102Data.Where(m => m.Address == address).ToListAsync();
         elder.GPSData = await _dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
         try
         {
