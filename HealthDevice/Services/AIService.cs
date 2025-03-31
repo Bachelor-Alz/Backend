@@ -1,25 +1,13 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using HealthDevice.DTO;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
+﻿using HealthDevice.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
-public class AIService
+public class AiService(ILogger<AiService> logger)
 {
-    private readonly UserManager<Elder> _elderManager;
-    private readonly ILogger<AIService> _logger;
-    
-    public AIService(UserManager<Elder> elderManager, ILogger<AIService> logger)
+    public Task<ActionResult> HandleAiRequest([FromBody] List<int> request)
     {
-        _elderManager = elderManager;
-        _logger = logger;
-    }
-    
-    public Task<ActionResult> HandleAIRequest([FromBody] List<int> request)
-    {
-       _logger.LogInformation("HandleAIRequest {request}", request);
+       logger.LogInformation("HandleAIRequest {request}", request);
        if (request.Contains(1))
        {
            HandleFall();
@@ -28,7 +16,7 @@ public class AIService
        return Task.FromResult<ActionResult>(new OkResult());
     }
 
-    public void HandleFall()
+    private static void HandleFall()
     {
         
         FallInfo fallInfo = new FallInfo()

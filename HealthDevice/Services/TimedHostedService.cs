@@ -3,24 +3,16 @@ using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services
 {
-    public class TimedHostedService : BackgroundService
+    public class TimedHostedService(ILogger<TimedHostedService> logger, IServiceProvider serviceProvider)
+        : BackgroundService
     {
-        private readonly ILogger<TimedHostedService> _logger;
-        private readonly IServiceProvider _serviceProvider;
-
-        public TimedHostedService(ILogger<TimedHostedService> logger, IServiceProvider serviceProvider)
-        {
-            _logger = logger;
-            _serviceProvider = serviceProvider;
-        }
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Timed Hosted Service is working.");
+                logger.LogInformation("Timed Hosted Service is working.");
 
-                using (IServiceScope scope = _serviceProvider.CreateScope())
+                using (IServiceScope scope = serviceProvider.CreateScope())
                 {
                     UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
@@ -39,8 +31,8 @@ namespace HealthDevice.Services
                         Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
                         elder.Distance.Add(distance);
                         
-                        await healthService.DeleteMax30102Data(currentTime, elder);
-                        await healthService.DeleteGPSData(currentTime, elder);
+                        await HealthService.DeleteMax30102Data(currentTime, elder);
+                        await HealthService.DeleteGpsData(currentTime, elder);
                         
                         await elderManager.UpdateAsync(elder);
                     }

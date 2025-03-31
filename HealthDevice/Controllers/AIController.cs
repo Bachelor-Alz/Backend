@@ -1,34 +1,15 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using HealthDevice.DTO;
-using HealthDevice.Services;
-
-namespace HealthDevice.Controllers;
-
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
+namespace HealthDevice.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class AIController : ControllerBase
+public class AiController(AiService aiService) : ControllerBase
 {
-    private readonly ILogger<AIController> _logger;
-    private readonly AIService _aiService;
-    
-    public AIController(ILogger<AIController> logger, AIService aiService)
-    {
-        _logger = logger;
-        _aiService = aiService;
-    }
-
     [HttpPost("compute")]
     public async Task<ActionResult> Compute([FromBody] List<int> data)
     {
-        if (data == null)
-        {
-            return BadRequest();
-        }
-        await _aiService.HandleAIRequest(data);
+        await aiService.HandleAiRequest(data);
         return Ok();
     }
     

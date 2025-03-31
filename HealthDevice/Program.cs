@@ -11,7 +11,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddHttpClient<AIController>();
+builder.Services.AddHttpClient<AiController>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -44,7 +44,7 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ArduinoService>();
 builder.Services.AddScoped<HealthService>();
-builder.Services.AddScoped<AIService>();
+builder.Services.AddScoped<AiService>();
 
 builder.Services.AddRazorPages();
 
