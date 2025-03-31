@@ -2,10 +2,10 @@
 
 public class Heartrate
 {
-    public required int Id { get; set; }
-    public int MaxRate { get; set; }
-    public int MinRate { get; set; }
-    public int AvgRate { get; set; }
+    public int Id { get; set; }
+    public int Maxrate { get; set; }
+    public int Minrate { get; set; }
+    public int Avgrate { get; set; }
     public DateTime Timestamp { get; set; }
 }
 
@@ -13,8 +13,8 @@ public class Heartrate
 
 public class Spo2
 {
-    public required int Id { get; set; }
-    public float spO2 { get; set; }
+    public int Id { get; set; }
+    public float SpO2 { get; set; }
     public float MaxSpO2 { get; set; }
     public float MinSpO2 { get; set; }
     public DateTime Timestamp { get; set; }
@@ -24,8 +24,8 @@ public class Spo2
 
 public class Steps
 {
-    public required int Id { get; set; }
-    public int distance { get; set; }
+    public int Id { get; set; }
+    public int StepsCount { get; set; }
     public DateTime Timestamp { get; set; }
 }
 

@@ -30,7 +30,7 @@ public class ArduinoService
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
         
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.arduino == data.First().Address);
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.First().Address);
         
         foreach (var entry in data)
         {

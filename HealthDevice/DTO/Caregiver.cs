@@ -4,6 +4,6 @@ namespace HealthDevice.DTO;
 
 public class Caregiver : IdentityUser
 {
-    public required string name { get; set; }
-    public List<Elder> elders { get; set; }
+    public required string Name { get; set; }
+    public List<Elder> Elders { get; set; }
 }

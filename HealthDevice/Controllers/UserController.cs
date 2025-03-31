@@ -47,21 +47,21 @@ public class UserController : ControllerBase
             ? await _userService.HandleRegister(_elderManager, userRegisterDTO, 
                                                 new Elder
                                                 {
-                                                    name = userRegisterDTO.Name,
+                                                    Name = userRegisterDTO.Name,
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
                                                     Max30102Data = new List<Max30102>(), 
-                                                    GpsData = new List<GPS>(),
-                                                    location = new Location(),
-                                                    perimeter = new Perimeter{location = new Location()},
+                                                    GPSData = new List<GPS>(),
+                                                    Location = new Location(),
+                                                    Perimeter = new Perimeter{Location = new Location()},
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDTO, 
                                                 new Caregiver
                                                 {
-                                                    name = userRegisterDTO.Name, 
+                                                    Name = userRegisterDTO.Name, 
                                                     Email = userRegisterDTO.Email, 
                                                     UserName = userRegisterDTO.Email, 
-                                                    elders = new List<Elder>()
+                                                    Elders = new List<Elder>()
                                                 }, HttpContext);
     }
 
@@ -95,16 +95,16 @@ public class UserController : ControllerBase
             return NotFound("Elder not found.");
         }
 
-        if (caregiver.elders == null)
+        if (caregiver.Elders == null)
         {
-            caregiver.elders = new List<Elder>();
+            caregiver.Elders = new List<Elder>();
         }
 
-        caregiver.elders.Add(elder);
+        caregiver.Elders.Add(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
-            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.name}.", elder.Email, caregiver.name);
+            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
             return Ok();
         }
         catch (Exception ex)
@@ -138,11 +138,11 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        caregiver.elders.Remove(elder);
+        caregiver.Elders.Remove(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
-            _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.name);
+            _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
             return Ok();
         }
         catch
@@ -157,7 +157,7 @@ public class UserController : ControllerBase
     {
         //Get a list of all Max30102 address that has not an elder associated with it
         List<string> Address = await _dbContext.Max30102Data.Select(a => a.Address).Distinct().ToListAsync();
-        List<string> AddressNotAssociated = Address.Except(_elderManager.Users.Select(e => e.arduino)).ToList();
+        List<string> AddressNotAssociated = Address.Except(_elderManager.Users.Select(e => e.Arduino)).ToList();
         
         return AddressNotAssociated;
     }
@@ -173,7 +173,7 @@ public class UserController : ControllerBase
         }
 
         elder.Max30102Data = await _dbContext.Max30102Data.Where(m => m.Address == address).ToListAsync();
-        elder.GpsData = await _dbContext.GpsData.Where(m => m.Address == address).ToListAsync();
+        elder.GPSData = await _dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
         try
         {
             await _elderManager.UpdateAsync(elder);
