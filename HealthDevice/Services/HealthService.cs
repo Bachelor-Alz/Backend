@@ -49,24 +49,20 @@ public class HealthService
     {
         DateTime earlierDate = currentDate - TimeSpan.FromHours(1);
         List<GPS> gpsData = elder.gpsData.Where(c => c.Timestamp >= earlierDate && c.Timestamp <= currentDate).ToList();
-        
-        //Math for distance walked
-        List<double> a = new List<double>();
-        List<double> c = new List<double>();
-        List<double> d = new List<double>();
 
+        //Math for distance calculation
+        double d = 0;
         for(int i = 0; i < gpsData.Count - 1; i++)
         {
-            a.Add(Math.Pow(Math.Sin((gpsData[i + 1].Latitude - gpsData[i].Latitude) / 2), 2) + Math.Cos(gpsData[i].Latitude) * Math.Cos(gpsData[i + 1].Latitude) * Math.Pow(Math.Sin((gpsData[i + 1].Longitude - gpsData[i].Longitude) / 2), 2));
-            c.Add(2 * Math.Atan2(Math.Sqrt(a[i]), Math.Sqrt(1 - a[i])));
-            d.Add(6371 * c[i]);
+            double a = Math.Pow(Math.Sin((gpsData[i + 1].Latitude - gpsData[i].Latitude) / 2), 2) + Math.Cos(gpsData[i].Latitude) * Math.Cos(gpsData[i + 1].Latitude) * Math.Pow(Math.Sin((gpsData[i + 1].Longitude - gpsData[i].Longitude) / 2), 2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            d += 6371 * c;
         }
-        
         
         return new Kilometer
         {
             Id = -1,
-            distance = d.Sum(),
+            distance = d,
             timestamp = currentDate
         };
     }
