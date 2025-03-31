@@ -15,3 +15,10 @@ public class Perimeter
 
     public int Id { get; set; }
 }
+
+public class Kilometer
+{
+    public int Id { get; set; }
+    public double distance { get; set; }
+    public DateTime timestamp { get; set; }
+}
