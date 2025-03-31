@@ -51,5 +51,15 @@ namespace HealthDevice.Controllers
             }
             return await _healthService.GetHealthData<Kilometer>(elderEmail, periodEnum, date, e => e.distance, _elderManager);
         }
+        
+        [HttpGet("Steps")]
+        public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string period = "Hour")
+        {
+            if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
+            {
+                return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+            }
+            return await _healthService.GetHealthData<Steps>(elderEmail, periodEnum, date, e => e.steps, _elderManager);
+        }
     }
 }

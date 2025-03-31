@@ -25,7 +25,6 @@ public class Spo2
 public class Steps
 {
     public required int Id { get; set; }
-    public int stepCount { get; set; }
     public int distance { get; set; }
     public DateTime Timestamp { get; set; }
 }

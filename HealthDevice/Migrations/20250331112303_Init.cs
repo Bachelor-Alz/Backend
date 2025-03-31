@@ -192,6 +192,26 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Kilometer",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    distance = table.Column<double>(type: "double precision", nullable: false),
+                    timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Kilometer", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Kilometer_Elders_ElderId",
+                        column: x => x.ElderId,
+                        principalTable: "Elders",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Max30102Data",
                 columns: table => new
                 {
@@ -235,6 +255,26 @@ namespace HealthDevice.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Steps",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    distance = table.Column<int>(type: "integer", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ElderId = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Steps", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Steps_Elders_ElderId",
+                        column: x => x.ElderId,
+                        principalTable: "Elders",
+                        principalColumn: "Id");
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Elders_CaregiverId",
                 table: "Elders",
@@ -271,6 +311,11 @@ namespace HealthDevice.Migrations
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Kilometer_ElderId",
+                table: "Kilometer",
+                column: "ElderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Max30102Data_ElderId",
                 table: "Max30102Data",
                 column: "ElderId");
@@ -284,6 +329,11 @@ namespace HealthDevice.Migrations
                 name: "IX_SpO2s_ElderId",
                 table: "SpO2s",
                 column: "ElderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Steps_ElderId",
+                table: "Steps",
+                column: "ElderId");
         }
 
         /// <inheritdoc />
@@ -296,10 +346,16 @@ namespace HealthDevice.Migrations
                 name: "Heartrates");
 
             migrationBuilder.DropTable(
+                name: "Kilometer");
+
+            migrationBuilder.DropTable(
                 name: "Max30102Data");
 
             migrationBuilder.DropTable(
                 name: "SpO2s");
+
+            migrationBuilder.DropTable(
+                name: "Steps");
 
             migrationBuilder.DropTable(
                 name: "Elders");

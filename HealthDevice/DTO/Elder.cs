@@ -14,6 +14,7 @@ public class Elder : IdentityUser
     public List<Kilometer> distance { get; set; }
     public string? arduino { get; set; }
     public FallInfo? fallInfo { get; set; }
+    public List<Steps> steps { get; set; }
 }
 
 public class ElderLocationDTO
