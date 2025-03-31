@@ -39,10 +39,10 @@ namespace HealthDevice.Services
                         Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
                         elder.distance.Add(distance);
                         
-                        await elderManager.UpdateAsync(elder);
-                        
                         await healthService.DeleteMax30102Data(currentTime, elder);
                         await healthService.DeleteGPSData(currentTime, elder);
+                        
+                        await elderManager.UpdateAsync(elder);
                     }
                 }
 

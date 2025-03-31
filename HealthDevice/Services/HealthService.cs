@@ -97,7 +97,6 @@ public class HealthService
         {
             elder.Max30102Datas.Remove(max30102);
         }
-        await _elderManager.UpdateAsync(elder);
     }
     
     public async Task DeleteGPSData(DateTime currentDate, Elder elder)
@@ -109,6 +108,5 @@ public class HealthService
         {
             elder.gpsData.Remove(gps);
         }
-        await _elderManager.UpdateAsync(elder);
     }
 }
