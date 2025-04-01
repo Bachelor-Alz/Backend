@@ -10,10 +10,12 @@ namespace HealthDevice.Services;
 public class UserService
 {
     private readonly ILogger<UserService> _logger;
+    private readonly EmailService _emailService;
     
-    public UserService(ILogger<UserService> logger)
+    public UserService(ILogger<UserService> logger, EmailService emailService)
     {
         _logger = logger;
+        _emailService = emailService;
     }
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin<T>(UserManager<T> userManager, UserLoginDTO userLoginDto, string role, HttpContext httpContext) where T : IdentityUser
     {
@@ -49,11 +51,13 @@ public class UserService
         }
 
         IdentityResult result = await userManager.CreateAsync(user, userRegisterDto.Password);
+        
         if (result.Succeeded)
         {
             _logger.LogInformation("{timestamp}: Registration successful for email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
             return new OkResult();
         }
+        
         return new BadRequestObjectResult(new { Message = "Registration failed.", result.Errors });
     }
 
