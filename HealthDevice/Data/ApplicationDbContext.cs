@@ -3,8 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Data
 {
-    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+    public class ApplicationDbContext : DbContext
     {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+        
         public DbSet<Heartrate> Heartrate { get; set; }
         public DbSet<Location> Location { get; set; }
         public DbSet<FallInfo> FallInfo { get; set; }

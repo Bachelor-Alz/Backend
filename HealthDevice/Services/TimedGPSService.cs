@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services
 {
-    public class TimedHostedService : BackgroundService
+    public class TimedGPSService : BackgroundService
     {
-        private readonly ILogger<TimedHostedService> _logger;
+        private readonly ILogger<TimedGPSService> _logger;
         private readonly IServiceProvider _serviceProvider;
         
-        public TimedHostedService(ILogger<TimedHostedService> logger, IServiceProvider serviceProvider)
+        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
@@ -17,7 +17,7 @@ namespace HealthDevice.Services
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Timed Hosted Service is working.");
+                _logger.LogInformation("Timed GPS Service is working.");
 
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
@@ -29,23 +29,15 @@ namespace HealthDevice.Services
                     {
                         DateTime currentTime = DateTime.Now;
                         
-                        Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
-                        elder.Heartrate.Add(heartRate);
-                        
-                        Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
-                        elder.SpO2.Add(spo2);
-
-                        Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
-                        elder.Distance.Add(distance);
-                        
-                        await healthService.DeleteMax30102Data(currentTime, elder);
-                        await healthService.DeleteGpsData(currentTime, elder);
+                        Location location = await healthService.GetLocation(currentTime, elder);
+                        elder.Location = location;
                         
                         await elderManager.UpdateAsync(elder);
+                        await healthService.ComputeOutOfPerimeter(elder);
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
     }

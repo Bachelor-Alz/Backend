@@ -80,6 +80,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddHostedService<TimedHostedService>();
+builder.Services.AddHostedService<TimedGPSService>();
 
 var app = builder.Build();
 app.UseSwagger();

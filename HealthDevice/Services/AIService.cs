@@ -3,11 +3,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
-public class AiService(ILogger<AiService> logger)
+public class AiService
 {
+    
+    private readonly ILogger<AiService> _logger;
+    
+    public AiService(ILogger<AiService> logger)
+    {
+        _logger = logger;
+    }
     public Task<ActionResult> HandleAiRequest([FromBody] List<int> request)
     {
-       logger.LogInformation("HandleAIRequest {request}", request);
+       _logger.LogInformation("HandleAIRequest {request}", request);
        if (request.Contains(1))
        {
            HandleFall();

@@ -44,8 +44,8 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Latitude = table.Column<int>(type: "integer", nullable: false),
-                    Longitude = table.Column<int>(type: "integer", nullable: false),
+                    Latitude = table.Column<double>(type: "double precision", nullable: false),
+                    Longitude = table.Column<double>(type: "double precision", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -100,7 +100,7 @@ namespace HealthDevice.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     LocationId = table.Column<int>(type: "integer", nullable: false),
-                    PerimeterId = table.Column<int>(type: "integer", nullable: false),
+                    PerimeterId = table.Column<int>(type: "integer", nullable: true),
                     Arduino = table.Column<string>(type: "text", nullable: true),
                     FallInfoId = table.Column<int>(type: "integer", nullable: true),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
@@ -142,8 +142,7 @@ namespace HealthDevice.Migrations
                         name: "FK_Elder_Perimeter_PerimeterId",
                         column: x => x.PerimeterId,
                         principalTable: "Perimeter",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -152,11 +151,11 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
                     Course = table.Column<float>(type: "real", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true),
                     Address = table.Column<string>(type: "text", nullable: false),
-                    EpochTimestamp = table.Column<long>(type: "bigint", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -212,22 +211,22 @@ namespace HealthDevice.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Max30102Data",
+                name: "MAX30102Data",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Heartrate = table.Column<int>(type: "integer", nullable: false),
                     SpO2 = table.Column<float>(type: "real", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true),
                     Address = table.Column<string>(type: "text", nullable: false),
-                    EpochTimestamp = table.Column<long>(type: "bigint", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Max30102Data", x => x.Id);
+                    table.PrimaryKey("PK_MAX30102Data", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Max30102Data_Elder_ElderId",
+                        name: "FK_MAX30102Data_Elder_ElderId",
                         column: x => x.ElderId,
                         principalTable: "Elder",
                         principalColumn: "Id");
@@ -316,8 +315,8 @@ namespace HealthDevice.Migrations
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Max30102Data_ElderId",
-                table: "Max30102Data",
+                name: "IX_MAX30102Data_ElderId",
+                table: "MAX30102Data",
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(
@@ -349,7 +348,7 @@ namespace HealthDevice.Migrations
                 name: "Kilometer");
 
             migrationBuilder.DropTable(
-                name: "Max30102Data");
+                name: "MAX30102Data");
 
             migrationBuilder.DropTable(
                 name: "SpO2");

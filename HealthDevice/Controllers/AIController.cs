@@ -4,12 +4,19 @@ namespace HealthDevice.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class AiController(AiService aiService) : ControllerBase
+public class AiController : ControllerBase
 {
+    private readonly AiService _aiService;
+    
+    public AiController(AiService aiService)
+    {
+        _aiService = aiService;
+    }
+    
     [HttpPost("compute")]
     public async Task<ActionResult> Compute([FromBody] List<int> data)
     {
-        await aiService.HandleAiRequest(data);
+        await _aiService.HandleAiRequest(data);
         return Ok();
     }
     

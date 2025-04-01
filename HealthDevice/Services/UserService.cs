@@ -7,8 +7,14 @@ using Microsoft.IdentityModel.Tokens;
 namespace HealthDevice.Services;
 
 
-public class UserService(ILogger<UserService> logger)
+public class UserService
 {
+    private readonly ILogger<UserService> _logger;
+    
+    public UserService(ILogger<UserService> logger)
+    {
+        _logger = logger;
+    }
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin<T>(UserManager<T> userManager, UserLoginDTO userLoginDto, string role, HttpContext httpContext) where T : IdentityUser
     {
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
@@ -17,17 +23,17 @@ public class UserService(ILogger<UserService> logger)
         
         if (user == null || !await userManager.CheckPasswordAsync(user, userLoginDto.Password))
         {
-            logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
             return new UnauthorizedResult();
         }
         
         if (await userManager.IsLockedOutAsync(user))
         {
-            logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
             return new UnauthorizedResult();
         }
         
-        logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+        _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
         return new LoginResponseDTO { Token = GenerateJwt(user, role) };
     }
 
@@ -38,14 +44,14 @@ public class UserService(ILogger<UserService> logger)
 
         if (await userManager.FindByEmailAsync(userRegisterDto.Email) != null)
         {
-            logger.LogWarning("{timestamp}: Registration failed for email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
+            _logger.LogWarning("{timestamp}: Registration failed for email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
             return new BadRequestObjectResult("Email already exists.");
         }
 
         IdentityResult result = await userManager.CreateAsync(user, userRegisterDto.Password);
         if (result.Succeeded)
         {
-            logger.LogInformation("{timestamp}: Registration successful for email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
+            _logger.LogInformation("{timestamp}: Registration successful for email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
             return new OkResult();
         }
         return new BadRequestObjectResult(new { Message = "Registration failed.", result.Errors });
