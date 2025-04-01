@@ -3,16 +3,23 @@ using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services
 {
-    public class TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider)
-        : BackgroundService
+    public class TimedGPSService : BackgroundService
     {
+        private readonly ILogger<TimedGPSService> _logger;
+        private readonly IServiceProvider _serviceProvider;
+        
+        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider)
+        {
+            _logger = logger;
+            _serviceProvider = serviceProvider;
+        }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                logger.LogInformation("Timed GPS Service is working.");
+                _logger.LogInformation("Timed GPS Service is working.");
 
-                using (IServiceScope scope = serviceProvider.CreateScope())
+                using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
                     UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();

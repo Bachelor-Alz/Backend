@@ -6,11 +6,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
 
-public class ArduinoService(
-    ILogger<ArduinoService> logger,
-    UserManager<Elder> elderManager,
-    ApplicationDbContext dbContext)
+public class ArduinoService
 {
+    private readonly ILogger<ArduinoService> _logger;
+    private readonly UserManager<Elder> _elderManager;
+    private readonly ApplicationDbContext _dbContext;
+    
+    public ArduinoService(ILogger<ArduinoService> logger, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
+    {
+        _logger = logger;
+        _elderManager = elderManager;
+        _dbContext = dbContext;
+    }
     public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
@@ -18,11 +25,11 @@ public class ArduinoService(
         
         if (data.Count == 0)
         {
-            logger.LogWarning("{Timestamp}: {SensorType} data was empty from IP: {IP}.", receivedAt, typeof(T).Name, ip);
+            _logger.LogWarning("{Timestamp}: {SensorType} data was empty from IP: {IP}.", receivedAt, typeof(T).Name, ip);
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
         
-        Elder? elder = await elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.First().Address);
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.First().Address);
         
         foreach (var entry in data)
         {
@@ -31,7 +38,7 @@ public class ArduinoService(
         
         if (elder == null)
         {
-            dbContext.Set<T>().AddRange(data);
+            _dbContext.Set<T>().AddRange(data);
         }
         else
         {
@@ -44,16 +51,16 @@ public class ArduinoService(
         try
         {
             if (elder == null)
-                await dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync();
             else
-                await elderManager.UpdateAsync(elder);
+                await _elderManager.UpdateAsync(elder);
             
-            logger.LogInformation("{Timestamp}: Saved {Count} {SensorType} entries from IP: {IP}.", receivedAt, data.Count, typeof(T).Name, ip);
+            _logger.LogInformation("{Timestamp}: Saved {Count} {SensorType} entries from IP: {IP}.", receivedAt, data.Count, typeof(T).Name, ip);
             return new OkResult();
         }
         catch (Exception)
         {
-            logger.LogError("{Timestamp}: Error saving {SensorType} entries from IP: {IP}.", receivedAt, typeof(T).Name, ip);
+            _logger.LogError("{Timestamp}: Error saving {SensorType} entries from IP: {IP}.", receivedAt, typeof(T).Name, ip);
             return new BadRequestObjectResult($"Error saving {typeof(T).Name} entries.");
         }
     }

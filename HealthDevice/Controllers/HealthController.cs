@@ -11,9 +11,18 @@ namespace HealthDevice.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class HealthController(UserManager<Elder> elderManager, HealthService healthService)
-        : ControllerBase
+    public class HealthController : ControllerBase
     {
+        private readonly UserManager<Elder> _elderManager;
+        private readonly HealthService _healthService;
+        
+        public HealthController(UserManager<Elder> elderManager, HealthService healthService)
+        {
+            _elderManager = elderManager;
+            _healthService = healthService;
+        }
+        
+        
         [HttpGet("Heartrate")]
         public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, string period = "Hour")
         {
@@ -21,7 +30,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.Heartrate, elderManager);
+            return await _healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.Heartrate, _elderManager);
         }
 
         [HttpGet("Spo2")]
@@ -31,7 +40,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, elderManager);
+            return await _healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, _elderManager);
         }
         
         [HttpGet("Distance")]
@@ -41,7 +50,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await healthService.GetHealthData<Kilometer>(elderEmail, periodEnum, date, e => e.Distance, elderManager);
+            return await _healthService.GetHealthData<Kilometer>(elderEmail, periodEnum, date, e => e.Distance, _elderManager);
         }
         
         [HttpGet("Steps")]
@@ -51,7 +60,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await healthService.GetHealthData<Steps>(elderEmail, periodEnum, date, e => e.Steps, elderManager);
+            return await _healthService.GetHealthData<Steps>(elderEmail, periodEnum, date, e => e.Steps, _elderManager);
         }
     }
 }

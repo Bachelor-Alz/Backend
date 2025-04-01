@@ -4,8 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
-public class HealthService(ILogger<HealthService> logger)
+public class HealthService
 {
+    private readonly ILogger<HealthService> _logger;
+    
+    public HealthService(ILogger<HealthService> logger)
+    {
+        _logger = logger;
+    }
     public Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
         List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
@@ -67,7 +73,7 @@ public class HealthService(ILogger<HealthService> logger)
         Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
         if (elder == null)
         {
-            logger.LogError("No elder found with email {email}", elderEmail);
+            _logger.LogError("No elder found with email {email}", elderEmail);
             return new BadRequestResult();
         }
 
@@ -122,7 +128,7 @@ public class HealthService(ILogger<HealthService> logger)
         GPS gps = elder.GPSData.FirstOrDefault(g => g.Timestamp <= currentTime);
         if (gps == null)
         {
-            logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
+            _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
             return Task.FromResult(new Location());
         }
         return Task.FromResult(new Location
