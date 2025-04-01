@@ -25,6 +25,10 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=postgres_db;Database=HealthMonitor;Username=DbUser;Password=1Strong_Password!
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_PORT: ${SMTP_PORT}
 
   fall_detection_ml:
     container_name: fall_detection_ml
