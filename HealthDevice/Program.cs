@@ -7,7 +7,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using dotenv.net;
 
+
+DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
