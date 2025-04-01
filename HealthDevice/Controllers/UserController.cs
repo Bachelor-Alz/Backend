@@ -151,6 +151,27 @@ public class UserController : ControllerBase
             return BadRequest();
         }
     }
+
+    [HttpGet("users/getElders")]
+    [Authorize(Roles = "Caregiver")]
+    public async Task<ActionResult<List<Elder>>> GetElders()
+    {
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+
+        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
+        List<Elder> elders = caregiver.Elders;
+        return elders;
+    }
     
     [HttpGet("users/arduino")]
     public async Task<ActionResult<List<string?>>> GetUnusedArduino()
