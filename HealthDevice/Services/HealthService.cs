@@ -145,7 +145,7 @@ public class HealthService
         if (elder.GPSData == null)
         {
             _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
-            return Task.FromResult(new Location());
+            return Task.FromResult(elder.Location);
         }
 
         GPS? gps = elder.GPSData.FirstOrDefault(g => g?.Timestamp <= currentTime);
