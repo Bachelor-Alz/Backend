@@ -15,6 +15,13 @@ public class HealthService
     public Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
         List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        
+        if(heartRates.Count == 0)
+        {
+            _logger.LogWarning("No heart rate data found for elder {elder}", elder.Email);
+            return Task.FromResult(new Heartrate());
+        }
+        
         List<int> heartRateValues = heartRates.Select(h => h.Heartrate).ToList();
 
         return Task.FromResult(new Heartrate
@@ -29,6 +36,11 @@ public class HealthService
     public Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
         List<Max30102> spo2S = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        if(spo2S.Count == 0)
+        {
+            _logger.LogWarning("No SpO2 data found for elder {elder}", elder.Email);
+            return Task.FromResult(new Spo2());
+        }
         List<float> spo2Values = spo2S.Select(s => s.SpO2).ToList();
 
         return Task.FromResult(new Spo2
@@ -42,7 +54,12 @@ public class HealthService
     }
     public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, Elder elder)
     {
-        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS?> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        if(gpsData.Count == 0)
+        {
+            _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
+            return Task.FromResult(new Kilometer());
+        }
 
         //Math for distance calculation
         double d = 0;
@@ -95,9 +112,9 @@ public class HealthService
     
     public Task DeleteGpsData(DateTime currentDate, Elder elder)
     {
-        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS?> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         
-        foreach (GPS gps in gpsData)
+        foreach (GPS? gps in gpsData)
         {
             elder.GPSData.Remove(gps);
         }
@@ -125,17 +142,21 @@ public class HealthService
     
     public Task<Location> GetLocation(DateTime currentTime, Elder elder)
     {
-        GPS gps = elder.GPSData.FirstOrDefault(g => g.Timestamp <= currentTime);
-        if (gps == null)
+        if (elder.GPSData == null)
         {
             _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
             return Task.FromResult(new Location());
         }
-        return Task.FromResult(new Location
-        {
-            Latitude = gps.Latitude,
-            Longitude = gps.Longitude,
-            Timestamp = gps.Timestamp
-        });
+
+        GPS? gps = elder.GPSData.FirstOrDefault(g => g?.Timestamp <= currentTime);
+        if (gps != null)
+            return Task.FromResult(new Location
+            {
+                Latitude = gps.Latitude,
+                Longitude = gps.Longitude,
+                Timestamp = gps.Timestamp
+            });
+        _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
+        return Task.FromResult(new Location());
     }
 }
