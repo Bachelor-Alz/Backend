@@ -95,7 +95,9 @@ public class HealthService
         }
 
         List<T> data = selector(elder).Where(d => ((dynamic)d).Timestamp >= earlierDate && ((dynamic)d).Timestamp <= date).ToList();
-        return data;
+        if (data.Count != 0) return data;
+        _logger.LogWarning("No data found for elder {elder}", elder.Email);
+        return new BadRequestResult();
     }
     
     public Task DeleteMax30102Data(DateTime currentDate, Elder elder)
