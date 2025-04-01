@@ -61,8 +61,8 @@ public class UserController(
 
 
     [HttpPost("users/elder")]
-    [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> PutElder(string elderEmail)
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult> PutCaregiver(string caregiverEmail)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -71,14 +71,14 @@ public class UserController(
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await caregiverManager.FindByEmailAsync(userClaim.Value);
+        Caregiver? caregiver = await caregiverManager.FindByEmailAsync(caregiverEmail);
         if (caregiver == null)
         {
             logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
 
-        Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await elderManager.FindByEmailAsync(userClaim.Value);
         if (elder == null)
         {
             logger.LogError("Elder not found.");
@@ -100,8 +100,8 @@ public class UserController(
     }
 
     [HttpDelete("users/elder")]
-    [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> RemoveElder(string elderEmail)
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -110,13 +110,13 @@ public class UserController(
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await caregiverManager.FindByEmailAsync(userClaim.Value);
+        Caregiver? caregiver = await caregiverManager.FindByEmailAsync(caregiverEmail);
         if (caregiver == null)
         {
             logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
-        Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await elderManager.FindByEmailAsync(userClaim.Value);
         if(elder == null)
         {
             logger.LogError("Elder not found.");
