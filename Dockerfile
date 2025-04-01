@@ -1,19 +1,12 @@
 # Stage 1: Build the application
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG TARGETARCH
-ARG SMTP_HOST
-ARG SMTP_PORT
-ARG SMTP_USER
-ARG SMTP_PASSWORD
+
 WORKDIR /app
 
 # Set the default environment to Development
 ARG ENVIRONMENT=Development
 ENV ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-ENV SMTP_HOST=${SMTP_HOST}
-ENV SMTP_PORT=${SMTP_PORT}
-ENV SMTP_USER=${SMTP_USER}
-ENV SMTP_PASSWORD=${SMTP_PASSWORD}
 
 # Copy the solution and project files
 COPY Backend.sln ./
