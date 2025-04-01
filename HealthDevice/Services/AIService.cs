@@ -25,7 +25,7 @@ public class AiService
 
     private static void HandleFall()
     {
-        
+           
         FallInfo fallInfo = new FallInfo()
         {
             Timestamp = DateTime.Now,

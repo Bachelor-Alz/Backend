@@ -7,11 +7,18 @@ namespace HealthDevice.Services;
 public class HealthService
 {
     private readonly ILogger<HealthService> _logger;
+    private readonly UserManager<Caregiver> _caregiverManager;
+    private readonly UserManager<Elder> _elderManager;
+    private readonly EmailService _emailService;
     
-    public HealthService(ILogger<HealthService> logger)
+    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, UserManager<Elder> elderManager, EmailService emailService)
     {
         _logger = logger;
+        _caregiverManager = caregiverManager;
+        _elderManager = elderManager;
+        _emailService = emailService;
     }
+
     public Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
         List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
@@ -124,7 +131,7 @@ public class HealthService
         return Task.CompletedTask;
     }
 
-    public Task ComputeOutOfPerimeter(Elder elder)
+    public async Task<Task> ComputeOutOfPerimeter(Elder elder)
     {
         Perimeter? perimeter = elder.Perimeter;
         if(perimeter == null)
@@ -136,8 +143,22 @@ public class HealthService
         double distance = Math.Sqrt(Math.Pow(lastLocation.Latitude - perimeter.Location.Latitude, 2) + Math.Pow(lastLocation.Longitude - perimeter.Location.Longitude, 2));
         if (distance > perimeter.Radius)
         {
-            // Elder is out of the perimeter
-            // Add your logic here
+            List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders.Contains(elder)).ToList();
+            foreach (Caregiver caregiver in caregivers)
+            {
+                Email emailInfo = new Email
+                {
+                    name = caregiver.Name,
+                    email = caregiver.Email,
+                };
+                if(emailInfo.name == null || emailInfo.email == null)
+                {
+                    _logger.LogError("Caregiver {caregiver} has no email or name", caregiver.Email);
+                    return Task.CompletedTask;
+                }
+                _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
+                await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {elder.Location}.");
+            }
         }
         return Task.CompletedTask;
     }
