@@ -12,9 +12,7 @@
       - pgdata:/var/lib/postgresql/data
 
   healthdevice_app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/bachelor-alz/backend:latest
     container_name: healthdevice_app
     volumes:
       - ./HealthDevice:/app/HealthDevice
