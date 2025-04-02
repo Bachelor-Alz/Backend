@@ -8,14 +8,12 @@ public class HealthService
 {
     private readonly ILogger<HealthService> _logger;
     private readonly UserManager<Caregiver> _caregiverManager;
-    private readonly UserManager<Elder> _elderManager;
     private readonly EmailService _emailService;
     
-    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, UserManager<Elder> elderManager, EmailService emailService)
+    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService)
     {
         _logger = logger;
         _caregiverManager = caregiverManager;
-        _elderManager = elderManager;
         _emailService = emailService;
     }
 
@@ -61,7 +59,7 @@ public class HealthService
     }
     public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, Elder elder)
     {
-        List<GPS?> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         if(gpsData.Count == 0)
         {
             _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
@@ -121,7 +119,7 @@ public class HealthService
     
     public Task DeleteGpsData(DateTime currentDate, Elder elder)
     {
-        List<GPS?> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (GPS? gps in gpsData)
         {
@@ -144,38 +142,29 @@ public class HealthService
         if (distance > perimeter.Radius)
         {
             List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders.Contains(elder)).ToList();
+            if(caregivers.Count == 0)
+            {
+                _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
+                return;
+            }
             foreach (Caregiver caregiver in caregivers)
             {
-                Email emailInfo = new Email
+                if (caregiver.Email != null)
                 {
-                    name = caregiver.Name,
-                    email = caregiver.Email,
-                };
-                if(emailInfo.name == null || emailInfo.email == null)
-                {
-                    _logger.LogError("Caregiver {caregiver} has no email or name", caregiver.Email);
-                   
-                }
-                else
-                {
+                    Email emailInfo = new Email
+                    {
+                        name = caregiver.Name,
+                        email = caregiver.Email,
+                    };
                     _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
-                    await _emailService.SendEmail(emailInfo, "Elder out of perimeter",
-                        $"Elder {elder.Name} is out of perimeter, at location {elder.Location}.");
+                    await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {elder.Location}.");
                 }
             }
         }
-
-        return;
     }
     
     public Task<Location> GetLocation(DateTime currentTime, Elder elder)
     {
-        if (elder.GPSData == null)
-        {
-            _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
-            return Task.FromResult(elder.Location);
-        }
-
         GPS? gps = elder.GPSData.FirstOrDefault(g => g?.Timestamp <= currentTime);
         if (gps != null)
             return Task.FromResult(new Location

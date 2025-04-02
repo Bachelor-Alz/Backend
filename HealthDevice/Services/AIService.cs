@@ -48,7 +48,11 @@ public class AiService
         {
             await _elderManager.UpdateAsync(elder);
             List<Caregiver> caregivers = _caregiverManager.Users.Where(e => e.Elders.Contains(elder)).ToList();
-
+            if(caregivers.Count == 0)
+            {
+                _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
+                return;
+            }
             foreach (var caregiver in caregivers)
             {
                 Email emailInfo = new Email
