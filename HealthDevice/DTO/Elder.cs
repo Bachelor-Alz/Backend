@@ -13,7 +13,7 @@ public class Elder : IdentityUser
     public Perimeter? Perimeter { get; set; }
     public List<Kilometer> Distance { get; set; }
     public string? Arduino { get; set; }
-    public FallInfo? FallInfo { get; set; }
+    public List<FallInfo> FallInfo { get; set; }
     public List<Steps> Steps { get; set; }
 }
 
