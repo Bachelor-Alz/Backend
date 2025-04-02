@@ -19,24 +19,22 @@ public class AiService
         _caregiverManager = caregiverManager;
         _emailService = emailService;
     }
-    public Task<ActionResult> HandleAiRequest([FromBody] List<int> request, string adress)
+    public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
-        Elder? elder = _elderManager.Users.FirstOrDefault(a => a.Arduino == adress);
+        Elder? elder = _elderManager.Users.FirstOrDefault(a => a.Arduino == address);
         if (elder == null)
         {
-            _logger.LogWarning("No elder found with adress {adress}", adress);
-            return Task.FromResult<ActionResult>(new BadRequestObjectResult("No elder found with adress"));
-        } 
+            _logger.LogWarning("No elder found with address {address}", address);
+            return;
+        }
         _logger.LogInformation("HandleAIRequest {request}", request);
        if (request.Contains(1))
        {
-           HandleFall(elder);
+           await HandleFall(elder);
        }
-       
-       return Task.FromResult<ActionResult>(new OkResult());
     }
 
-    private async void HandleFall(Elder elder)
+    private async Task HandleFall(Elder elder)
     {
            
         FallInfo fallInfo = new FallInfo()

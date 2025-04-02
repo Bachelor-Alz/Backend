@@ -131,12 +131,12 @@ public class HealthService
         return Task.CompletedTask;
     }
 
-    public async Task<Task> ComputeOutOfPerimeter(Elder elder)
+    public async Task ComputeOutOfPerimeter(Elder elder)
     {
         Perimeter? perimeter = elder.Perimeter;
         if(perimeter == null)
         {
-            return Task.CompletedTask;
+            return;
         }
         Location lastLocation = elder.Location;
 
@@ -154,13 +154,18 @@ public class HealthService
                 if(emailInfo.name == null || emailInfo.email == null)
                 {
                     _logger.LogError("Caregiver {caregiver} has no email or name", caregiver.Email);
-                    return Task.CompletedTask;
+                   
                 }
-                _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
-                await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {elder.Location}.");
+                else
+                {
+                    _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
+                    await _emailService.SendEmail(emailInfo, "Elder out of perimeter",
+                        $"Elder {elder.Name} is out of perimeter, at location {elder.Location}.");
+                }
             }
         }
-        return Task.CompletedTask;
+
+        return;
     }
     
     public Task<Location> GetLocation(DateTime currentTime, Elder elder)
