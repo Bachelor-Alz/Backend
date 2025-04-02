@@ -165,7 +165,7 @@ public class HealthService
     
     public Task<Location> GetLocation(DateTime currentTime, Elder elder)
     {
-        GPS? gps = elder.GPSData.FirstOrDefault(g => g?.Timestamp <= currentTime);
+        GPS? gps = elder.GPSData.FirstOrDefault(g => g.Timestamp <= currentTime);
         if (gps != null)
             return Task.FromResult(new Location
             {
