@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using System.Text.Json;
+using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,11 +8,18 @@ namespace HealthDevice.Services;
 public class HealthService
 {
     private readonly ILogger<HealthService> _logger;
+    private readonly UserManager<Caregiver> _caregiverManager;
+    private readonly EmailService _emailService;
+    private readonly GeoService _geoService;
     
-    public HealthService(ILogger<HealthService> logger)
+    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService)
     {
         _logger = logger;
+        _caregiverManager = caregiverManager;
+        _emailService = emailService;
+        _geoService = geoService;
     }
+
     public Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
     {
         List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
@@ -54,7 +62,7 @@ public class HealthService
     }
     public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, Elder elder)
     {
-        List<GPS?> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         if(gpsData.Count == 0)
         {
             _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
@@ -114,7 +122,7 @@ public class HealthService
     
     public Task DeleteGpsData(DateTime currentDate, Elder elder)
     {
-        List<GPS?> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         
         foreach (GPS? gps in gpsData)
         {
@@ -124,33 +132,44 @@ public class HealthService
         return Task.CompletedTask;
     }
 
-    public Task ComputeOutOfPerimeter(Elder elder)
+    public async Task ComputeOutOfPerimeter(Elder elder)
     {
         Perimeter? perimeter = elder.Perimeter;
         if(perimeter == null)
         {
-            return Task.CompletedTask;
+            return;
         }
         Location lastLocation = elder.Location;
 
         double distance = Math.Sqrt(Math.Pow(lastLocation.Latitude - perimeter.Location.Latitude, 2) + Math.Pow(lastLocation.Longitude - perimeter.Location.Longitude, 2));
         if (distance > perimeter.Radius)
         {
-            // Elder is out of the perimeter
-            // Add your logic here
+            List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders.Contains(elder)).ToList();
+            if(caregivers.Count == 0)
+            {
+                _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
+                return;
+            }
+            foreach (Caregiver caregiver in caregivers)
+            {
+                if (caregiver.Email != null)
+                {
+                    Email emailInfo = new Email
+                    {
+                        name = caregiver.Name,
+                        email = caregiver.Email,
+                    };
+                    string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
+                    _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
+                    await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {address}.");
+                }
+            }
         }
-        return Task.CompletedTask;
     }
     
     public Task<Location> GetLocation(DateTime currentTime, Elder elder)
     {
-        if (elder.GPSData == null)
-        {
-            _logger.LogWarning("No GPS data found for elder {elder}", elder.Email);
-            return Task.FromResult(elder.Location);
-        }
-
-        GPS? gps = elder.GPSData.FirstOrDefault(g => g?.Timestamp <= currentTime);
+        GPS? gps = elder.GPSData.FirstOrDefault(g => g.Timestamp <= currentTime);
         if (gps != null)
             return Task.FromResult(new Location
             {
