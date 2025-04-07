@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using System.Text.Json;
+using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +10,14 @@ public class HealthService
     private readonly ILogger<HealthService> _logger;
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly EmailService _emailService;
+    private readonly GeoService _geoService;
     
-    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService)
+    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService)
     {
         _logger = logger;
         _caregiverManager = caregiverManager;
         _emailService = emailService;
+        _geoService = geoService;
     }
 
     public Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
@@ -156,8 +159,9 @@ public class HealthService
                         name = caregiver.Name,
                         email = caregiver.Email,
                     };
+                    string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
                     _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
-                    await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {elder.Location}.");
+                    await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {address}.");
                 }
             }
         }

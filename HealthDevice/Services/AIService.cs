@@ -11,13 +11,15 @@ public class AiService
     private readonly UserManager<Elder> _elderManager;
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly EmailService _emailService;
+    private readonly GeoService _geoService;
     
-    public AiService(ILogger<AiService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, EmailService emailService)
+    public AiService(ILogger<AiService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService)
     {
         _logger = logger;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _emailService = emailService;
+        _geoService = geoService;
     }
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
@@ -65,12 +67,14 @@ public class AiService
                     _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
+                
+                string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
 
                 _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
                 try
                 {
                     await _emailService.SendEmail(emailInfo, "Fall detected",
-                        $"Fall detected for elder {elder.Name} at location {elder.Location}");
+                        $"Fall detected for elder {elder.Name} at location {address}.");
                 }
                 catch (Exception e)
                 {

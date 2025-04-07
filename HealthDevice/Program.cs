@@ -47,6 +47,7 @@ builder.Services.AddScoped<ArduinoService>();
 builder.Services.AddScoped<HealthService>();
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<GeoService>();
 
 builder.Services.AddRazorPages();
 
