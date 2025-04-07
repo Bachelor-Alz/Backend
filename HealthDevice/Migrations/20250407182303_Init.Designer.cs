@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250331151020_Init")]
+    [Migration("20250407182303_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -104,9 +104,6 @@ namespace HealthDevice.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<int?>("FallInfoId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("LocationId")
                         .HasColumnType("integer");
 
@@ -151,8 +148,6 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("CaregiverId");
 
-                    b.HasIndex("FallInfoId");
-
                     b.HasIndex("LocationId");
 
                     b.HasIndex("PerimeterId");
@@ -168,6 +163,9 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ElderId")
+                        .HasColumnType("text");
+
                     b.Property<int>("LocationId")
                         .HasColumnType("integer");
 
@@ -175,6 +173,8 @@ namespace HealthDevice.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ElderId");
 
                     b.HasIndex("LocationId");
 
@@ -403,10 +403,6 @@ namespace HealthDevice.Migrations
                         .WithMany("Elders")
                         .HasForeignKey("CaregiverId");
 
-                    b.HasOne("HealthDevice.DTO.FallInfo", "FallInfo")
-                        .WithMany()
-                        .HasForeignKey("FallInfoId");
-
                     b.HasOne("HealthDevice.DTO.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId")
@@ -417,8 +413,6 @@ namespace HealthDevice.Migrations
                         .WithMany()
                         .HasForeignKey("PerimeterId");
 
-                    b.Navigation("FallInfo");
-
                     b.Navigation("Location");
 
                     b.Navigation("Perimeter");
@@ -426,6 +420,10 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
                 {
+                    b.HasOne("HealthDevice.DTO.Elder", null)
+                        .WithMany("FallInfo")
+                        .HasForeignKey("ElderId");
+
                     b.HasOne("HealthDevice.DTO.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId")
@@ -496,6 +494,8 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.Navigation("Distance");
+
+                    b.Navigation("FallInfo");
 
                     b.Navigation("GPSData");
 
