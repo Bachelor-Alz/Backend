@@ -101,7 +101,7 @@ namespace HealthDevice.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("LocationId")
+                    b.Property<int?>("LocationId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("LockoutEnabled")
@@ -163,7 +163,7 @@ namespace HealthDevice.Migrations
                     b.Property<string>("ElderId")
                         .HasColumnType("text");
 
-                    b.Property<int>("LocationId")
+                    b.Property<int?>("LocationId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("Timestamp")
@@ -187,7 +187,6 @@ namespace HealthDevice.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<float>("Course")
@@ -297,7 +296,6 @@ namespace HealthDevice.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("ElderId")
@@ -327,7 +325,7 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("LocationId")
+                    b.Property<int?>("LocationId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Radius")
@@ -402,9 +400,7 @@ namespace HealthDevice.Migrations
 
                     b.HasOne("HealthDevice.DTO.Location", "Location")
                         .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LocationId");
 
                     b.HasOne("HealthDevice.DTO.Perimeter", "Perimeter")
                         .WithMany()
@@ -423,9 +419,7 @@ namespace HealthDevice.Migrations
 
                     b.HasOne("HealthDevice.DTO.Location", "Location")
                         .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LocationId");
 
                     b.Navigation("Location");
                 });
@@ -462,9 +456,7 @@ namespace HealthDevice.Migrations
                 {
                     b.HasOne("HealthDevice.DTO.Location", "Location")
                         .WithMany()
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LocationId");
 
                     b.Navigation("Location");
                 });

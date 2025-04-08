@@ -23,7 +23,7 @@ public class TestController : ControllerBase
     }
     
     [HttpPost("Coordinates")]
-    public async Task<ActionResult> GetCoordinates(string street, string city, string state, string country, string postalCode = null, string amenity = null)
+    public async Task<ActionResult> GetCoordinates(string street, string city, string state, string country, string? postalCode = null, string? amenity = null)
     {
         var result = await _geoService.GetCoordinatesFromAddress(street, city, state, country, postalCode, amenity);
         return Ok(result);

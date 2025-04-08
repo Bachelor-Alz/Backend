@@ -30,14 +30,14 @@ namespace HealthDevice.Services
                         DateTime currentTime = DateTime.Now;
                         
                         Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
-                        elder.Heartrate.Add(heartRate);
-                        
+                        if (elder.Heartrate != null) elder.Heartrate.Add(heartRate);
+
                         Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
-                        elder.SpO2.Add(spo2);
+                        if (elder.SpO2 != null) elder.SpO2.Add(spo2);
 
                         Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
-                        elder.Distance.Add(distance);
-                        
+                        if (elder.Distance != null) elder.Distance.Add(distance);
+
                         await healthService.DeleteMax30102Data(currentTime, elder);
                         await healthService.DeleteGpsData(currentTime, elder);
                         

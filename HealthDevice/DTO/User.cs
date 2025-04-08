@@ -9,7 +9,7 @@
 
     public class LoginResponseDTO
     {
-        public string Token { get; set; }
+        public string? Token { get; set; }
     }
 
     public class UserRegisterDTO

@@ -10,7 +10,7 @@ public class Location
 
 public class Perimeter
 {
-    public Location Location { get; set; }
+    public Location? Location { get; set; }
     public int Radius { get; set; }
 
     public int Id { get; set; }

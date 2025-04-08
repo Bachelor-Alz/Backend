@@ -28,7 +28,7 @@ public class GeoService
         return "Unknown location";
     }
 
-    public async Task<Location?> GetCoordinatesFromAddress(string street, string city, string state, string country, string postalCode = null, string amenity = null)
+    public async Task<Location?> GetCoordinatesFromAddress(string street, string city, string state, string country, string? postalCode = null, string? amenity = null)
     {
         var queryParams = new Dictionary<string, string?>
         {
@@ -65,31 +65,30 @@ public class GeoService
 
     private string FormatAddress(NominatimResponse response)
     {
-        string[] addressParts = response.DisplayName.Split(", ");
-        string houseNumber = addressParts[0];
-        string street = addressParts[1];
-        string city = addressParts[3];
-        string postalCode = addressParts[6];
-        string country = addressParts[7];
-        string formattedAddress = $"{street} {houseNumber}, {city}, {postalCode}, {country}";
-        return formattedAddress;
+        if (response.DisplayName != null)
+        {
+            string[] addressParts = response.DisplayName.Split(", ");
+            string houseNumber = addressParts[0];
+            string street = addressParts[1];
+            string city = addressParts[3];
+            string postalCode = addressParts[6];
+            string country = addressParts[7];
+            string formattedAddress = $"{street} {houseNumber}, {city}, {postalCode}, {country}";
+            return formattedAddress;
+        }
+        return "Unknown location";
     }
 }
 
 public class NominatimResponse
 {
     [JsonPropertyName("display_name")]
-    public string DisplayName { get; set; }
+    public string? DisplayName { get; set; }
 }
 
 public class NominatimSearchResponse
 {
-    [JsonPropertyName("lat")]
-    public string Lat { get; set; }
-
-    [JsonPropertyName("lon")]
-    public string Lon { get; set; }
 
     [JsonPropertyName("boundingbox")]
-    public string[] BoundingBox { get; set; }
+    public string[]? BoundingBox { get; set; }
 }
