@@ -44,12 +44,12 @@ public class AiService
             Timestamp = DateTime.Now,
             Location = new Location(),
         };
-        
-        elder.FallInfo.Add(fallInfo);
+
+        if (elder.FallInfo != null) elder.FallInfo.Add(fallInfo);
         try
         {
             await _elderManager.UpdateAsync(elder);
-            List<Caregiver> caregivers = _caregiverManager.Users.Where(e => e.Elders.Contains(elder)).ToList();
+            List<Caregiver> caregivers = _caregiverManager.Users.Where(e => e.Elders != null && e.Elders.Contains(elder)).ToList();
             if(caregivers.Count == 0)
             {
                 _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
@@ -67,23 +67,26 @@ public class AiService
                     _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
-                
-                string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
 
-                _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
-                try
+                if (elder.Location != null)
                 {
-                    await _emailService.SendEmail(emailInfo, "Fall detected",
-                        $"Fall detected for elder {elder.Name} at location {address}.");
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError("Failed to send email to {caregiver}", caregiver.Email);
-                    return;
+                    string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
+
+                    _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
+                    try
+                    {
+                        await _emailService.SendEmail(emailInfo, "Fall detected",
+                            $"Fall detected for elder {elder.Name} at location {address}.");
+                    }
+                    catch
+                    {
+                        _logger.LogError("Failed to send email to {caregiver}", caregiver.Email);
+                        return;
+                    }
                 }
             }
         }
-        catch (Exception e)
+        catch
         {
            _logger.LogError("Failed to update elder {elder}", elder.Email);
         }

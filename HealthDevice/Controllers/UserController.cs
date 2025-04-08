@@ -101,7 +101,7 @@ public class UserController : ControllerBase
             return NotFound("Elder not found.");
         }
 
-        caregiver.Elders.Add(elder);
+        if (caregiver.Elders != null) caregiver.Elders.Add(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
@@ -139,7 +139,7 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        caregiver.Elders.Remove(elder);
+        if (caregiver.Elders != null) caregiver.Elders.Remove(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
@@ -170,17 +170,31 @@ public class UserController : ControllerBase
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
-        List<Elder> elders = caregiver.Elders;
-        return elders;
+
+        if (caregiver.Elders != null)
+        {
+            List<Elder> elders = caregiver.Elders;
+            return elders;
+        }
+        _logger.LogError("Caregiver has no elders.");
+        return BadRequest("Caregiver has no elders.");
     }
     
     [HttpGet("users/arduino")]
-    public async Task<ActionResult<List<string?>>> GetUnusedArduino()
+    public async Task<ActionResult<List<string>>> GetUnusedArduino()
     {
-        //Get a list of all Max30102 address that has not an elder associated with it
-        List<string> address = await _dbContext.MAX30102Data.Select(a => a.Address).Distinct().ToListAsync();
-        List<string?> addressNotAssociated = address.Except(_elderManager.Users.Select(e => e.Arduino)).ToList();
-        
+        // Get a list of all Max30102 addresses that are not associated with an elder
+        List<string?> address = await _dbContext.MAX30102Data
+            .Select(a => a.Address)
+            .Distinct()
+            .ToListAsync();
+
+        List<string> addressNotAssociated = address
+            .Where(a => a != null) // Filter out null values
+            .Select(a => a!) // Use the null-forgiving operator to cast to non-nullable
+            .Except(_elderManager.Users.Select(e => e.Arduino ?? string.Empty)) // Handle nullable Arduino values
+            .ToList();
+
         return addressNotAssociated;
     }
     

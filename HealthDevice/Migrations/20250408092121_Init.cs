@@ -59,7 +59,7 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    LocationId = table.Column<int>(type: "integer", nullable: false),
+                    LocationId = table.Column<int>(type: "integer", nullable: true),
                     Radius = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -69,8 +69,7 @@ namespace HealthDevice.Migrations
                         name: "FK_Perimeter_Location_LocationId",
                         column: x => x.LocationId,
                         principalTable: "Location",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -79,7 +78,7 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    LocationId = table.Column<int>(type: "integer", nullable: false),
+                    LocationId = table.Column<int>(type: "integer", nullable: true),
                     PerimeterId = table.Column<int>(type: "integer", nullable: true),
                     Arduino = table.Column<string>(type: "text", nullable: true),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
@@ -110,8 +109,7 @@ namespace HealthDevice.Migrations
                         name: "FK_Elder_Location_LocationId",
                         column: x => x.LocationId,
                         principalTable: "Location",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Elder_Perimeter_PerimeterId",
                         column: x => x.PerimeterId,
@@ -126,7 +124,7 @@ namespace HealthDevice.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LocationId = table.Column<int>(type: "integer", nullable: false),
+                    LocationId = table.Column<int>(type: "integer", nullable: true),
                     ElderId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
@@ -141,8 +139,7 @@ namespace HealthDevice.Migrations
                         name: "FK_FallInfo_Location_LocationId",
                         column: x => x.LocationId,
                         principalTable: "Location",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -155,7 +152,7 @@ namespace HealthDevice.Migrations
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
                     Course = table.Column<float>(type: "real", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true),
-                    Address = table.Column<string>(type: "text", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -219,7 +216,7 @@ namespace HealthDevice.Migrations
                     Heartrate = table.Column<int>(type: "integer", nullable: false),
                     SpO2 = table.Column<float>(type: "real", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true),
-                    Address = table.Column<string>(type: "text", nullable: false),
+                    Address = table.Column<string>(type: "text", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
