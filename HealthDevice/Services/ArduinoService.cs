@@ -33,7 +33,7 @@ public class ArduinoService
         
         foreach (var entry in data)
         {
-            entry.Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(entry.EpochTimestamp).UtcDateTime;
+            entry.Timestamp = DateTimeOffset.FromUnixTimeSeconds(entry.EpochTimestamp).UtcDateTime;
         }
         
         if (elder == null)
