@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Data;
+using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +13,13 @@ public class TestController : ControllerBase
 {
     private readonly GeoService _geoService;
     private readonly UserManager<Elder> _elderManager;
+    private readonly ApplicationDbContext _dbContext;
     
-    public TestController(GeoService geoService, UserManager<Elder> elderManager)
+    public TestController(GeoService geoService, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
     {
         _geoService = geoService;
         _elderManager = elderManager;
+        _dbContext = dbContext;
     }
     
     [HttpPost("Address")]
@@ -33,33 +36,44 @@ public class TestController : ControllerBase
         return Ok(result);
     }
     [HttpPost("FakeData")]
-    public async Task<ActionResult> GenerateFakeData(Elder elder)
+    public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        DateTime currentDate = DateTime.Now;
-        int HeartrangeX = 40;
-        int HeartrangeY = 200;
-        double SpO2rangeX = 0.7;
-        double SpO2rangeY = 1;
-        
-        if (elder.MAX30102Data == null)
+        var elder = await _elderManager.FindByEmailAsync(elderEmail);
+        if (elder == null)
         {
-            elder.MAX30102Data = new List<Max30102>();
+            return NotFound("Elder not found");
         }
-        
+
+        string macAddress = elder.Arduino;
+        DateTime currentDate = DateTime.UtcNow; // Use UTC time
+        int heartrateMin = 40;
+        int heartrateMax = 200;
+        double spo2Min = 0.7;
+        double spo2Max = 1.0;
+
         for (int i = 0; i < 30000; i++)
         {
             DateTime timestamp = currentDate.AddMinutes(i);
-            int heartrate = Random.Shared.Next(HeartrangeX, HeartrangeY);
-            double spo2 = Random.Shared.NextDouble() * (SpO2rangeY - SpO2rangeX) + SpO2rangeX;
-            elder.MAX30102Data.Add(new Max30102
+            int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
+            float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
+
+            _dbContext.MAX30102Data.Add(new Max30102
             {
-                Id = i,
                 Heartrate = heartrate,
-                SpO2 = (float)spo2,
-                Timestamp = timestamp
+                SpO2 = spo2,
+                Timestamp = timestamp,
+                Address = macAddress    
             });
         }
-        await _elderManager.UpdateAsync(elder);
-        return Ok("Fake data generated successfully");
+
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+            return Ok("Fake data generated successfully");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Failed to generate fake data: {ex.Message}");
+        }
     }
 }

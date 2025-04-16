@@ -207,7 +207,7 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound();
         }
-
+        elder.Arduino = address;
         elder.MAX30102Data = await _dbContext.MAX30102Data.Where(m => m.Address == address).ToListAsync();
         elder.GPSData = await _dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
         try

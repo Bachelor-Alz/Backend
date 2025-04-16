@@ -9,6 +9,33 @@ public class Heartrate
     public DateTime Timestamp { get; set; }
 }
 
+public class PostHeartRate
+{
+   public Heartrate? Heartrate { get; set; }
+   public currentHeartRate? CurrentHeartRate { get; set; }
+}
+
+public class PostSpo2
+{
+   public Spo2? Spo2 { get; set; }
+   public currentSpo2? CurrentSpo2 { get; set; }
+}
+
+public class currentData
+{
+    public DateTime Timestamp { get; set; }
+}
+
+public class currentHeartRate : currentData
+{
+    public int Heartrate { get; set; }
+}
+
+public class currentSpo2 : currentData
+{
+    public float SpO2 { get; set; }
+}
+
 //We need to send to frontend every hour send AvgRate. If min or max is out of range send asap
 
 public class Spo2

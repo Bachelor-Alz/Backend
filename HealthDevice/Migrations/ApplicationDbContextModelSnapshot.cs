@@ -78,6 +78,38 @@ namespace HealthDevice.Migrations
                     b.ToTable("Caregiver");
                 });
 
+            modelBuilder.Entity("HealthDevice.DTO.DashBoard", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("HeartRate")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("SpO2")
+                        .HasColumnType("real");
+
+                    b.Property<int>("allFall")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("distance")
+                        .HasColumnType("real");
+
+                    b.Property<string>("locationAdress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("steps")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DashBoard");
+                });
+
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
                     b.Property<string>("Id")
@@ -141,6 +173,9 @@ namespace HealthDevice.Migrations
                     b.Property<string>("UserName")
                         .HasColumnType("text");
 
+                    b.Property<int?>("dashBoardId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CaregiverId");
@@ -148,6 +183,8 @@ namespace HealthDevice.Migrations
                     b.HasIndex("LocationId");
 
                     b.HasIndex("PerimeterId");
+
+                    b.HasIndex("dashBoardId");
 
                     b.ToTable("Elder");
                 });
@@ -406,9 +443,15 @@ namespace HealthDevice.Migrations
                         .WithMany()
                         .HasForeignKey("PerimeterId");
 
+                    b.HasOne("HealthDevice.DTO.DashBoard", "dashBoard")
+                        .WithMany()
+                        .HasForeignKey("dashBoardId");
+
                     b.Navigation("Location");
 
                     b.Navigation("Perimeter");
+
+                    b.Navigation("dashBoard");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
