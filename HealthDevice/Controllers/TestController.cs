@@ -17,6 +17,8 @@ public class TestController : ControllerBase
     
     public TestController(GeoService geoService, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
     {
+        _healthService = healthService;
+        _elderManager = elderManager;
         _geoService = geoService;
         _elderManager = elderManager;
         _dbContext = dbContext;
@@ -35,6 +37,7 @@ public class TestController : ControllerBase
         var result = await _geoService.GetCoordinatesFromAddress(street, city, state, country, postalCode, amenity);
         return Ok(result);
     }
+
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
