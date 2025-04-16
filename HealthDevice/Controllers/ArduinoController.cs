@@ -12,7 +12,7 @@ public class ArduinoController : ControllerBase
 
     public ArduinoController(ArduinoService arduinoService)
     {
-        this._arduinoService = arduinoService;
+        _arduinoService = arduinoService;
     }
     
     [HttpPost("gps")]
@@ -25,5 +25,11 @@ public class ArduinoController : ControllerBase
     public async Task<ActionResult> PostMax30102([FromBody] List<Max30102> data)
     {
         return await _arduinoService.HandleSensorData(data, HttpContext);
+    }
+    
+    [HttpPost("data")]
+    public async Task PostData([FromBody] Arduino data)
+    {
+        await _arduinoService.HandleArduinoData(data, HttpContext);
     }
 }
