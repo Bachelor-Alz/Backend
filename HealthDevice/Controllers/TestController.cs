@@ -35,7 +35,6 @@ public class TestController : ControllerBase
         var result = await _geoService.GetCoordinatesFromAddress(street, city, state, country, postalCode, amenity);
         return Ok(result);
     }
-
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
