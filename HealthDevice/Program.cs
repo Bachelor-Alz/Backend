@@ -49,8 +49,6 @@ builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
 
-builder.Services.AddRazorPages();
-
 builder.Services.ConfigureApplicationCookie();
 
 builder.Services.AddOpenApi();
@@ -93,7 +91,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())
 {
