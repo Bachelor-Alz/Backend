@@ -7,25 +7,24 @@ WORKDIR /app
 ARG ENVIRONMENT=Development
 ENV ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
 
-# Copy the solution and project files
 COPY Backend.sln ./ 
 COPY HealthDevice/*.csproj ./HealthDevice/
 COPY HealthDevice/Migrations/*.cs ./HealthDevice/Migrations/
 
-# Restore dependencies for all projects in the solution
-RUN dotnet restore Backend.sln
+# Restore dependencies
+RUN dotnet restore Backend.sln -a $TARGETARCH
 
-# Copy the entire source code for the projects
 COPY . .
 
-# Build the main application with the architecture specified
-RUN dotnet build ./HealthDevice/HealthDevice.csproj -c Release -o /app/build -a $TARGETARCH
+RUN dotnet publish -a $TARGETARCH ./HealthDevice/HealthDevice.csproj -c Release -o /app/publish --no-restore
 
-# Publish the main application with the architecture specified
-RUN dotnet publish ./HealthDevice/HealthDevice.csproj -c Release -o /app/publish -a $TARGETARCH --no-restore
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
 
-# Expose the port for the app
+# Copy published output from build stage
+COPY --from=build /app/publish .
+
 EXPOSE 5171
 
-# Set the entry point for development or production
-ENTRYPOINT ["sh", "-c", "if [ \"$ASPNETCORE_ENVIRONMENT\" = 'Development' ]; then dotnet watch run --project HealthDevice/HealthDevice.csproj --urls http://+:5171; else dotnet /app/publish/HealthDevice.dll; fi"]
+# Start the application
+ENTRYPOINT ["dotnet", "HealthDevice.dll"]

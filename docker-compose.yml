@@ -22,6 +22,7 @@
       - postgres_db
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5171
       ConnectionStrings__DefaultConnection: Host=postgres_db;Database=HealthMonitor;Username=DbUser;Password=1Strong_Password!
       SMTP_HOST: ${SMTP_HOST}
       SMTP_USER: ${SMTP_USER}
