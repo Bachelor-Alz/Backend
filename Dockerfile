@@ -4,22 +4,8 @@ ARG TARGETARCH
 
 WORKDIR /app
 
-# Set the default environment to Development
 ARG ENVIRONMENT=Development
 ENV ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-
-# Define build arguments
-ARG SMTP_HOST
-ARG SMTP_USER
-ARG SMTP_PASSWORD
-ARG SMTP_PORT
-
-# Set environment variables using the build arguments
-ENV SMTP_HOST=${SMTP_HOST}
-ENV SMTP_USER=${SMTP_USER}
-ENV SMTP_PASSWORD=${SMTP_PASSWORD}
-ENV SMTP_PORT=${SMTP_PORT}
-
 
 # Copy the solution and project files
 COPY Backend.sln ./ 
