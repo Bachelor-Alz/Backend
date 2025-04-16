@@ -37,58 +37,61 @@ public class HealthService
             return Task.FromResult(new Heartrate());
         }
 
-        var heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         if (heartRates.Count == 0)
         {
             _logger.LogWarning("No heart rate data found for elder {Email}", elder.Email);
             return Task.FromResult(new Heartrate());
         }
 
-        var values = heartRates.Select(h => h.Heartrate);
+        IEnumerable<int> values = heartRates.Select(h => h.Heartrate);
 
+        IEnumerable<int> enumerable = values.ToList();
         return Task.FromResult(new Heartrate
         {
-            Avgrate = (int)values.Average(),
-            Maxrate = values.Max(),
-            Minrate = values.Min(),
+            Avgrate = (int)enumerable.Average(),
+            Maxrate = enumerable.Max(),
+            Minrate = enumerable.Min(),
             Timestamp = currentDate
         });
     }
 
     public Task<Heartrate> CalculateHeartRateFromUnproccessed(List<currentHeartRate> heartRates)
     {
-        if (heartRates == null || heartRates.Count == 0)
+        if (heartRates.Count == 0)
         {
             _logger.LogWarning("No heart rate data found");
             return Task.FromResult(new Heartrate());
         }
 
-        var values = heartRates.Select(h => h.Heartrate);
+        IEnumerable<int> values = heartRates.Select(h => h.Heartrate);
 
+        IEnumerable<int> enumerable = values.ToList();
         return Task.FromResult(new Heartrate
         {
-            Avgrate = (int)values.Average(),
-            Maxrate = values.Max(),
-            Minrate = values.Min(),
+            Avgrate = (int)enumerable.Average(),
+            Maxrate = enumerable.Max(),
+            Minrate = enumerable.Min(),
             Timestamp = DateTime.UtcNow
         });
     }
 
     public Task<Spo2> CalculateSpo2FromUnprocessed(List<currentSpo2> spo2Data)
     {
-        if (spo2Data == null || spo2Data.Count == 0)
+        if (spo2Data.Count == 0)
         {
             _logger.LogWarning("No SpO2 data found");
             return Task.FromResult(new Spo2());
         }
 
-        var values = spo2Data.Select(s => s.SpO2);
+        IEnumerable<float> values = spo2Data.Select(s => s.SpO2);
 
+        IEnumerable<float> enumerable = values.ToList();
         return Task.FromResult(new Spo2
         {
-            MinSpO2 = values.Min(),
-            MaxSpO2 = values.Max(),
-            SpO2 = values.Average(),
+            MinSpO2 = enumerable.Min(),
+            MaxSpO2 = enumerable.Max(),
+            SpO2 = enumerable.Average(),
             Timestamp = DateTime.UtcNow
         });
     }
@@ -101,20 +104,21 @@ public class HealthService
             return Task.FromResult(new Spo2());
         }
 
-        var spo2List = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate && c.SpO2 != null).ToList();
+        List<Max30102> spo2List = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
         if (spo2List.Count == 0)
         {
             _logger.LogWarning("No SpO2 data found for elder {Email}", elder.Email);
             return Task.FromResult(new Spo2());
         }
 
-        var values = spo2List.Select(s => s.SpO2);
+        IEnumerable<float> values = spo2List.Select(s => s.SpO2);
 
+        IEnumerable<float> enumerable = values.ToList();
         return Task.FromResult(new Spo2
         {
-            MinSpO2 = values.Min(),
-            MaxSpO2 = values.Max(),
-            SpO2 = values.Average(),
+            MinSpO2 = enumerable.Min(),
+            MaxSpO2 = enumerable.Max(),
+            SpO2 = enumerable.Average(),
             Timestamp = currentDate
         });
     }
@@ -127,7 +131,7 @@ public class HealthService
             return Task.FromResult(new Kilometer());
         }
 
-        var gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
         if (gpsData.Count < 2)
         {
             return Task.FromResult(new Kilometer());
@@ -193,7 +197,7 @@ public class HealthService
             return new BadRequestResult();
         }
 
-        var data = _db.MAX30102Data
+        List<Max30102> data = _db.MAX30102Data
             .Where(d => d.Timestamp >= earlierDate && d.Timestamp <= date && d.Address == elder.Arduino)
             .ToList();
 
@@ -201,7 +205,7 @@ public class HealthService
         {
             return new BadRequestResult();
         }
-        var result = data.Select(selector).ToList();
+        List<T> result = data.Select(selector).ToList();
 
         return result;
     }
@@ -213,7 +217,7 @@ public class HealthService
         double distance = Math.Sqrt(Math.Pow(elder.Location.Latitude - elder.Perimeter.Location.Latitude, 2) + Math.Pow(elder.Location.Longitude - elder.Perimeter.Location.Longitude, 2));
         if (distance > elder.Perimeter.Radius)
         {
-            var caregivers = _caregiverManager.Users.Where(c => c.Elders != null && c.Elders.Contains(elder)).ToList();
+            List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders != null && c.Elders.Contains(elder)).ToList();
             if (caregivers.Count == 0)
             {
                 _logger.LogWarning("No caregivers found for elder {Email}", elder.Email);

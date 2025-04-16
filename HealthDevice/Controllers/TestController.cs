@@ -51,7 +51,7 @@ public class TestController : ControllerBase
         {
             return BadRequest("Elder does not have a MAC address");
         }
-        DateTime currentDate = DateTime.UtcNow; // Use UTC time
+        DateTime currentDate = DateTime.UtcNow;
         int heartrateMin = 40;
         int heartrateMax = 200;
         double spo2Min = 0.7;
