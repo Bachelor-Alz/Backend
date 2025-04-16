@@ -31,11 +31,6 @@ public class ArduinoService
         
         Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.First().Address);
         
-        foreach (var entry in data)
-        {
-            entry.Timestamp = DateTimeOffset.FromUnixTimeSeconds(entry.EpochTimestamp).UtcDateTime;
-        }
-        
         if (elder == null)
         {
             _dbContext.Set<T>().AddRange(data);
@@ -79,6 +74,7 @@ public class ArduinoService
                 Latitude = data.Latitude,
                 Longitude = data.Longitude,
                 Timestamp = receivedAt,
+                Course = data.Course,
                 Address = data.MacAddress
             });
             foreach (var entry in data.Max30102)
