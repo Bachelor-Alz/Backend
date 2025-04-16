@@ -55,6 +55,25 @@ public class HealthService
         });
     }
 
+    public Task<Heartrate> CalculateHeartRateFromUnproccessed(List<currentHeartRate> heartRates)
+    {
+        if (heartRates == null || heartRates.Count == 0)
+        {
+            _logger.LogWarning("No heart rate data found");
+            return Task.FromResult(new Heartrate());
+        }
+
+        var values = heartRates.Select(h => h.Heartrate);
+
+        return Task.FromResult(new Heartrate
+        {
+            Avgrate = (int)values.Average(),
+            Maxrate = values.Max(),
+            Minrate = values.Min(),
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
     public Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
         if (elder.MAX30102Data == null || elder.MAX30102Data.Count == 0)

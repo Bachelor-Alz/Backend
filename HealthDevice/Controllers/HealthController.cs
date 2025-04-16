@@ -33,10 +33,10 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            var data = await _healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.Heartrate, _elderManager);
+            ActionResult<List<Heartrate>> data = await _healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.Heartrate, _elderManager);
             if (data.Result is BadRequestResult || data.Value == null || !data.Value.Any())
             {
-                var currentHeartRateData = await _healthService.GetCurrentHealthData<currentHeartRate>(
+                ActionResult<List<currentHeartRate>> currentHeartRateData = await _healthService.GetCurrentHealthData<currentHeartRate>(
                     elderEmail, periodEnum, date,
                     m => new currentHeartRate
                     {
@@ -49,18 +49,32 @@ namespace HealthDevice.Controllers
                 {
                     return BadRequest("No data available for the specified parameters.");
                 }
-                
-                List<PostHeartRate> postOtherHeartRates = currentHeartRateData.Value
-                    .Select(hr => new PostHeartRate
-                    {
-                        CurrentHeartRate = hr
-                    }).ToList();
 
-                return postOtherHeartRates;
+                if (periodEnum == Period.Hour)
+                {
+                    return currentHeartRateData.Value
+                        .Select(hr => new PostHeartRate
+                        {
+                            CurrentHeartRate = hr
+                        }).ToList();
+                }
+                Heartrate heartrates = await _healthService.CalculateHeartRateFromUnproccessed(currentHeartRateData.Value);
+                return new List<PostHeartRate>
+                {
+                    new PostHeartRate
+                    {
+                        Heartrate = new Heartrate
+                        {
+                            Avgrate = heartrates.Avgrate,
+                            Maxrate = heartrates.Maxrate,
+                            Minrate = heartrates.Minrate,
+                            Timestamp = heartrates.Timestamp
+                        }
+                    }
+                };
             }
 
-            // Process and return the historical heart rate data
-            var postHeartRates = data.Value.Select(hr => new PostHeartRate
+            return data.Value.Select(hr => new PostHeartRate
             {
                 Heartrate = new Heartrate
                 {
@@ -70,8 +84,6 @@ namespace HealthDevice.Controllers
                     Timestamp = hr.Timestamp
                 }
             }).ToList();
-
-            return postHeartRates;
         }
 
         [HttpGet("Spo2")]
@@ -82,10 +94,10 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            var data = await _healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, _elderManager);
+            ActionResult<List<Spo2>> data = await _healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, _elderManager);
             if (data.Result is BadRequestResult || data.Value == null || !data.Value.Any())
             {
-                var currentSpo2Data = await _healthService.GetCurrentHealthData<currentSpo2>(
+                ActionResult<List<currentSpo2>> currentSpo2Data = await _healthService.GetCurrentHealthData<currentSpo2>(
                     elderEmail, periodEnum, date,
                     m => new currentSpo2
                     {
@@ -107,7 +119,7 @@ namespace HealthDevice.Controllers
                     .ToList();
             }
 
-            var postSpo2Data = data.Value.Select(spo2 => new PostSpo2
+            List<PostSpo2> postSpo2Data = data.Value.Select(spo2 => new PostSpo2
             {
                 Spo2 = new Spo2
                 {
