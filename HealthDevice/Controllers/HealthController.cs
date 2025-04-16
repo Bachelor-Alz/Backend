@@ -86,53 +86,67 @@ namespace HealthDevice.Controllers
             }).ToList();
         }
 
-        [HttpGet("Spo2")]
-        public async Task<ActionResult<List<PostSpo2>>> GetSpo2(string elderEmail, DateTime date, string period = "Hour")
+       [HttpGet("Spo2")]
+public async Task<ActionResult<List<PostSpo2>>> GetSpo2(string elderEmail, DateTime date, string period = "Hour")
+{
+    if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
+    {
+        return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+    }
+
+    ActionResult<List<Spo2>> data = await _healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, _elderManager);
+    if (data.Result is BadRequestResult || data.Value == null || !data.Value.Any())
+    {
+        ActionResult<List<currentSpo2>> currentSpo2Data = await _healthService.GetCurrentHealthData<currentSpo2>(
+            elderEmail, periodEnum, date,
+            m => new currentSpo2
+            {
+                SpO2 = m.SpO2,
+                Timestamp = m.Timestamp
+            },
+            _elderManager);
+
+        if (currentSpo2Data.Result is BadRequestResult || currentSpo2Data.Value == null || !currentSpo2Data.Value.Any())
         {
-            if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
-            {
-                return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
-            }
+            return BadRequest("No data available for the specified parameters.");
+        }
 
-            ActionResult<List<Spo2>> data = await _healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, _elderManager);
-            if (data.Result is BadRequestResult || data.Value == null || !data.Value.Any())
-            {
-                ActionResult<List<currentSpo2>> currentSpo2Data = await _healthService.GetCurrentHealthData<currentSpo2>(
-                    elderEmail, periodEnum, date,
-                    m => new currentSpo2
-                    {
-                        SpO2 = m.SpO2,
-                        Timestamp = m.Timestamp
-                    },
-                    _elderManager);
-
-                if (currentSpo2Data.Result is BadRequestResult || currentSpo2Data.Value == null || !currentSpo2Data.Value.Any())
+        if (periodEnum == Period.Hour)
+        {
+            return currentSpo2Data.Value
+                .Select(spo2 => new PostSpo2
                 {
-                    return BadRequest("No data available for the specified parameters.");
-                }
+                    CurrentSpo2 = spo2
+                }).ToList();
+        }
 
-                return currentSpo2Data.Value
-                    .Select(spo2 => new PostSpo2
-                    {
-                        CurrentSpo2 = spo2
-                    })
-                    .ToList();
-            }
-
-            List<PostSpo2> postSpo2Data = data.Value.Select(spo2 => new PostSpo2
+        Spo2 spo2Data = await _healthService.CalculateSpo2FromUnprocessed(currentSpo2Data.Value);
+        return new List<PostSpo2>
+        {
+            new PostSpo2
             {
                 Spo2 = new Spo2
                 {
-                    Id = spo2.Id,
-                    SpO2 = spo2.SpO2,
-                    MaxSpO2 = spo2.MaxSpO2,
-                    MinSpO2 = spo2.MinSpO2,
-                    Timestamp = spo2.Timestamp
+                    SpO2 = spo2Data.SpO2,
+                    MaxSpO2 = spo2Data.MaxSpO2,
+                    MinSpO2 = spo2Data.MinSpO2,
+                    Timestamp = spo2Data.Timestamp
                 }
-            }).ToList();
+            }
+        };
+    }
 
-            return postSpo2Data;
+    return data.Value.Select(spo2 => new PostSpo2
+    {
+        Spo2 = new Spo2
+        {
+            SpO2 = spo2.SpO2,
+            MaxSpO2 = spo2.MaxSpO2,
+            MinSpO2 = spo2.MinSpO2,
+            Timestamp = spo2.Timestamp
         }
+    }).ToList();
+}
         
         [HttpGet("Distance")]
         public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, string period = "Hour")

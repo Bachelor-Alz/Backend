@@ -74,6 +74,25 @@ public class HealthService
         });
     }
 
+    public Task<Spo2> CalculateSpo2FromUnprocessed(List<currentSpo2> spo2Data)
+    {
+        if (spo2Data == null || spo2Data.Count == 0)
+        {
+            _logger.LogWarning("No SpO2 data found");
+            return Task.FromResult(new Spo2());
+        }
+
+        var values = spo2Data.Select(s => s.SpO2);
+
+        return Task.FromResult(new Spo2
+        {
+            MinSpO2 = values.Min(),
+            MaxSpO2 = values.Max(),
+            SpO2 = values.Average(),
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
     public Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
     {
         if (elder.MAX30102Data == null || elder.MAX30102Data.Count == 0)
@@ -93,7 +112,6 @@ public class HealthService
 
         return Task.FromResult(new Spo2
         {
-            Id = -1,
             MinSpO2 = values.Min(),
             MaxSpO2 = values.Max(),
             SpO2 = values.Average(),
