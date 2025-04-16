@@ -12,11 +12,11 @@ COPY HealthDevice/*.csproj ./HealthDevice/
 COPY HealthDevice/Migrations/*.cs ./HealthDevice/Migrations/
 
 # Restore dependencies
-RUN dotnet restore Backend.sln
+RUN dotnet restore Backend.sln -a $TARGETARCH
 
 COPY . .
 
-RUN dotnet publish ./HealthDevice/HealthDevice.csproj -c Release -o /app/publish -a $TARGETARCH --no-restore
+RUN dotnet publish -a $TARGETARCH ./HealthDevice/HealthDevice.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
