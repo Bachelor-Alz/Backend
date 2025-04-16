@@ -45,7 +45,7 @@ namespace HealthDevice.Services
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromDays(31), stoppingToken);
             }
         }
     }

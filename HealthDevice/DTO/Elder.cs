@@ -5,6 +5,7 @@ namespace HealthDevice.DTO;
 public class Elder : IdentityUser
 {
     public required string Name { get; set; }
+    public DashBoard? dashBoard { get; set; }
     public List<Max30102>? MAX30102Data { get; set; }
     public List<Heartrate>? Heartrate { get; set; }
     public List<GPS>? GPSData { get; set; }
