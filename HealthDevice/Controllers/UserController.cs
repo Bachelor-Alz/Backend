@@ -183,16 +183,15 @@ public class UserController : ControllerBase
     [HttpGet("users/arduino")]
     public async Task<ActionResult<List<string>>> GetUnusedArduino()
     {
-        // Get a list of all Max30102 addresses that are not associated with an elder
         List<string?> address = await _dbContext.MAX30102Data
             .Select(a => a.Address)
             .Distinct()
             .ToListAsync();
 
         List<string> addressNotAssociated = address
-            .Where(a => a != null) // Filter out null values
-            .Select(a => a!) // Use the null-forgiving operator to cast to non-nullable
-            .Except(_elderManager.Users.Select(e => e.Arduino ?? string.Empty)) // Handle nullable Arduino values
+            .Where(a => a != null)
+            .Select(a => a!)
+            .Except(_elderManager.Users.Select(e => e.Arduino ?? string.Empty))
             .ToList();
 
         return addressNotAssociated;
@@ -207,7 +206,7 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound();
         }
-
+        elder.Arduino = address;
         elder.MAX30102Data = await _dbContext.MAX30102Data.Where(m => m.Address == address).ToListAsync();
         elder.GPSData = await _dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
         try

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -36,6 +36,24 @@ namespace HealthDevice.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Caregiver", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DashBoard",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    HeartRate = table.Column<int>(type: "integer", nullable: false),
+                    SpO2 = table.Column<float>(type: "real", nullable: false),
+                    steps = table.Column<int>(type: "integer", nullable: false),
+                    distance = table.Column<float>(type: "real", nullable: false),
+                    allFall = table.Column<int>(type: "integer", nullable: false),
+                    locationAdress = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DashBoard", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -78,6 +96,7 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
+                    dashBoardId = table.Column<int>(type: "integer", nullable: true),
                     LocationId = table.Column<int>(type: "integer", nullable: true),
                     PerimeterId = table.Column<int>(type: "integer", nullable: true),
                     Arduino = table.Column<string>(type: "text", nullable: true),
@@ -104,6 +123,11 @@ namespace HealthDevice.Migrations
                         name: "FK_Elder_Caregiver_CaregiverId",
                         column: x => x.CaregiverId,
                         principalTable: "Caregiver",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Elder_DashBoard_dashBoardId",
+                        column: x => x.dashBoardId,
+                        principalTable: "DashBoard",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Elder_Location_LocationId",
@@ -277,6 +301,11 @@ namespace HealthDevice.Migrations
                 column: "CaregiverId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Elder_dashBoardId",
+                table: "Elder",
+                column: "dashBoardId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Elder_LocationId",
                 table: "Elder",
                 column: "LocationId");
@@ -361,6 +390,9 @@ namespace HealthDevice.Migrations
 
             migrationBuilder.DropTable(
                 name: "Caregiver");
+
+            migrationBuilder.DropTable(
+                name: "DashBoard");
 
             migrationBuilder.DropTable(
                 name: "Perimeter");
