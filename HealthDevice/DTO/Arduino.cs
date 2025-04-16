@@ -5,7 +5,6 @@ public class Arduino
     public int Id { get; set; }
     public double Latitude { get; set; }         // Decimal degrees (positive = N, negative = S)
     public double Longitude { get; set; }        // Decimal degrees (positive = E, negative = W)
-    public float Course { get; set; }     // Track angle in degrees
     public List<ArduinoMax> Max30102 { get; set; }
     public string MacAddress { get; set; } = string.Empty;
 }

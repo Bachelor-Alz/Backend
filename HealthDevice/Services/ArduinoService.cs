@@ -74,7 +74,6 @@ public class ArduinoService
                 Latitude = data.Latitude,
                 Longitude = data.Longitude,
                 Timestamp = receivedAt,
-                Course = data.Course,
                 Address = data.MacAddress
             });
             foreach (var entry in data.Max30102)
