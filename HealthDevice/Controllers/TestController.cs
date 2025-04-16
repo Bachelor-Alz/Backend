@@ -17,8 +17,6 @@ public class TestController : ControllerBase
     
     public TestController(GeoService geoService, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
     {
-        _healthService = healthService;
-        _elderManager = elderManager;
         _geoService = geoService;
         _elderManager = elderManager;
         _dbContext = dbContext;
@@ -48,6 +46,11 @@ public class TestController : ControllerBase
         }
 
         string macAddress = elder.Arduino;
+        
+        if (string.IsNullOrEmpty(macAddress))
+        {
+            return BadRequest("Elder does not have a MAC address");
+        }
         DateTime currentDate = DateTime.UtcNow; // Use UTC time
         int heartrateMin = 40;
         int heartrateMax = 200;
