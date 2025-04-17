@@ -201,5 +201,15 @@ namespace HealthDevice.Controllers
                 steps = steps?.StepsCount ?? 0
             };
         }
+        
+        [HttpGet("Falls")]
+        public async Task<ActionResult<List<FallInfo>>> GetFalls(string elderEmail, DateTime date, string period = "Hour")
+        {
+            if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
+            {
+                return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+            }
+            return await _healthService.GetHealthData<FallInfo>(elderEmail, periodEnum, date, e => e.FallInfo, _elderManager);
+        }
     }
 }
