@@ -87,7 +87,11 @@ public class UserController : ControllerBase
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(caregiverEmail);
+        // Use Include to ensure Elders are loaded with the Caregiver
+        Caregiver? caregiver = await _caregiverManager.Users
+            .Include(c => c.Elders)
+            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+
         if (caregiver == null)
         {
             _logger.LogError("Caregiver not found.");
@@ -101,11 +105,17 @@ public class UserController : ControllerBase
             return NotFound("Elder not found.");
         }
 
-        if (caregiver.Elders != null) caregiver.Elders.Add(elder);
+        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
+
+        // Add the elder to the caregiver's Elders collection
+        caregiver.Elders ??= new List<Elder>();
+        caregiver.Elders.Add(elder);
+
         try
         {
-            await _caregiverManager.UpdateAsync(caregiver);
-            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
+            // Save changes explicitly
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
             return Ok();
         }
         catch (Exception ex)
