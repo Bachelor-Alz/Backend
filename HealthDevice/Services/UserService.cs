@@ -11,32 +11,56 @@ public class UserService
 {
     private readonly ILogger<UserService> _logger;
     private readonly EmailService _emailService;
+    private readonly UserManager<Elder> _elderManager;
+    private readonly UserManager<Caregiver> _caregiverManager;
     
-    public UserService(ILogger<UserService> logger, EmailService emailService)
+    public UserService(ILogger<UserService> logger, EmailService emailService, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager)
     {
         _logger = logger;
         _emailService = emailService;
+        _elderManager = elderManager;
+        _caregiverManager = caregiverManager;
     }
-    public async Task<ActionResult<LoginResponseDTO>> HandleLogin<T>(UserManager<T> userManager, UserLoginDTO userLoginDto, string role, HttpContext httpContext) where T : IdentityUser
+    
+    public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, HttpContext httpContext)
     {
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
-        T? user = await userManager.FindByEmailAsync(userLoginDto.Email);
-        
-        if (user == null || !await userManager.CheckPasswordAsync(user, userLoginDto.Password))
+        Elder? elder = await _elderManager.FindByEmailAsync(userLoginDto.Email);
+        if (elder != null)
+        {
+            if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
+            {
+                _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+                return new UnauthorizedResult();
+            }
+            if (await _elderManager.IsLockedOutAsync(elder))
+            {
+                _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+                return new UnauthorizedResult();
+            }
+            _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
+        }
+
+        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userLoginDto.Email);
+        if (caregiver == null)
+        {
+            _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            return new UnauthorizedResult();
+        }
+        if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
         {
             _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
             return new UnauthorizedResult();
         }
-        
-        if (await userManager.IsLockedOutAsync(user))
+        if (await _caregiverManager.IsLockedOutAsync(caregiver))
         {
             _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
             return new UnauthorizedResult();
         }
-        
         _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
-        return new LoginResponseDTO { Token = GenerateJwt(user, role) };
+        return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), role = Roles.Caregiver};
     }
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, HttpContext httpContext) where T : IdentityUser

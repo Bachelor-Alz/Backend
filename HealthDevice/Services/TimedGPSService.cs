@@ -26,9 +26,14 @@ namespace HealthDevice.Services
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
                     ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     GeoService geoService = scope.ServiceProvider.GetRequiredService<GeoService>();
-                    List<Elder> elders = elderManager.Users.ToList();
-                    //Find all gpsData where the address isnt assigned to an elder arduino
-                    List<GPS> gpsData = dbContext.GPSData.Where(g => g.Address != null && elders.All(e => e.Arduino != g.Address)).ToList();
+                    List<Elder> elders = elderManager.Users.ToList(); // Materialize elders into memory
+                    List<GPS> gpsData = dbContext.GPSData
+                        .Where(g => g.Address != null)
+                        .ToList();
+
+                    gpsData = gpsData
+                        .Where(g => elders.All(e => e.Arduino != g.Address))
+                        .ToList();
                     
                     foreach (Elder elder in elders)
                     {

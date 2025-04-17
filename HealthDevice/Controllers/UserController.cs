@@ -42,9 +42,7 @@ public class UserController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDto)
     {
-        return userLoginDto.Role == Roles.Elder 
-            ? await _userService.HandleLogin(_elderManager, userLoginDto, "Elder", HttpContext) 
-            : await _userService.HandleLogin(_caregiverManager, userLoginDto, "Caregiver", HttpContext);
+        return await _userService.HandleLogin(userLoginDto, HttpContext);
     }
 
     [AllowAnonymous]
