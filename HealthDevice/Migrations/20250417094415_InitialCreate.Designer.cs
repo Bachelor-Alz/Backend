@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250417093124_InitialCreate")]
+    [Migration("20250417094415_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -370,15 +370,16 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("LocationId")
-                        .HasColumnType("integer");
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
 
                     b.Property<int>("Radius")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LocationId");
 
                     b.ToTable("Perimeter");
                 });
@@ -505,15 +506,6 @@ namespace HealthDevice.Migrations
                     b.HasOne("HealthDevice.DTO.Elder", null)
                         .WithMany("MAX30102Data")
                         .HasForeignKey("ElderId");
-                });
-
-            modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Location", "Location")
-                        .WithMany()
-                        .HasForeignKey("LocationId");
-
-                    b.Navigation("Location");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Spo2", b =>
