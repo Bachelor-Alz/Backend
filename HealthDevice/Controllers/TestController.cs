@@ -71,6 +71,14 @@ public class TestController : ControllerBase
             });
         }
 
+        _dbContext.GPSData.Add(new GPS
+        {
+            Latitude = 57.012153,
+            Longitude = 9.991292,
+            Timestamp = currentDate,
+            Address = macAddress
+        });
+
         try
         {
             await _dbContext.SaveChangesAsync();
