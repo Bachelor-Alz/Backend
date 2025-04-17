@@ -15,11 +15,15 @@ namespace HealthDevice.Controllers
     {
         private readonly UserManager<Elder> _elderManager;
         private readonly HealthService _healthService;
+        private readonly ILogger<HealthController> _logger;
+        private readonly GeoService _geoService;
         
-        public HealthController(UserManager<Elder> elderManager, HealthService healthService)
+        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService)
         {
             _elderManager = elderManager;
             _healthService = healthService;
+            _logger = logger;
+            _geoService = geoService;
         }
         
         
@@ -167,6 +171,35 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             return await _healthService.GetHealthData<Steps>(elderEmail, periodEnum, date, e => e.Steps, _elderManager);
+        }
+
+        [HttpGet("Dashboard")]
+        public async Task<ActionResult<DashBoard>> GetDashBordInfo(string elderEmail)
+        {
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if (elder is null)
+            {
+                return BadRequest();
+            }
+            Location? location = elder.Location;
+            if (location is null)
+            {
+                return BadRequest();
+            }
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            Max30102? max30102 = elder.MAX30102Data?.FindLast(h => h.Address == elder.Arduino);
+            Kilometer? kilometer = elder.Distance?.FindLast(d => d.Timestamp.Date == DateTime.UtcNow.Date);
+            Steps? steps = elder.Steps?.FindLast(d => d.Timestamp.Date == DateTime.UtcNow.Date);
+            
+            return new DashBoard
+            {
+                allFall = elder.FallInfo?.Count ?? 0,
+                distance = kilometer?.Distance ?? 0,
+                HeartRate = max30102?.Heartrate ?? 0,
+                locationAdress = address,
+                SpO2 = max30102?.SpO2 ?? 0,
+                steps = steps?.StepsCount ?? 0
+            };
         }
     }
 }
