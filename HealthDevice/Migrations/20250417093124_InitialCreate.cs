@@ -103,6 +103,7 @@ namespace HealthDevice.Migrations
                     latitude = table.Column<double>(type: "double precision", nullable: true),
                     longitude = table.Column<double>(type: "double precision", nullable: true),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
+                    CaregiverId1 = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "text", nullable: true),
                     NormalizedUserName = table.Column<string>(type: "text", nullable: true),
                     Email = table.Column<string>(type: "text", nullable: true),
@@ -124,6 +125,11 @@ namespace HealthDevice.Migrations
                     table.ForeignKey(
                         name: "FK_Elder_Caregiver_CaregiverId",
                         column: x => x.CaregiverId,
+                        principalTable: "Caregiver",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Elder_Caregiver_CaregiverId1",
+                        column: x => x.CaregiverId1,
                         principalTable: "Caregiver",
                         principalColumn: "Id");
                     table.ForeignKey(
@@ -299,6 +305,11 @@ namespace HealthDevice.Migrations
                 name: "IX_Elder_CaregiverId",
                 table: "Elder",
                 column: "CaregiverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Elder_CaregiverId1",
+                table: "Elder",
+                column: "CaregiverId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Elder_dashBoardId",

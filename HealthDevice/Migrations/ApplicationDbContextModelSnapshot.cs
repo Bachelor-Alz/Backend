@@ -124,6 +124,9 @@ namespace HealthDevice.Migrations
                     b.Property<string>("CaregiverId")
                         .HasColumnType("text");
 
+                    b.Property<string>("CaregiverId1")
+                        .HasColumnType("text");
+
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
 
@@ -185,6 +188,8 @@ namespace HealthDevice.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CaregiverId");
+
+                    b.HasIndex("CaregiverId1");
 
                     b.HasIndex("LocationId");
 
@@ -435,6 +440,10 @@ namespace HealthDevice.Migrations
                         .WithMany("Elders")
                         .HasForeignKey("CaregiverId");
 
+                    b.HasOne("HealthDevice.DTO.Caregiver", null)
+                        .WithMany("Invites")
+                        .HasForeignKey("CaregiverId1");
+
                     b.HasOne("HealthDevice.DTO.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
@@ -521,6 +530,8 @@ namespace HealthDevice.Migrations
             modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
                 {
                     b.Navigation("Elders");
+
+                    b.Navigation("Invites");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>

@@ -92,7 +92,7 @@ public class UserController : ControllerBase
 
         // Use Include to ensure Elders are loaded with the Caregiver
         Caregiver? caregiver = await _caregiverManager.Users
-            .Include(c => c.Elders)
+            .Include(c => c.Invites)
             .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
 
         if (caregiver == null)
@@ -111,8 +111,8 @@ public class UserController : ControllerBase
         _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
 
         // Add the elder to the caregiver's Elders collection
-        caregiver.Elders ??= new List<Elder>();
-        caregiver.Elders.Add(elder);
+        caregiver.Invites ??= new List<Elder>();
+        caregiver.Invites.Add(elder);
 
         try
         {
@@ -288,5 +288,76 @@ public class UserController : ControllerBase
             _logger.LogError(e, "Failed to add address {elderEmail}.", elder.Email);
             return BadRequest("Failed to add address.");
         }
+    }
+
+    [HttpGet("caregiver/invites")]
+    [Authorize(Roles = "Caregiver")]
+    public async Task<ActionResult<List<Elder>>> GetInvites()
+    {
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+
+        // Include Elders when retrieving the Caregiver
+        Caregiver? caregiver = await _caregiverManager.Users
+            .Include(c => c.Invites)
+            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
+        
+        if (caregiver.Invites != null)
+        {
+            List<Elder> invites = caregiver.Invites;
+            return invites;
+        }
+        _logger.LogError("Caregiver has no invites.");
+        return BadRequest("Caregiver has no invites.");
+    }
+
+    [HttpPost("caregiver/invites/accept")]
+    [Authorize(Roles = "Caregiver")]
+    public async Task<ActionResult> AcceptInvite(string elderEmail)
+    {
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+        
+        Caregiver? caregiver = await _caregiverManager.Users
+            .Include(c => c.Invites)
+            .Include(e => e.Elders)
+            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+        if (caregiver.Invites != null)
+        {
+            caregiver.Invites.Remove(elder);
+            caregiver.Elders ??= new List<Elder>();
+            caregiver.Elders.Add(elder);
+        }
+        else
+        {
+            _logger.LogError("Caregiver has no invites.");
+            return BadRequest("Caregiver has no invites.");
+        }
+        _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+        return Ok();
     }
 }
