@@ -19,19 +19,22 @@ public class UserController : ControllerBase
     private readonly UserService _userService;
     private readonly ILogger<UserController> _logger;
     private readonly ApplicationDbContext _dbContext;
+    private readonly GeoService _geoService;
     
     public UserController(
         UserManager<Elder> elderManager,
         UserManager<Caregiver> caregiverManager,
         UserService userService,
         ILogger<UserController> logger,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        GeoService geoService)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _userService = userService;
         _logger = logger;
         _dbContext = dbContext;
+        _geoService = geoService;
     }
     
     
@@ -249,5 +252,38 @@ public class UserController : ControllerBase
         }
 
         return true;
+    }
+
+    [HttpPost("elder/address")]
+    public async Task<ActionResult> AddAddress(Address address, string elderEmail)
+    {
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+
+        var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City, address.State,
+            address.Country, address.ZipCode, null);
+        if (result == null)
+        {
+            _logger.LogError("Failed to get coordinates from address.");
+            return BadRequest("Failed to get coordinates from address.");
+        }
+        elder.latitude = result.Latitude;
+        elder.longitude = result.Longitude;
+
+        try
+        {
+            await _elderManager.UpdateAsync(elder);
+            _logger.LogInformation("Address added for elder {elder.Email}.", elder.Email);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to add address {elderEmail}.", elder.Email);
+            return BadRequest("Failed to add address.");
+        }
     }
 }
