@@ -77,17 +77,13 @@ namespace HealthDevice.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    LocationId = table.Column<int>(type: "integer", nullable: true),
+                    Latitude = table.Column<double>(type: "double precision", nullable: true),
+                    Longitude = table.Column<double>(type: "double precision", nullable: true),
                     Radius = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Perimeter", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Perimeter_Location_LocationId",
-                        column: x => x.LocationId,
-                        principalTable: "Location",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -346,11 +342,6 @@ namespace HealthDevice.Migrations
                 column: "ElderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Perimeter_LocationId",
-                table: "Perimeter",
-                column: "LocationId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SpO2_ElderId",
                 table: "SpO2",
                 column: "ElderId");
@@ -395,10 +386,10 @@ namespace HealthDevice.Migrations
                 name: "DashBoard");
 
             migrationBuilder.DropTable(
-                name: "Perimeter");
+                name: "Location");
 
             migrationBuilder.DropTable(
-                name: "Location");
+                name: "Perimeter");
         }
     }
 }

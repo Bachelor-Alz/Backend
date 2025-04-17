@@ -212,9 +212,9 @@ public class HealthService
 
     public async Task ComputeOutOfPerimeter(Elder elder)
     {
-        if (elder.Perimeter?.Location == null || elder.Location == null) return;
+        if (elder.Perimeter?.Latitude == null || elder.Perimeter?.Longitude == null || elder.Location == null) return;
 
-        double distance = Math.Sqrt(Math.Pow(elder.Location.Latitude - elder.Perimeter.Location.Latitude, 2) + Math.Pow(elder.Location.Longitude - elder.Perimeter.Location.Longitude, 2));
+        double distance = Math.Sqrt(Math.Pow((double)(elder.Location.Latitude - elder.Perimeter.Latitude), 2) + Math.Pow((double)(elder.Location.Longitude - elder.Perimeter.Longitude), 2));
         if (distance > elder.Perimeter.Radius)
         {
             List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders != null && c.Elders.Contains(elder)).ToList();

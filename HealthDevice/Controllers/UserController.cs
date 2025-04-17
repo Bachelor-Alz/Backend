@@ -61,7 +61,7 @@ public class UserController : ControllerBase
                                                     MAX30102Data = new List<Max30102>(), 
                                                     GPSData = new List<GPS>(),
                                                     Location = new Location(),
-                                                    Perimeter = new Perimeter{Location = new Location()},
+                                                    Perimeter = new Perimeter(),
                                                     FallInfo = new List<FallInfo>(),
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto, 

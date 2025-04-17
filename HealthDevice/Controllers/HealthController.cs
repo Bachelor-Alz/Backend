@@ -211,5 +211,78 @@ namespace HealthDevice.Controllers
             }
             return await _healthService.GetHealthData<FallInfo>(elderEmail, periodEnum, date, e => e.FallInfo, _elderManager);
         }
+
+        [HttpGet("Coordinates")]
+        public async Task<ActionResult<Location>> GetLocaiton(string elderEmail)
+        {
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if (elder is null)
+            {
+                return BadRequest();
+            }
+            Location? location = elder.Location;
+            if (location is null)
+            {
+                return BadRequest();
+            }
+
+            return location;
+        }
+
+        [HttpGet("Address")]
+        public async Task<ActionResult<string>> GetAddress(string elderEmail)
+        {
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if (elder is null)
+            {
+                return BadRequest();
+            }
+            Location? location = elder.Location;
+            if (location is null)
+            {
+                return BadRequest();
+            }
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            if (string.IsNullOrEmpty(address))
+            {
+                return BadRequest();
+            }
+
+            return address;
+        }
+
+        [HttpPost("Perimeter")]
+        public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
+        {
+            Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            if (elder is null)
+            {
+                return BadRequest();
+            }
+
+            if (elder.latitude == null || elder.longitude == null)
+            {
+                _logger.LogError("No home address set");
+                return BadRequest("No home address set");
+            }
+
+            Perimeter perimeter = new Perimeter
+            {
+                Latitude = elder.latitude,
+                Longitude = elder.longitude,
+                Radius = radius
+            };
+            elder.Perimeter = perimeter;
+            try
+            {
+                await _elderManager.UpdateAsync(elder);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Failed to set perimeter: {Error}", e.Message);
+                return BadRequest("Failed to set perimeter");
+            }
+        }
     }
 }
