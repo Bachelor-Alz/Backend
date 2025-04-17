@@ -38,7 +38,7 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        var elder = await _elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
         if (elder == null)
         {
             return NotFound("Elder not found");
@@ -78,10 +78,23 @@ public class TestController : ControllerBase
             Timestamp = currentDate,
             Address = macAddress
         });
+        
+        elder.Distance.Add(new Kilometer
+        {
+            Distance = 2.7,
+            Timestamp = currentDate
+        });
+        
+        elder.Steps.Add(new Steps
+        {
+            StepsCount = 1000,
+            Timestamp = currentDate
+        });
 
         try
         {
             await _dbContext.SaveChangesAsync();
+            await _elderManager.UpdateAsync(elder);
             return Ok("Fake data generated successfully");
         }
         catch (Exception ex)
