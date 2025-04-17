@@ -3,6 +3,7 @@ using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Controllers;
 
@@ -38,7 +39,10 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await _elderManager.Users.Include(e => e.Distance)
+            .Include(e => e.Steps)
+            .Include(e => e.FallInfo)
+            .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
             return NotFound("Elder not found");
