@@ -177,13 +177,16 @@ public class UserController : ControllerBase
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+        // Include Elders when retrieving the Caregiver
+        Caregiver? caregiver = await _caregiverManager.Users
+            .Include(c => c.Elders)
+            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
         if (caregiver == null)
         {
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
-
+        
         if (caregiver.Elders != null)
         {
             List<Elder> elders = caregiver.Elders;
