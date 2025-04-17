@@ -14,9 +14,9 @@ public class AiController : ControllerBase
     }
     
     [HttpPost("compute")]
-    public async Task<ActionResult> Compute([FromBody] List<int> data, string address)
+    public async Task<ActionResult> Compute([FromBody] List<int> predictions, string mac)
     {
-        await _aiService.HandleAiRequest(data, address);
+        await _aiService.HandleAiRequest(predictions, mac);
         return Ok();
     }
     

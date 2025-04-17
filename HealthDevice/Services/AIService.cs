@@ -44,8 +44,8 @@ public class AiService
             Timestamp = DateTime.Now,
             Location = new Location(),
         };
-
-        if (elder.FallInfo != null) elder.FallInfo.Add(fallInfo);
+        elder.FallInfo ??= new List<FallInfo>();
+        elder.FallInfo.Add(fallInfo);
         try
         {
             await _elderManager.UpdateAsync(elder);

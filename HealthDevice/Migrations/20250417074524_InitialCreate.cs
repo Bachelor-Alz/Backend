@@ -47,7 +47,7 @@ namespace HealthDevice.Migrations
                     HeartRate = table.Column<int>(type: "integer", nullable: false),
                     SpO2 = table.Column<float>(type: "real", nullable: false),
                     steps = table.Column<int>(type: "integer", nullable: false),
-                    distance = table.Column<float>(type: "real", nullable: false),
+                    distance = table.Column<double>(type: "double precision", nullable: false),
                     allFall = table.Column<int>(type: "integer", nullable: false),
                     locationAdress = table.Column<string>(type: "text", nullable: false)
                 },
@@ -100,6 +100,8 @@ namespace HealthDevice.Migrations
                     LocationId = table.Column<int>(type: "integer", nullable: true),
                     PerimeterId = table.Column<int>(type: "integer", nullable: true),
                     Arduino = table.Column<string>(type: "text", nullable: true),
+                    latitude = table.Column<double>(type: "double precision", nullable: true),
+                    longitude = table.Column<double>(type: "double precision", nullable: true),
                     CaregiverId = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "text", nullable: true),
                     NormalizedUserName = table.Column<string>(type: "text", nullable: true),

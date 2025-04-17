@@ -95,8 +95,8 @@ namespace HealthDevice.Migrations
                     b.Property<int>("allFall")
                         .HasColumnType("integer");
 
-                    b.Property<float>("distance")
-                        .HasColumnType("real");
+                    b.Property<double>("distance")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("locationAdress")
                         .IsRequired()
@@ -175,6 +175,12 @@ namespace HealthDevice.Migrations
 
                     b.Property<int?>("dashBoardId")
                         .HasColumnType("integer");
+
+                    b.Property<double?>("latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("longitude")
+                        .HasColumnType("double precision");
 
                     b.HasKey("Id");
 
