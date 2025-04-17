@@ -231,4 +231,23 @@ public class UserController : ControllerBase
             return BadRequest();
         }
     }
+
+    [HttpGet("connected")]
+    public async Task<ActionResult<bool>> IsConnected(string elderEmail)
+    {
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+
+        if (elder.Arduino == null)
+        {
+            _logger.LogError("Elder has no Arduino address.");
+            return false;
+        }
+
+        return true;
+    }
 }
