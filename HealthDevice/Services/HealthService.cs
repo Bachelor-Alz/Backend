@@ -201,7 +201,7 @@ public class HealthService
             .Where(d => d.Timestamp >= earlierDate && d.Timestamp <= date && d.Address == elder.Arduino)
             .ToList();
 
-        if (!data.Any())
+        if (data.Count == 0)
         {
             return new BadRequestResult();
         }
