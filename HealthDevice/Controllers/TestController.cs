@@ -1,4 +1,4 @@
-﻿using HealthDevice.Data;
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Identity;
@@ -42,7 +42,6 @@ public class TestController : ControllerBase
         Elder? elder = await _elderManager.Users.Include(e => e.Distance)
             .Include(e => e.Steps)
             .Include(e => e.FallInfo)
-            .Include(e => e.Arduino)
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
