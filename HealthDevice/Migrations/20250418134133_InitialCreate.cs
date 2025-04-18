@@ -180,7 +180,8 @@ namespace HealthDevice.Migrations
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
                     Course = table.Column<float>(type: "real", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true),
-                    Address = table.Column<string>(type: "text", nullable: true)
+                    Address = table.Column<string>(type: "text", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -243,7 +244,8 @@ namespace HealthDevice.Migrations
                     Heartrate = table.Column<int>(type: "integer", nullable: false),
                     SpO2 = table.Column<float>(type: "real", nullable: false),
                     ElderId = table.Column<string>(type: "text", nullable: true),
-                    Address = table.Column<string>(type: "text", nullable: true)
+                    Address = table.Column<string>(type: "text", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
