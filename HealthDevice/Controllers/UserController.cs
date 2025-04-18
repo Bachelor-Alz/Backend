@@ -346,14 +346,24 @@ public class UserController : ControllerBase
         }
         if (caregiver.Invites != null)
         {
-            caregiver.Invites.Remove(elder);
             caregiver.Elders ??= new List<Elder>();
             caregiver.Elders.Add(elder);
+            caregiver.Invites.Remove(elder);
         }
         else
         {
             _logger.LogError("Caregiver has no invites.");
             return BadRequest("Caregiver has no invites.");
+        }
+        try
+        {
+            await _caregiverManager.UpdateAsync(caregiver);
+            _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update caregiver.");
+            return BadRequest("Failed to update caregiver.");
         }
         _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
         return Ok();

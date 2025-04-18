@@ -1,3 +1,4 @@
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -17,13 +18,19 @@ namespace HealthDevice.Controllers
         private readonly HealthService _healthService;
         private readonly ILogger<HealthController> _logger;
         private readonly GeoService _geoService;
-        
-        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService)
+        private readonly ApplicationDbContext _db;
+        public HealthController(
+            UserManager<Elder> elderManager,
+            HealthService healthService,
+            ILogger<HealthController> logger,
+            GeoService geoService,
+            ApplicationDbContext db)
         {
             _elderManager = elderManager;
             _healthService = healthService;
             _logger = logger;
             _geoService = geoService;
+            _db = db;
         }
         
         
@@ -181,13 +188,16 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest();
             }
-            Location? location = elder.Location;
-            if (location is null)
+            Location? location = elder.Location ?? new()
             {
-                return BadRequest();
-            }
+                Latitude = 0.1,
+                Longitude = 0.1
+            };
             string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-            Max30102? max30102 = elder.MAX30102Data?.FindLast(h => h.Address == elder.Arduino);
+            Max30102? max30102 = _db.MAX30102Data.
+                Where(c => c.Timestamp.Date == DateTime.UtcNow.Date && c.Address == elder.Arduino)
+                .OrderByDescending(c => c.Timestamp)
+                .FirstOrDefault();
             Kilometer? kilometer = elder.Distance?.FindLast(d => d.Timestamp.Date == DateTime.UtcNow.Date);
             Steps? steps = elder.Steps?.FindLast(d => d.Timestamp.Date == DateTime.UtcNow.Date);
             
