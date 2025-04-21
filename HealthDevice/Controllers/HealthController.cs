@@ -229,16 +229,7 @@ namespace HealthDevice.Controllers
                 .OrderByDescending(s => s.Timestamp)
                 .FirstOrDefault();
 
-            Location? location = _db.GPSData
-                .Where(g => g.Address == macAddress)
-                .OrderByDescending(g => g.Timestamp)
-                .Select(g => new Location
-                {
-                    Latitude = g.Latitude,
-                    Longitude = g.Longitude,
-                    Timestamp = g.Timestamp
-                })
-                .FirstOrDefault();
+            Location? location = _db.Location.LastOrDefault(m => m.MacAddress == macAddress);
 
             if (location is null)
             {

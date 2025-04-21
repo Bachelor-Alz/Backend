@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250421094400_InitialCreate")]
+    [Migration("20250421095935_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -237,6 +237,9 @@ namespace HealthDevice.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.ToTable("GPSData");
@@ -333,6 +336,9 @@ namespace HealthDevice.Migrations
 
                     b.Property<float>("SpO2")
                         .HasColumnType("real");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

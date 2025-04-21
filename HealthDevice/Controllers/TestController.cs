@@ -39,9 +39,7 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        Elder? elder = await _elderManager.Users.Include(e => e.Distance)
-            .Include(e => e.Steps)
-            .Include(e => e.FallInfo)
+        Elder? elder = await _elderManager.Users
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
@@ -83,16 +81,18 @@ public class TestController : ControllerBase
             Address = macAddress
         });
         
-        elder.Distance.Add(new Kilometer
+        _dbContext.Distance.Add(new Kilometer
         {
             Distance = 2.7,
-            Timestamp = currentDate
+            Timestamp = currentDate,
+            MacAddress = macAddress
         });
         
-        elder.Steps.Add(new Steps
+        _dbContext.Steps.Add(new Steps
         {
             StepsCount = 1000,
-            Timestamp = currentDate
+            Timestamp = currentDate,
+            MacAddress = macAddress
         });
 
         try
