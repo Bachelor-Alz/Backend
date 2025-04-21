@@ -32,7 +32,7 @@ namespace HealthDevice.Services
                         string? arduino = elder.Arduino;
                         if(arduino != null)
                         {
-                            DateTime currentTime = DateTime.Now;
+                            DateTime currentTime = DateTime.UtcNow;
                         
                             Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
                             db.Heartrate.Add(heartRate);

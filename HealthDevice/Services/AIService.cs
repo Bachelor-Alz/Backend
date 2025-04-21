@@ -36,7 +36,7 @@ public class AiService
     {
         FallInfo fallInfo = new FallInfo()
         {
-            Timestamp = DateTime.Now,
+            Timestamp = DateTime.UtcNow,
             Location = new Location(),
             MacAddress = addrees
         };

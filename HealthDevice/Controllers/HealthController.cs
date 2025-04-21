@@ -220,16 +220,19 @@ namespace HealthDevice.Controllers
                 .FirstOrDefault();
 
             Kilometer? kilometer = _db.Distance
-                .Where(d => d.MacAddress == macAddress && d.Timestamp.Date == DateTime.UtcNow.Date)
+                .Where(d => d.MacAddress == macAddress)
                 .OrderByDescending(d => d.Timestamp)
                 .FirstOrDefault();
 
             Steps? steps = _db.Steps
-                .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == DateTime.UtcNow.Date)
+                .Where(s => s.MacAddress == macAddress)
                 .OrderByDescending(s => s.Timestamp)
                 .FirstOrDefault();
 
-            Location? location = _db.Location.LastOrDefault(m => m.MacAddress == macAddress);
+            Location? location = _db.Location
+                .Where(m => m.MacAddress == macAddress)
+                .OrderByDescending(m => m.Timestamp)
+                .FirstOrDefault();
 
             if (location is null)
             {

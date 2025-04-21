@@ -148,7 +148,7 @@ public class HealthService
     public async Task<ActionResult<List<T>>> GetHealthData<T>(
     string elderEmail, Period period, DateTime date, Func<T, bool> filter) where T : class
 {
-    DateTime earlierDate = GetEarlierDate(date, period);
+    DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
     Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
     if (elder == null || string.IsNullOrEmpty(elder.Arduino))
     {
@@ -224,7 +224,7 @@ public class HealthService
     public async Task<ActionResult<List<T>>> GetCurrentHealthData<T>(
         string elderEmail, Period period, DateTime date, Func<Max30102, T> selector) where T : currentData
     {
-        DateTime earlierDate = GetEarlierDate(date, period);
+        DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
         Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
         if (elder == null)
         {

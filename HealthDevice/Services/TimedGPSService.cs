@@ -31,7 +31,7 @@ namespace HealthDevice.Services
                         string? arduino = elder.Arduino;
                         if (!string.IsNullOrEmpty(arduino))
                         {
-                            DateTime currentTime = DateTime.Now;
+                            DateTime currentTime = DateTime.UtcNow;
                         
                             Location location = await healthService.GetLocation(currentTime, arduino);
                             db.Location.Add(location);

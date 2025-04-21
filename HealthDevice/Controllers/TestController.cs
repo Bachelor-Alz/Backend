@@ -46,7 +46,7 @@ public class TestController : ControllerBase
             return NotFound("Elder not found");
         }
 
-        string macAddress = elder.Arduino;
+        string? macAddress = elder.Arduino;
         
         if (string.IsNullOrEmpty(macAddress))
         {
@@ -91,6 +91,13 @@ public class TestController : ControllerBase
         _dbContext.Steps.Add(new Steps
         {
             StepsCount = 1000,
+            Timestamp = currentDate,
+            MacAddress = macAddress
+        });
+        _dbContext.Location.Add(new Location
+        {
+            Latitude = 57.012153,
+            Longitude = 9.991292,
             Timestamp = currentDate,
             MacAddress = macAddress
         });
