@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250421103650_InitialCreate")]
+    [Migration("20250421105819_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -227,9 +227,6 @@ namespace HealthDevice.Migrations
 
                     b.Property<string>("Address")
                         .HasColumnType("text");
-
-                    b.Property<float>("Course")
-                        .HasColumnType("real");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");

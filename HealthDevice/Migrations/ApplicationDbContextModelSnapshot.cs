@@ -225,9 +225,6 @@ namespace HealthDevice.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("text");
 
-                    b.Property<float>("Course")
-                        .HasColumnType("real");
-
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");
 
