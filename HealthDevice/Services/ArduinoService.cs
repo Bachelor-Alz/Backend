@@ -64,66 +64,62 @@ public class ArduinoService
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
-        
-        
-        Elder elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.MacAddress);
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.MacAddress);
         if (elder == null)
         {
-            _dbContext.GPSData.Add(new GPS
-            {
-                Latitude = data.Latitude,
-                Longitude = data.Longitude,
-                Timestamp = receivedAt,
-                Address = data.MacAddress
-            });
-            foreach (var entry in data.Max30102)
-            {
-                _dbContext.MAX30102Data.Add(new Max30102
-                {
-                    Heartrate = entry.heartRate,
-                    SpO2 = entry.SpO2,
-                    Timestamp = receivedAt,
-                    Address = data.MacAddress
-                });
-            }
+            _logger.LogWarning("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
+            return;
+        }
 
-            try
-            {
-                await _dbContext.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-                _logger.LogError("{Timestamp}: Error saving Arduino data from IP: {IP}.", receivedAt, ip);
-            }
+        _dbContext.GPSData.Add(new GPS
+        {
+            Latitude = data.Latitude,
+            Longitude = data.Longitude,
+            Timestamp = receivedAt,
+            Address = data.MacAddress
+        });
+        
+        Steps? neweststeps = await _dbContext.Steps
+            .Where(s => s.MacAddress == data.MacAddress)
+            .OrderByDescending(s => s.Timestamp)
+            .FirstOrDefaultAsync();
+        if (neweststeps != null && neweststeps.Timestamp.Date == receivedAt.Date)
+        {
+            neweststeps.StepsCount += data.steps;
         }
         else
         {
-            elder.GPSData?.Add(new GPS
+            _dbContext.Steps.Add(new Steps()
             {
-                Latitude = data.Latitude,
-                Longitude = data.Longitude,
+                StepsCount = data.steps,
                 Timestamp = receivedAt,
-                Address = data.MacAddress
+                MacAddress = data.MacAddress
             });
-            foreach (var entry in data.Max30102)
-            {
-                elder.MAX30102Data?.Add(new Max30102
-                {
-                    Heartrate = entry.heartRate,
-                    SpO2 = entry.SpO2,
-                    Timestamp = receivedAt,
-                    Address = data.MacAddress
-                });
-            }
-            
-            try
-            {
-                await _elderManager.UpdateAsync(elder);
-            }
-            catch (Exception)
-            {
-                _logger.LogError("{Timestamp}: Error saving Arduino data from IP: {IP}.", receivedAt, ip);
-            }
+        }
+
+        int totalHr = 0;
+        float totalSpO2 = 0;
+        foreach (var entry in data.Max30102)
+        {
+           totalHr += entry.heartRate;
+           totalSpO2 += entry.SpO2;
+        }
+
+        _dbContext.MAX30102Data.Add(new Max30102
+        {
+            Heartrate = totalHr / data.Max30102.Count,
+            SpO2 = totalSpO2 / data.Max30102.Count,
+            Timestamp = receivedAt,
+            Address = data.MacAddress
+        });
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("{Timestamp}: Successfully saved Arduino data from IP: {IP}.", receivedAt, ip);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Timestamp}: Error saving Arduino data from IP: {IP}.", receivedAt, ip);
         }
     }
 }

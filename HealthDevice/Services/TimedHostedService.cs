@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Data;
+using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services
@@ -23,29 +24,35 @@ namespace HealthDevice.Services
                 {
                     UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
+                    ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     List<Elder> elders = elderManager.Users.ToList();
 
                     foreach (Elder elder in elders)
                     {
-                        DateTime currentTime = DateTime.Now;
+                        string? arduino = elder.Arduino;
+                        if(arduino != null)
+                        {
+                            DateTime currentTime = DateTime.UtcNow;
                         
-                        Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, elder);
-                        if (elder.Heartrate != null) elder.Heartrate.Add(heartRate);
+                            Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
+                            db.Heartrate.Add(heartRate);
 
-                        Spo2 spo2 = await healthService.CalculateSpo2(currentTime, elder);
-                        if (elder.SpO2 != null) elder.SpO2.Add(spo2);
+                            Spo2 spo2 = await healthService.CalculateSpo2(currentTime, arduino);
+                            db.SpO2.Add(spo2);
 
-                        Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, elder);
-                        if (elder.Distance != null) elder.Distance.Add(distance);
+                            Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, arduino);
+                            db.Distance.Add(distance);
 
-                        await healthService.DeleteMax30102Data(currentTime, elder);
-                        await healthService.DeleteGpsData(currentTime, elder);
+                            await healthService.DeleteMax30102Data(currentTime, arduino);
+                            await healthService.DeleteGpsData(currentTime, arduino);
                         
-                        await elderManager.UpdateAsync(elder);
+                            await elderManager.UpdateAsync(elder);
+                        }
+                     
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromDays(31), stoppingToken);
+                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
             }
         }
     }
