@@ -56,11 +56,6 @@ public class UserController : ControllerBase
                                                     Name = userRegisterDto.Name,
                                                     Email = userRegisterDto.Email, 
                                                     UserName = userRegisterDto.Email, 
-                                                    MAX30102Data = new List<Max30102>(), 
-                                                    GPSData = new List<GPS>(),
-                                                    Location = new Location(),
-                                                    Perimeter = new Perimeter(),
-                                                    FallInfo = new List<FallInfo>(),
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto, 
                                                 new Caregiver
@@ -221,8 +216,6 @@ public class UserController : ControllerBase
             return NotFound();
         }
         elder.Arduino = address;
-        elder.MAX30102Data = await _dbContext.MAX30102Data.Where(m => m.Address == address).ToListAsync();
-        elder.GPSData = await _dbContext.GPSData.Where(m => m.Address == address).ToListAsync();
         try
         {
             await _elderManager.UpdateAsync(elder);

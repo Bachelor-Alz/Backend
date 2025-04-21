@@ -6,6 +6,7 @@ public class Location
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public DateTime Timestamp { get; set; }
+    public string? MacAddress { get; set; }
 }
 
 public class Perimeter
@@ -15,6 +16,7 @@ public class Perimeter
     public int Radius { get; set; }
 
     public int Id { get; set; }
+    public string? MacAddress { get; set; }
 }
 
 public class Kilometer
@@ -22,4 +24,5 @@ public class Kilometer
     public int Id { get; set; }
     public double Distance { get; set; }
     public DateTime Timestamp { get; set; }
+    public string? MacAddress { get; set; }
 }

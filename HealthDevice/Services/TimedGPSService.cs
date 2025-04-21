@@ -24,12 +24,8 @@ namespace HealthDevice.Services
                 {
                     UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
-                    ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    GeoService geoService = scope.ServiceProvider.GetRequiredService<GeoService>();
-                    List<Elder> elders = elderManager.Users.ToList(); // Materialize elders into memory
-                    List<GPS> gpsData = dbContext.GPSData
-                        .Where(g => g.Address != null)
-                        .ToList();
+                    ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    List<Elder> elders = elderManager.Users.ToList();
 
                     gpsData = gpsData
                         .Where(g => elders.All(e => e.Arduino != g.Address))
@@ -37,26 +33,17 @@ namespace HealthDevice.Services
                     
                     foreach (Elder elder in elders)
                     {
-                        if (elder.Arduino == null)
+                        string? arduino = elder.Arduino;
+                        if (!string.IsNullOrEmpty(arduino))
                         {
-                            foreach (GPS gp in gpsData)
-                            {
-                                string GpsAddress = await geoService.GetAddressFromCoordinates(gp.Latitude, gp.Longitude);
-                                if (elder is not { latitude: not null, longitude: not null }) continue;
-                                string elderAddress = await geoService.GetAddressFromCoordinates((double)elder.latitude, (double)elder.longitude);
-                                if (GpsAddress != elderAddress) continue;
-                                elder.Arduino = gp.Address;
-                                _logger.LogInformation("Elder {ElderEmail} assigned to Arduino {Arduino}", elder.Email, gp.Address);
-                                
-                            }
+                            DateTime currentTime = DateTime.Now;
+                        
+                            Location location = await healthService.GetLocation(currentTime, arduino);
+                            db.Location.Add(location);
+
+                            await db.SaveChangesAsync();
+                            await healthService.ComputeOutOfPerimeter(arduino, location);
                         }
-                        DateTime currentTime = DateTime.Now;
-                        
-                        Location location = await healthService.GetLocation(currentTime, elder);
-                        elder.Location = location;
-                        
-                        await elderManager.UpdateAsync(elder);
-                        await healthService.ComputeOutOfPerimeter(elder);
                     }
                 }
 

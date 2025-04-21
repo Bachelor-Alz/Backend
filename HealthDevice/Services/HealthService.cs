@@ -12,13 +12,15 @@ public class HealthService
     private readonly EmailService _emailService;
     private readonly GeoService _geoService;
     private readonly ApplicationDbContext _db;
-    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db)
+    private readonly UserManager<Elder> _elderManager;
+    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db, UserManager<Elder> elderManager)
     {
         _logger = logger;
         _caregiverManager = caregiverManager;
         _emailService = emailService;
         _geoService = geoService;
         _db = db;
+        _elderManager = elderManager;
     }
 
     private DateTime GetEarlierDate(DateTime date, Period period) => period switch
@@ -29,18 +31,14 @@ public class HealthService
         _ => throw new ArgumentException("Invalid period specified")
     };
 
-    public Task<Heartrate> CalculateHeartRate(DateTime currentDate, Elder elder)
+    public Task<Heartrate> CalculateHeartRate(DateTime currentDate, string Address)
     {
-        if (elder.MAX30102Data == null || elder.MAX30102Data.Count == 0)
-        {
-            _logger.LogWarning("No heart rate data found for elder {Email}", elder.Email);
-            return Task.FromResult(new Heartrate());
-        }
-
-        List<Max30102> heartRates = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> heartRates = _db.MAX30102Data
+            .Where(c => c.Timestamp <= currentDate && c.Address == Address)
+            .ToList();
         if (heartRates.Count == 0)
         {
-            _logger.LogWarning("No heart rate data found for elder {Email}", elder.Email);
+            _logger.LogWarning("No heart rate data found for elder");
             return Task.FromResult(new Heartrate());
         }
 
@@ -96,18 +94,14 @@ public class HealthService
         });
     }
 
-    public Task<Spo2> CalculateSpo2(DateTime currentDate, Elder elder)
+    public Task<Spo2> CalculateSpo2(DateTime currentDate, string Arduino)
     {
-        if (elder.MAX30102Data == null || elder.MAX30102Data.Count == 0)
-        {
-            _logger.LogWarning("No SpO2 data found for elder {Email}", elder.Email);
-            return Task.FromResult(new Spo2());
-        }
-
-        List<Max30102> spo2List = elder.MAX30102Data.Where(c => c.Timestamp <= currentDate).ToList();
+        List<Max30102> spo2List = _db.MAX30102Data
+            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
+            .ToList();
         if (spo2List.Count == 0)
         {
-            _logger.LogWarning("No SpO2 data found for elder {Email}", elder.Email);
+            _logger.LogWarning("No SpO2 data found for elder");
             return Task.FromResult(new Spo2());
         }
 
@@ -123,20 +117,17 @@ public class HealthService
         });
     }
 
-    public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, Elder elder)
+    public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, string Arduino)
     {
-        if (elder.GPSData == null || elder.GPSData.Count == 0)
-        {
-            _logger.LogWarning("No GPS data found for elder {Email}", elder.Email);
-            return Task.FromResult(new Kilometer());
-        }
-
-        List<GPS> gpsData = elder.GPSData.Where(c => c.Timestamp <= currentDate).ToList();
+        List<GPS> gpsData = _db.GPSData
+            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
+            .ToList();
         if (gpsData.Count < 2)
         {
+            _logger.LogWarning("Not enough GPS data to calculate distance");
             return Task.FromResult(new Kilometer());
         }
-
+        
         double d = 0;
         for (int i = 0; i < gpsData.Count - 1; i++)
         {
@@ -154,43 +145,87 @@ public class HealthService
         });
     }
 
-    public async Task<ActionResult<List<T>>> GetHealthData<T>(string elderEmail, Period period, DateTime date, Func<Elder, List<T>?> selector, UserManager<Elder> elderManager) where T : class
+    public async Task<ActionResult<List<T>>> GetHealthData<T>(
+    string elderEmail, Period period, DateTime date, Func<T, bool> filter) where T : class
+{
+    DateTime earlierDate = GetEarlierDate(date, period);
+    Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+    if (elder == null || string.IsNullOrEmpty(elder.Arduino))
     {
-        DateTime earlierDate = GetEarlierDate(date, period);
-        Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
-        if (elder == null)
-        {
-            _logger.LogError("No elder found with email {Email}", elderEmail);
-            return new BadRequestResult();
-        }
-
-        List<T>? data = selector(elder)?.Where(d => ((dynamic)d).Timestamp >= earlierDate && ((dynamic)d).Timestamp <= date).ToList();
-        if (data == null || data.Count == 0)
-        {
-            _logger.LogWarning("No data found for elder {Email}", elder.Email);
-            return new BadRequestResult();
-        }
-
-        return new OkObjectResult(data);
+        _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
+        return new BadRequestResult();
     }
 
-    public Task DeleteMax30102Data(DateTime currentDate, Elder elder)
+    string arduino = elder.Arduino;
+    IQueryable<T>? query = null;
+
+    // Determine the correct DbSet to query based on the type T
+    switch (typeof(T).Name)
     {
-        elder.MAX30102Data?.RemoveAll(c => c.Timestamp <= currentDate);
+        case nameof(Max30102):
+            query = _db.MAX30102Data
+                .Where(d => d.Address == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+            break;
+        case nameof(GPS):
+            query = _db.GPSData
+                .Where(d => d.Address == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+            break;
+        case nameof(FallInfo):
+            query = _db.FallInfo
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+            break;
+        case nameof(Kilometer):
+            query = _db.Distance
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+            break;
+        case nameof(Steps):
+            query = _db.Steps
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+            break;
+        default:
+            _logger.LogError("Unsupported type {Type}", typeof(T).Name);
+            return new BadRequestResult();
+    }
+
+    if (query == null)
+    {
+        return new BadRequestResult();
+    }
+
+    List<T> data = query.Where(filter).ToList();
+    if (data.Count != 0) return new OkObjectResult(data);
+    _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
+    return new BadRequestResult();
+
+}
+
+    public Task DeleteMax30102Data(DateTime currentDate, string Arduino)
+    {
+        List<Max30102> data = _db.MAX30102Data
+            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
+            .ToList();
+        _db.MAX30102Data.RemoveRange(data);
         return Task.CompletedTask;
     }
-
-    public Task DeleteGpsData(DateTime currentDate, Elder elder)
+    public Task DeleteGpsData(DateTime currentDate, string Arduino)
     {
-        elder.GPSData?.RemoveAll(c => c.Timestamp <= currentDate);
+        List<GPS> data = _db.GPSData
+            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
+            .ToList();
+        _db.GPSData.RemoveRange(data);
         return Task.CompletedTask;
     }
 
     public async Task<ActionResult<List<T>>> GetCurrentHealthData<T>(
-        string elderEmail, Period period, DateTime date, Func<Max30102, T> selector, UserManager<Elder> elderManager) where T : currentData
+        string elderEmail, Period period, DateTime date, Func<Max30102, T> selector) where T : currentData
     {
         DateTime earlierDate = GetEarlierDate(date, period);
-        Elder? elder = await elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
         if (elder == null)
         {
             _logger.LogError("No elder found with email {Email}", elderEmail);
@@ -210,13 +245,25 @@ public class HealthService
         return result;
     }
 
-    public async Task ComputeOutOfPerimeter(Elder elder)
+    public async Task ComputeOutOfPerimeter(string Arduino, Location location)
     {
-        if (elder.Perimeter?.Latitude == null || elder.Perimeter?.Longitude == null || elder.Location == null) return;
-
-        double distance = Math.Sqrt(Math.Pow((double)(elder.Location.Latitude - elder.Perimeter.Latitude), 2) + Math.Pow((double)(elder.Location.Longitude - elder.Perimeter.Longitude), 2));
-        if (distance > elder.Perimeter.Radius)
+        Perimeter? perimeter = _db.Perimeter.FirstOrDefault(p => p.MacAddress == Arduino);
+        if (perimeter == null)
         {
+            _logger.LogWarning("No perimeter found for elder with Arduino {Arduino}", Arduino);
+            return;
+        }
+        if (perimeter.Latitude == null || perimeter.Longitude == null) return;
+
+        double distance = Math.Sqrt(Math.Pow((double)(location.Latitude - perimeter.Latitude), 2) + Math.Pow((double)(location.Longitude - perimeter.Longitude), 2));
+        if (distance > perimeter.Radius)
+        {
+            Elder? elder = _elderManager.Users.FirstOrDefault(e => e.Arduino == Arduino);
+            if (elder == null)
+            {
+                _logger.LogWarning("Elder with Arduino {Arduino} not found", Arduino);
+                return;
+            }
             List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders != null && c.Elders.Contains(elder)).ToList();
             if (caregivers.Count == 0)
             {
@@ -224,7 +271,7 @@ public class HealthService
                 return;
             }
 
-            string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
 
             foreach (var caregiver in caregivers.Where(c => c.Email != null))
             {
@@ -235,20 +282,22 @@ public class HealthService
         }
     }
 
-    public Task<Location> GetLocation(DateTime currentTime, Elder elder)
+    public Task<Location> GetLocation(DateTime currentTime, string Arduino)
     {
-        var gps = elder.GPSData?.FirstOrDefault(g => g.Timestamp <= currentTime);
-        if (gps != null)
+        GPS? gpsData = _db.GPSData
+            .Where(c => c.Timestamp <= currentTime && c.Address == Arduino)
+            .ToList().LastOrDefault();
+        if (gpsData != null)
         {
             return Task.FromResult(new Location
             {
-                Latitude = gps.Latitude,
-                Longitude = gps.Longitude,
-                Timestamp = gps.Timestamp
+                Latitude = gpsData.Latitude,
+                Longitude = gpsData.Longitude,
+                Timestamp = gpsData.Timestamp
             });
         }
 
-        _logger.LogWarning("No GPS data found for elder {Email}", elder.Email);
+        _logger.LogWarning("No GPS data found for elder");
         return Task.FromResult(new Location());
     }
 }

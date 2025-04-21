@@ -19,12 +19,8 @@ namespace HealthDevice.Controllers
         private readonly ILogger<HealthController> _logger;
         private readonly GeoService _geoService;
         private readonly ApplicationDbContext _db;
-        public HealthController(
-            UserManager<Elder> elderManager,
-            HealthService healthService,
-            ILogger<HealthController> logger,
-            GeoService geoService,
-            ApplicationDbContext db)
+        
+        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db)
         {
             _elderManager = elderManager;
             _healthService = healthService;
@@ -42,8 +38,12 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            ActionResult<List<Heartrate>> data = await _healthService.GetHealthData<Heartrate>(elderEmail, periodEnum, date, e => e.Heartrate, _elderManager);
+            // Fetch historical heart rate data
+            ActionResult<List<Heartrate>> data = await _healthService.GetHealthData<Heartrate>(
+                elderEmail, periodEnum, date, e => true);
+
             if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            {
                 return data.Value.Select(hr => new PostHeartRate
                 {
                     Heartrate = new Heartrate
@@ -54,110 +54,110 @@ namespace HealthDevice.Controllers
                         Timestamp = hr.Timestamp
                     }
                 }).ToList();
-            {
-                ActionResult<List<currentHeartRate>> currentHeartRateData = await _healthService.GetCurrentHealthData<currentHeartRate>(
-                    elderEmail, periodEnum, date,
-                    m => new currentHeartRate
-                    {
-                        Heartrate = m.Heartrate,
-                        Timestamp = m.Timestamp
-                    },
-                    _elderManager);
-
-                if (currentHeartRateData.Result is BadRequestResult || currentHeartRateData.Value == null || !currentHeartRateData.Value.Any())
-                {
-                    return BadRequest("No data available for the specified parameters.");
-                }
-
-                if (periodEnum == Period.Hour)
-                {
-                    return currentHeartRateData.Value
-                        .Select(hr => new PostHeartRate
-                        {
-                            CurrentHeartRate = hr
-                        }).ToList();
-                }
-                Heartrate heartrates = await _healthService.CalculateHeartRateFromUnproccessed(currentHeartRateData.Value);
-                return new List<PostHeartRate>
-                {
-                    new ()
-                    {
-                        Heartrate = new Heartrate
-                        {
-                            Avgrate = heartrates.Avgrate,
-                            Maxrate = heartrates.Maxrate,
-                            Minrate = heartrates.Minrate,
-                            Timestamp = heartrates.Timestamp
-                        }
-                    }
-                };
             }
 
+            // Fetch current heart rate data if historical data is unavailable
+            ActionResult<List<currentHeartRate>> currentHeartRateData = await _healthService.GetCurrentHealthData<currentHeartRate>(
+                elderEmail, periodEnum, date,
+                m => new currentHeartRate
+                {
+                    Heartrate = m.Heartrate,
+                    Timestamp = m.Timestamp
+                });
+
+            if (currentHeartRateData.Result is BadRequestResult || currentHeartRateData.Value == null || !currentHeartRateData.Value.Any())
+            {
+                return BadRequest("No data available for the specified parameters.");
+            }
+
+            if (periodEnum == Period.Hour)
+            {
+                return currentHeartRateData.Value
+                    .Select(hr => new PostHeartRate
+                    {
+                        CurrentHeartRate = hr
+                    }).ToList();
+            }
+
+            // Calculate aggregated heart rate data for longer periods
+            Heartrate heartrates = await _healthService.CalculateHeartRateFromUnproccessed(currentHeartRateData.Value);
+            return new List<PostHeartRate>
+            {
+                new()
+                {
+                    Heartrate = new Heartrate
+                    {
+                        Avgrate = heartrates.Avgrate,
+                        Maxrate = heartrates.Maxrate,
+                        Minrate = heartrates.Minrate,
+                        Timestamp = heartrates.Timestamp
+                    }
+                }
+            };
         }
 
         [HttpGet("Spo2")]
-        public async Task<ActionResult<List<PostSpo2>>> GetSpo2(string elderEmail, DateTime date,
-            string period = "Hour")
+        public async Task<ActionResult<List<PostSpo2>>> GetSpo2(string elderEmail, DateTime date, string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            ActionResult<List<Spo2>> data =
-                await _healthService.GetHealthData<Spo2>(elderEmail, periodEnum, date, e => e.SpO2, _elderManager);
+            // Fetch historical SpO2 data
+            ActionResult<List<Max30102>> data = await _healthService.GetHealthData<Max30102>(
+                elderEmail, periodEnum, date, e => true);
+
             if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            {
                 return data.Value.Select(spo2 => new PostSpo2
                 {
                     Spo2 = new Spo2
                     {
                         SpO2 = spo2.SpO2,
-                        MaxSpO2 = spo2.MaxSpO2,
-                        MinSpO2 = spo2.MinSpO2,
                         Timestamp = spo2.Timestamp
                     }
                 }).ToList();
-            {
-                ActionResult<List<currentSpo2>> currentSpo2Data =
-                    await _healthService.GetCurrentHealthData<currentSpo2>(
-                        elderEmail, periodEnum, date,
-                        m => new currentSpo2
-                        {
-                            SpO2 = m.SpO2,
-                            Timestamp = m.Timestamp
-                        },
-                        _elderManager);
-
-                if (currentSpo2Data.Result is BadRequestResult || currentSpo2Data.Value == null ||
-                    !currentSpo2Data.Value.Any())
-                {
-                    return BadRequest("No data available for the specified parameters.");
-                }
-
-                if (periodEnum == Period.Hour)
-                {
-                    return currentSpo2Data.Value
-                        .Select(spo2 => new PostSpo2
-                        {
-                            CurrentSpo2 = spo2
-                        }).ToList();
-                }
-
-                Spo2 spo2Data = await _healthService.CalculateSpo2FromUnprocessed(currentSpo2Data.Value);
-                return new List<PostSpo2>
-                {
-                    new()
-                    {
-                        Spo2 = new Spo2
-                        {
-                            SpO2 = spo2Data.SpO2,
-                            MaxSpO2 = spo2Data.MaxSpO2,
-                            MinSpO2 = spo2Data.MinSpO2,
-                            Timestamp = spo2Data.Timestamp
-                        }
-                    }
-                };
             }
+
+            // Fetch current SpO2 data if historical data is unavailable
+            ActionResult<List<currentSpo2>> currentSpo2Data = await _healthService.GetCurrentHealthData<currentSpo2>(
+                elderEmail, periodEnum, date,
+                m => new currentSpo2
+                {
+                    SpO2 = m.SpO2,
+                    Timestamp = m.Timestamp
+                });
+
+            if (currentSpo2Data.Result is BadRequestResult || currentSpo2Data.Value == null || !currentSpo2Data.Value.Any())
+            {
+                return BadRequest("No data available for the specified parameters.");
+            }
+
+            if (periodEnum == Period.Hour)
+            {
+                return currentSpo2Data.Value
+                    .Select(spo2 => new PostSpo2
+                    {
+                        CurrentSpo2 = spo2
+                    }).ToList();
+            }
+
+            // Calculate aggregated SpO2 data for longer periods
+            Spo2 spo2Data = await _healthService.CalculateSpo2FromUnprocessed(currentSpo2Data.Value);
+            return new List<PostSpo2>
+            {
+                new()
+                {
+                    Spo2 = new Spo2
+                    {
+                        SpO2 = spo2Data.SpO2,
+                        MaxSpO2 = spo2Data.MaxSpO2,
+                        MinSpO2 = spo2Data.MinSpO2,
+                        Timestamp = spo2Data.Timestamp
+                    }
+                }
+            };
         }
 
         [HttpGet("Distance")]
@@ -167,7 +167,17 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await _healthService.GetHealthData<Kilometer>(elderEmail, periodEnum, date, e => e.Distance, _elderManager);
+
+            // Fetch historical distance data
+            ActionResult<List<Kilometer>> data = await _healthService.GetHealthData<Kilometer>(
+                elderEmail, periodEnum, date, e => true);
+
+            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            {
+                return data.Value;
+            }
+
+            return BadRequest("No distance data available for the specified parameters.");
         }
         
         [HttpGet("Steps")]
@@ -177,33 +187,70 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await _healthService.GetHealthData<Steps>(elderEmail, periodEnum, date, e => e.Steps, _elderManager);
+
+            // Fetch historical steps data
+            ActionResult<List<Steps>> data = await _healthService.GetHealthData<Steps>(
+                elderEmail, periodEnum, date, e => true);
+
+            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            {
+                return data.Value;
+            }
+
+            return BadRequest("No steps data available for the specified parameters.");
         }
 
         [HttpGet("Dashboard")]
-        public async Task<ActionResult<DashBoard>> GetDashBordInfo(string elderEmail)
+        public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderEmail)
         {
+            // Fetch the elder by email
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-            if (elder is null)
+            if (elder is null || string.IsNullOrEmpty(elder.Arduino))
             {
-                return BadRequest();
+                _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
+                return BadRequest("Elder not found or Arduino not set.");
             }
-            Location? location = elder.Location ?? new()
-            {
-                Latitude = 0.1,
-                Longitude = 0.1
-            };
-            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-            Max30102? max30102 = _db.MAX30102Data.
-                Where(c => c.Timestamp.Date == DateTime.UtcNow.Date && c.Address == elder.Arduino)
-                .OrderByDescending(c => c.Timestamp)
+
+            string macAddress = elder.Arduino;
+
+            // Query data objects using the MacAddress
+            Max30102? max30102 = _db.MAX30102Data
+                .Where(m => m.Address == macAddress)
+                .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefault();
-            Kilometer? kilometer = elder.Distance?.FindLast(d => d.Timestamp.Date == DateTime.UtcNow.Date);
-            Steps? steps = elder.Steps?.FindLast(d => d.Timestamp.Date == DateTime.UtcNow.Date);
+
+            Kilometer? kilometer = _db.Distance
+                .Where(d => d.MacAddress == macAddress && d.Timestamp.Date == DateTime.UtcNow.Date)
+                .OrderByDescending(d => d.Timestamp)
+                .FirstOrDefault();
+
+            Steps? steps = _db.Steps
+                .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == DateTime.UtcNow.Date)
+                .OrderByDescending(s => s.Timestamp)
+                .FirstOrDefault();
+
+            Location? location = _db.GPSData
+                .Where(g => g.Address == macAddress)
+                .OrderByDescending(g => g.Timestamp)
+                .Select(g => new Location
+                {
+                    Latitude = g.Latitude,
+                    Longitude = g.Longitude,
+                    Timestamp = g.Timestamp
+                })
+                .FirstOrDefault();
+
+            if (location is null)
+            {
+                _logger.LogError("Location data not found for MacAddress: {MacAddress}", macAddress);
+                return BadRequest("Location data not found.");
+            }
+
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
             
             return new DashBoard
             {
-                allFall = elder.FallInfo?.Count ?? 0,
+                allFall = _db.FallInfo.Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.Heartrate ?? 0,
                 locationAdress = address,
@@ -219,7 +266,17 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            return await _healthService.GetHealthData<FallInfo>(elderEmail, periodEnum, date, e => e.FallInfo, _elderManager);
+
+            // Fetch historical fall data
+            ActionResult<List<FallInfo>> data = await _healthService.GetHealthData<FallInfo>(
+                elderEmail, periodEnum, date, e => true);
+
+            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            {
+                return data.Value;
+            }
+
+            return BadRequest("No fall data available for the specified parameters.");
         }
 
         [HttpGet("Coordinates")]
@@ -230,7 +287,8 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest();
             }
-            Location? location = elder.Location;
+
+            Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
             if (location is null)
             {
                 return BadRequest();
@@ -247,7 +305,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest();
             }
-            Location? location = elder.Location;
+            Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
             if (location is null)
             {
                 return BadRequest();
@@ -282,10 +340,10 @@ namespace HealthDevice.Controllers
                 Longitude = elder.longitude,
                 Radius = radius
             };
-            elder.Perimeter = perimeter;
+            _db.Perimeter.Add(perimeter);
             try
             {
-                await _elderManager.UpdateAsync(elder);
+                await _db.SaveChangesAsync();
                 return Ok();
             }
             catch (Exception e)

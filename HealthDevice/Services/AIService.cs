@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Data;
+using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,43 +13,43 @@ public class AiService
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly EmailService _emailService;
     private readonly GeoService _geoService;
+    private readonly ApplicationDbContext _db;
     
-    public AiService(ILogger<AiService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService)
+    public AiService(ILogger<AiService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db)
     {
         _logger = logger;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _emailService = emailService;
         _geoService = geoService;
+        _db = db;
     }
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
-        Elder? elder = _elderManager.Users.FirstOrDefault(a => a.Arduino == address);
-        if (elder == null)
-        {
-            _logger.LogWarning("No elder found with address {address}", address);
-            return;
-        }
-        _logger.LogInformation("HandleAIRequest {request}", request);
        if (request.Contains(1))
        {
-           await HandleFall(elder);
+           await HandleFall(address);
        }
     }
 
-    private async Task HandleFall(Elder elder)
+    private async Task HandleFall(string addrees)
     {
-           
         FallInfo fallInfo = new FallInfo()
         {
             Timestamp = DateTime.Now,
             Location = new Location(),
+            MacAddress = addrees
         };
-        elder.FallInfo ??= new List<FallInfo>();
-        elder.FallInfo.Add(fallInfo);
+        _db.FallInfo.Add(fallInfo);
         try
         {
-            await _elderManager.UpdateAsync(elder);
+            await _db.SaveChangesAsync();
+            Elder elder = _elderManager.Users.FirstOrDefault(elder => elder.Arduino == addrees);
+            if (elder == null)
+            {
+                _logger.LogWarning("Elder {address} does not exist", addrees);
+                return;
+            }
             List<Caregiver> caregivers = _caregiverManager.Users.Where(e => e.Elders != null && e.Elders.Contains(elder)).ToList();
             if(caregivers.Count == 0)
             {
@@ -67,10 +68,10 @@ public class AiService
                     _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
-
-                if (elder.Location != null)
+                Location? location = _db.Location.Where(a => a.MacAddress == elder.Arduino).OrderByDescending(a => a.Timestamp).FirstOrDefault();
+                if (location != null)
                 {
-                    string address = await _geoService.GetAddressFromCoordinates(elder.Location.Latitude, elder.Location.Longitude);
+                    string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
 
                     _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
                     try
@@ -88,7 +89,7 @@ public class AiService
         }
         catch
         {
-           _logger.LogError("Failed to update elder {elder}", elder.Email);
+           _logger.LogError("Failed to handle fall");
         }
     }
     }
