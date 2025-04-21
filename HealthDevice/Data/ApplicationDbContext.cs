@@ -18,5 +18,8 @@ namespace HealthDevice.Data
         public DbSet<Elder> Elder { get; set; }
         public DbSet<Caregiver> Caregiver { get; set; }
         public DbSet<Spo2> SpO2 { get; set; }
+        public DbSet<Steps> Steps { get; set; }
+        public DbSet<Kilometer> Distance { get; set; }
+        public DbSet<Perimeter> Perimeter { get; set; }
     }
 }

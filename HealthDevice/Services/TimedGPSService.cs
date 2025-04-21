@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Data;
+using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services
@@ -23,17 +24,23 @@ namespace HealthDevice.Services
                 {
                     UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
+                    ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     List<Elder> elders = elderManager.Users.ToList();
 
                     foreach (Elder elder in elders)
                     {
+                        string? arduino = elder.Arduino;
+                        if (!string.IsNullOrEmpty(arduino))
+                        {
+                            continue;
+                        }
                         DateTime currentTime = DateTime.Now;
                         
-                        Location location = await healthService.GetLocation(currentTime, elder);
-                        elder.Location = location;
-                        
-                        await elderManager.UpdateAsync(elder);
-                        await healthService.ComputeOutOfPerimeter(elder);
+                        Location location = await healthService.GetLocation(currentTime, arduino);
+                        db.Location.Add(location);
+
+                        await db.SaveChangesAsync();
+                        await healthService.ComputeOutOfPerimeter(arduino, location);
                     }
                 }
 
