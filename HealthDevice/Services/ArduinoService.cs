@@ -81,6 +81,26 @@ public class ArduinoService
             Timestamp = receivedAt,
             Address = data.MacAddress
         });
+        
+        Steps neweststeps = await _dbContext.Steps
+            .Where(s => s.MacAddress == data.MacAddress)
+            .OrderByDescending(s => s.Timestamp)
+            .FirstOrDefaultAsync();
+        if (neweststeps != null && neweststeps.Timestamp.Date == receivedAt.Date)
+        {
+            // If the newest step entry is from today, update it
+            neweststeps.StepsCount += data.steps;
+        }
+        else
+        {
+            // If not, add a new entry
+            _dbContext.Steps.Add(new Steps()
+            {
+                StepsCount = data.steps,
+                Timestamp = receivedAt,
+                MacAddress = data.MacAddress
+            });
+        }
 
         // Add MAX30102 data
         foreach (var entry in data.Max30102)
