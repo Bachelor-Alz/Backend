@@ -27,6 +27,10 @@ namespace HealthDevice.Services
                     ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     List<Elder> elders = elderManager.Users.ToList();
 
+                    gpsData = gpsData
+                        .Where(g => elders.All(e => e.Arduino != g.Address))
+                        .ToList();
+                    
                     foreach (Elder elder in elders)
                     {
                         string? arduino = elder.Arduino;

@@ -1,8 +1,9 @@
-﻿using HealthDevice.Data;
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Controllers;
 
@@ -38,7 +39,10 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        var elder = await _elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await _elderManager.Users.Include(e => e.Distance)
+            .Include(e => e.Steps)
+            .Include(e => e.FallInfo)
+            .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
             return NotFound("Elder not found");
@@ -58,7 +62,7 @@ public class TestController : ControllerBase
 
         for (int i = 0; i < 30000; i++)
         {
-            DateTime timestamp = currentDate.AddMinutes(i);
+            DateTime timestamp = currentDate.AddMinutes(i*5);
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
 
@@ -71,9 +75,30 @@ public class TestController : ControllerBase
             });
         }
 
+        _dbContext.GPSData.Add(new GPS
+        {
+            Latitude = 57.012153,
+            Longitude = 9.991292,
+            Timestamp = currentDate,
+            Address = macAddress
+        });
+        
+        elder.Distance.Add(new Kilometer
+        {
+            Distance = 2.7,
+            Timestamp = currentDate
+        });
+        
+        elder.Steps.Add(new Steps
+        {
+            StepsCount = 1000,
+            Timestamp = currentDate
+        });
+
         try
         {
             await _dbContext.SaveChangesAsync();
+            await _elderManager.UpdateAsync(elder);
             return Ok("Fake data generated successfully");
         }
         catch (Exception ex)

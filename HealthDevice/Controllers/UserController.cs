@@ -42,9 +42,7 @@ public class UserController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDto)
     {
-        return userLoginDto.Role == Roles.Elder 
-            ? await _userService.HandleLogin(_elderManager, userLoginDto, "Elder", HttpContext) 
-            : await _userService.HandleLogin(_caregiverManager, userLoginDto, "Caregiver", HttpContext);
+        return await _userService.HandleLogin(userLoginDto, HttpContext);
     }
 
     [AllowAnonymous]
@@ -341,14 +339,24 @@ public class UserController : ControllerBase
         }
         if (caregiver.Invites != null)
         {
-            caregiver.Invites.Remove(elder);
             caregiver.Elders ??= new List<Elder>();
             caregiver.Elders.Add(elder);
+            caregiver.Invites.Remove(elder);
         }
         else
         {
             _logger.LogError("Caregiver has no invites.");
             return BadRequest("Caregiver has no invites.");
+        }
+        try
+        {
+            await _caregiverManager.UpdateAsync(caregiver);
+            _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update caregiver.");
+            return BadRequest("Failed to update caregiver.");
         }
         _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
         return Ok();

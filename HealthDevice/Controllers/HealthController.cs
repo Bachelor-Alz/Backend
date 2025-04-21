@@ -247,7 +247,7 @@ namespace HealthDevice.Controllers
             }
 
             string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-
+            
             return new DashBoard
             {
                 allFall = _db.FallInfo.Count(f => f.MacAddress == macAddress),

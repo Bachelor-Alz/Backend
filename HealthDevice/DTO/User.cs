@@ -4,12 +4,12 @@
     {
         public required string Email { get; set; }
         public required string Password { get; set; }
-        public required Roles Role { get; set; }
     }
 
     public class LoginResponseDTO
     {
         public string? Token { get; set; }
+        public Roles role { get; set; }
     }
 
     public class UserRegisterDTO
