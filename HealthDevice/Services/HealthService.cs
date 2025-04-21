@@ -137,7 +137,7 @@ public class HealthService
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             d += 6371 * c;
         }
-        Kilometer newestKilometer = _db.Distance
+        Kilometer? newestKilometer = _db.Distance
             .Where(c => c.Timestamp <= currentDate && c.MacAddress == Arduino)
             .ToList().LastOrDefault();
         if (newestKilometer != null && newestKilometer.Timestamp.Date == currentDate.Date)
