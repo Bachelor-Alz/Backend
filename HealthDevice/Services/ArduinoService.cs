@@ -64,8 +64,6 @@ public class ArduinoService
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
-
-        // Validate if the elder exists for the given MacAddress
         Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.MacAddress);
         if (elder == null)
         {
@@ -73,7 +71,6 @@ public class ArduinoService
             return;
         }
 
-        // Add GPS data
         _dbContext.GPSData.Add(new GPS
         {
             Latitude = data.Latitude,
@@ -82,18 +79,16 @@ public class ArduinoService
             Address = data.MacAddress
         });
         
-        Steps neweststeps = await _dbContext.Steps
+        Steps? neweststeps = await _dbContext.Steps
             .Where(s => s.MacAddress == data.MacAddress)
             .OrderByDescending(s => s.Timestamp)
             .FirstOrDefaultAsync();
         if (neweststeps != null && neweststeps.Timestamp.Date == receivedAt.Date)
         {
-            // If the newest step entry is from today, update it
             neweststeps.StepsCount += data.steps;
         }
         else
         {
-            // If not, add a new entry
             _dbContext.Steps.Add(new Steps()
             {
                 StepsCount = data.steps,
@@ -102,18 +97,21 @@ public class ArduinoService
             });
         }
 
-        // Add MAX30102 data
+        int totalHr = 0;
+        float totalSpO2 = 0;
         foreach (var entry in data.Max30102)
         {
-            _dbContext.MAX30102Data.Add(new Max30102
-            {
-                Heartrate = entry.heartRate,
-                SpO2 = entry.SpO2,
-                Timestamp = receivedAt,
-                Address = data.MacAddress
-            });
+           totalHr += entry.heartRate;
+           totalSpO2 += entry.SpO2;
         }
 
+        _dbContext.MAX30102Data.Add(new Max30102
+        {
+            Heartrate = totalHr / data.Max30102.Count,
+            SpO2 = totalSpO2 / data.Max30102.Count,
+            Timestamp = receivedAt,
+            Address = data.MacAddress
+        });
         try
         {
             await _dbContext.SaveChangesAsync();
