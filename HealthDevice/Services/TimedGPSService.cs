@@ -32,15 +32,14 @@ namespace HealthDevice.Services
                         string? arduino = elder.Arduino;
                         if (!string.IsNullOrEmpty(arduino))
                         {
-                            continue;
-                        }
-                        DateTime currentTime = DateTime.Now;
+                            DateTime currentTime = DateTime.Now;
                         
-                        Location location = await healthService.GetLocation(currentTime, arduino);
-                        db.Location.Add(location);
+                            Location location = await healthService.GetLocation(currentTime, arduino);
+                            db.Location.Add(location);
 
-                        await db.SaveChangesAsync();
-                        await healthService.ComputeOutOfPerimeter(arduino, location);
+                            await db.SaveChangesAsync();
+                            await healthService.ComputeOutOfPerimeter(arduino, location);
+                        }
                     }
                 }
 
