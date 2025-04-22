@@ -332,7 +332,7 @@ namespace HealthDevice.Controllers
                     allFall = 0,
                     distance = 0,
                     HeartRate = 0,
-                    locationAdress = "Not address found",
+                    locationAdress = "No address found",
                     SpO2 = 0,
                     steps = 0
                 };
