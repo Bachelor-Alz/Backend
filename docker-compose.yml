@@ -10,6 +10,11 @@
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U DbUser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   healthdevice_app:
     image: ghcr.io/bachelor-alz/backend:latest
@@ -17,7 +22,8 @@
     ports:
       - "5171:5171"
     depends_on:
-      - postgres_db
+      postgres_db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://0.0.0.0:5171
