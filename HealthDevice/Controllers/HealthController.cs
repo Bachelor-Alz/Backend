@@ -392,14 +392,14 @@ namespace HealthDevice.Controllers
         [Authorize(Roles = "Caregiver")]
         public async Task<ActionResult<List<ElderLocation>>> GetEldersLocation()
         {
-            Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+            Claim? emailClaim = User.FindFirst(ClaimTypes.Email);
+            if (emailClaim == null || string.IsNullOrEmpty(emailClaim.Value))
             {
-                _logger.LogError("User claim is null or empty.");
-                return BadRequest("User claim is not available.");
+                _logger.LogError("Email claim is null or empty.");
+                return BadRequest("Email claim is not available.");
             }
 
-            Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+            Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(emailClaim.Value);
             if (caregiver == null)
             {
                 _logger.LogError("Caregiver not found.");
