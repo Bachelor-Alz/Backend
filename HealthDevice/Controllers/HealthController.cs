@@ -372,7 +372,7 @@ namespace HealthDevice.Controllers
                 allFall = _db.FallInfo.Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.Heartrate ?? 0,
-                locationAdress = address ?? "Not address found",
+                locationAdress = address ?? "No address found",
                 SpO2 = max30102?.SpO2 ?? 0,
                 steps = steps?.StepsCount ?? 0
             };
