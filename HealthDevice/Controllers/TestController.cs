@@ -58,7 +58,7 @@ public class TestController : ControllerBase
         double spo2Min = 0.7;
         double spo2Max = 1.0;
 
-        for (int i = 0; i < 30000; i++)
+        for (int i = -15000; i < 15000; i++)
         {
             DateTime timestamp = currentDate.AddMinutes(i*5);
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);

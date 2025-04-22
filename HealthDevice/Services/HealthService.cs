@@ -26,7 +26,7 @@ public class HealthService
     private DateTime GetEarlierDate(DateTime date, Period period) => period switch
     {
         Period.Hour => date - TimeSpan.FromHours(1),
-        Period.Day => date - TimeSpan.FromDays(1),
+        Period.Day => date.AddDays(-1),
         Period.Week => date - TimeSpan.FromDays(7),
         _ => throw new ArgumentException("Invalid period specified")
     };
@@ -197,6 +197,16 @@ public class HealthService
                 .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
                 .Cast<T>();
             break;
+        case nameof(Heartrate):
+            query = _db.Heartrate
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+                break;
+        case nameof(Spo2):
+            query = _db.SpO2
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+                break;
         default:
             _logger.LogError("Unsupported type {Type}", typeof(T).Name);
             return new BadRequestResult();
@@ -207,7 +217,8 @@ public class HealthService
         return new BadRequestResult();
     }
 
-    List<T> data = query.Where(filter).ToList();
+    List<T> data = query.AsEnumerable().Where(filter).ToList();
+    _logger.LogInformation("{data} pik,  pik, pik pik pik pik pik", data);
     if (data.Count != 0) return new OkObjectResult(data);
     _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
     return new BadRequestResult();
