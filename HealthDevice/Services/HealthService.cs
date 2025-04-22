@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Data;
 using HealthDevice.DTO;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +27,7 @@ public class HealthService
     private DateTime GetEarlierDate(DateTime date, Period period) => period switch
     {
         Period.Hour => date - TimeSpan.FromHours(1),
-        Period.Day => date - TimeSpan.FromDays(1),
+        Period.Day => date.AddDays(-1),
         Period.Week => date - TimeSpan.FromDays(7),
         _ => throw new ArgumentException("Invalid period specified")
     };
@@ -155,7 +156,7 @@ public class HealthService
         });
     }
 
-    public async Task<ActionResult<List<T>>> GetHealthData<T>(
+    public async Task<List<T>> GetHealthData<T>(
     string elderEmail, Period period, DateTime date, Func<T, bool> filter) where T : class
 {
     DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
@@ -163,54 +164,71 @@ public class HealthService
     if (elder == null || string.IsNullOrEmpty(elder.Arduino))
     {
         _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
-        return new BadRequestResult();
+        return new List<T>();
     }
 
     string arduino = elder.Arduino;
-    IQueryable<T>? query = null;
+    IQueryable<T> sensorData;
 
     // Determine the correct DbSet to query based on the type T
     switch (typeof(T).Name)
     {
         case nameof(Max30102):
-            query = _db.MAX30102Data
+            sensorData = _db.MAX30102Data
                 .Where(d => d.Address == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
                 .Cast<T>();
             break;
         case nameof(GPS):
-            query = _db.GPSData
+            sensorData = _db.GPSData
                 .Where(d => d.Address == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
                 .Cast<T>();
             break;
         case nameof(FallInfo):
-            query = _db.FallInfo
+            sensorData = _db.FallInfo
                 .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
                 .Cast<T>();
             break;
         case nameof(Kilometer):
-            query = _db.Distance
+            sensorData = _db.Distance
                 .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
                 .Cast<T>();
             break;
         case nameof(Steps):
-            query = _db.Steps
+            sensorData = _db.Steps
                 .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
                 .Cast<T>();
             break;
+        case nameof(Heartrate):
+            sensorData = _db.Heartrate
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+                break;
+        case nameof(Spo2):
+            sensorData = _db.SpO2
+                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
+                .Cast<T>();
+                break;
         default:
             _logger.LogError("Unsupported type {Type}", typeof(T).Name);
-            return new BadRequestResult();
+            return new List<T>();
     }
 
-    if (query == null)
+    _logger.LogInformation("Get health data complete{SensorData}", sensorData);
+    _logger.LogInformation("Querying Steps data for Arduino {Arduino} between {Start} and {End}", arduino, earlierDate, date);
+
+    List<T> data = sensorData.ToList();
+
+    _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
+    if (data.Count != 0)
     {
-        return new BadRequestResult();
+        _logger.LogInformation("Data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
+        return data; // Ensure this is returned
     }
-
-    List<T> data = query.Where(filter).ToList();
-    if (data.Count != 0) return new OkObjectResult(data);
-    _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
-    return new BadRequestResult();
+    else
+    {
+        _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
+        return new List<T>();
+    }
 
 }
 

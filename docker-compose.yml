@@ -17,7 +17,10 @@
       retries: 5
 
   healthdevice_app:
-    image: ghcr.io/bachelor-alz/backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: healthdevice_app:dev
     container_name: healthdevice_app
     ports:
       - "5171:5171"

@@ -1,32 +1,32 @@
 # Stage 1: Build the application
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG TARGETARCH
+ARG ENVIRONMENT=Development
 
 WORKDIR /app
 
-# Set the default environment to Development
-ARG ENVIRONMENT=Development
 ENV ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
 
-# Copy the solution and project files
-COPY Backend.sln ./ 
-COPY HealthDevice/*.csproj ./HealthDevice/
-COPY HealthDevice/Migrations/*.cs ./HealthDevice/Migrations/
-
-# Restore dependencies for all projects in the solution
-RUN dotnet restore Backend.sln
-
-# Copy the entire source code for the projects
+# Copy everything first to ensure full context (especially for analyzers and props)
 COPY . .
 
-# Build the main application with the architecture specified
-RUN dotnet build ./HealthDevice/HealthDevice.csproj -c Release -o /app/build -a $TARGETARCH
+# Restore dependencies — make sure it has access to all required files
+RUN dotnet restore ./HealthDevice/HealthDevice.csproj -r linux-x64
 
-# Publish the main application with the architecture specified
-RUN dotnet publish ./HealthDevice/HealthDevice.csproj -c Release -o /app/publish -a $TARGETARCH --no-restore
+# Build for good measure (optional, but best practice)
+RUN dotnet build ./HealthDevice/HealthDevice.csproj -c Release -r linux-x64 --no-restore
+
+# Publish
+RUN dotnet publish ./HealthDevice/HealthDevice.csproj -c Release -r linux-x64 -o /app/publish --self-contained false --no-restore
+
+# Stage 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+
+COPY --from=build /app/publish .
 
 # Expose the port for the app
 EXPOSE 5171
 
-# Set the entry point for development or production
-ENTRYPOINT ["sh", "-c", "if [ \"$ASPNETCORE_ENVIRONMENT\" = 'Development' ]; then dotnet watch run --project HealthDevice/HealthDevice.csproj --urls http://+:5171; else dotnet /app/publish/HealthDevice.dll; fi"]
+ENTRYPOINT ["dotnet", "HealthDevice.dll"]
+

@@ -28,24 +28,113 @@ namespace HealthDevice.Controllers
             _geoService = geoService;
             _db = db;
         }
-        
-        
+
+
         [HttpGet("Heartrate")]
-        public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, string period = "Hour")
+        public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date,
+            string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-
             // Fetch historical heart rate data
-            ActionResult<List<Heartrate>> data = await _healthService.GetHealthData<Heartrate>(
-                elderEmail, periodEnum, date, e => true);
+            List<Heartrate> data = await _healthService.GetHealthData<Heartrate>(
+                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
+            
+            // Fetch current heart rate data if historical data is unavailable
+            List<Max30102> currentHeartRateData =
+                await _healthService.GetHealthData<Max30102>(elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+
+            if (data.Count != 0)
             {
-                return data.Value.Select(hr => new PostHeartRate
+                return BadRequest("No data available for the specified parameters.");
+            }
+
+            var newestHr = currentHeartRateData.OrderByDescending(h => h.Timestamp).First();
+
+            if (data.Count != 0)
+            {
+                return data.Select(hr =>
+                    new PostHeartRate
+                    {
+                        CurrentHeartRate = new currentHeartRate
+                        {
+                            Heartrate = newestHr.Heartrate,
+                            Timestamp = hr.Timestamp
+                        },
+                        Heartrate = new Heartrate
+                        {
+                            Avgrate = hr.Avgrate,
+                            Maxrate = hr.Maxrate,
+                            Minrate = hr.Minrate,
+                            Timestamp = hr.Timestamp
+                        }
+                    }).ToList();
+            }
+            
+            List<Heartrate> proccessHeartrates = new List<Heartrate>();
+            if (periodEnum == Period.Hour)
+            {
+                Heartrate heartrate = new Heartrate
                 {
+                    Avgrate = (int)currentHeartRateData.Average(h => h.Heartrate),
+                    Maxrate = currentHeartRateData.Max(h => h.Heartrate),
+                    Minrate = currentHeartRateData.Min(h => h.Heartrate),
+                    Timestamp = currentHeartRateData.First().Timestamp
+                };
+                return currentHeartRateData.Select(hr => new PostHeartRate
+                {
+                    CurrentHeartRate = new currentHeartRate
+                    {
+                        Heartrate = hr.Heartrate,
+                        Timestamp = hr.Timestamp
+                    },
+                    Heartrate = heartrate
+                }).ToList();
+            }
+            if(periodEnum == Period.Day)
+            {
+                List<Heartrate> hourlyData = currentHeartRateData
+                    .GroupBy(h => h.Timestamp.Hour)
+                    .Select(g => new Heartrate
+                    {
+                        Avgrate = (int)g.Average(h => h.Heartrate),
+                        Maxrate = g.Max(h => h.Heartrate),
+                        Minrate = g.Min(h => h.Heartrate),
+                        Timestamp = g.First().Timestamp.Date.AddHours(g.Key)
+                    }).ToList();
+
+                proccessHeartrates.AddRange(hourlyData);
+            }
+            if(periodEnum == Period.Week)
+            {
+                List<Heartrate> dailyData = currentHeartRateData
+                    .GroupBy(h => h.Timestamp.Date)
+                    .Select(g => new Heartrate
+                    {
+                        Avgrate = (int)g.Average(h => h.Heartrate),
+                        Maxrate = g.Max(h => h.Heartrate),
+                        Minrate = g.Min(h => h.Heartrate),
+                        Timestamp = g.Key
+                    }).ToList();
+
+                proccessHeartrates.AddRange(dailyData);
+            }
+            _logger.LogInformation("ProcessedData {Count}", proccessHeartrates.Count);
+            if (proccessHeartrates.Count == 0)
+            {
+                return BadRequest("No data available for the specified parameters.");
+            }
+            return proccessHeartrates.Select(hr =>
+                new PostHeartRate
+                {
+                    CurrentHeartRate = new currentHeartRate
+                    {
+                        Heartrate = newestHr.Heartrate,
+                        Timestamp = hr.Timestamp
+                    },
                     Heartrate = new Heartrate
                     {
                         Avgrate = hr.Avgrate,
@@ -54,46 +143,6 @@ namespace HealthDevice.Controllers
                         Timestamp = hr.Timestamp
                     }
                 }).ToList();
-            }
-
-            // Fetch current heart rate data if historical data is unavailable
-            ActionResult<List<currentHeartRate>> currentHeartRateData = await _healthService.GetCurrentHealthData<currentHeartRate>(
-                elderEmail, periodEnum, date,
-                m => new currentHeartRate
-                {
-                    Heartrate = m.Heartrate,
-                    Timestamp = m.Timestamp
-                });
-
-            if (currentHeartRateData.Result is BadRequestResult || currentHeartRateData.Value == null || !currentHeartRateData.Value.Any())
-            {
-                return BadRequest("No data available for the specified parameters.");
-            }
-
-            if (periodEnum == Period.Hour)
-            {
-                return currentHeartRateData.Value
-                    .Select(hr => new PostHeartRate
-                    {
-                        CurrentHeartRate = hr
-                    }).ToList();
-            }
-
-            // Calculate aggregated heart rate data for longer periods
-            Heartrate heartrates = await _healthService.CalculateHeartRateFromUnproccessed(currentHeartRateData.Value);
-            return new List<PostHeartRate>
-            {
-                new()
-                {
-                    Heartrate = new Heartrate
-                    {
-                        Avgrate = heartrates.Avgrate,
-                        Maxrate = heartrates.Maxrate,
-                        Minrate = heartrates.Minrate,
-                        Timestamp = heartrates.Timestamp
-                    }
-                }
-            };
         }
 
         [HttpGet("Spo2")]
@@ -105,59 +154,102 @@ namespace HealthDevice.Controllers
             }
 
             // Fetch historical SpO2 data
-            ActionResult<List<Max30102>> data = await _healthService.GetHealthData<Max30102>(
-                elderEmail, periodEnum, date, e => true);
-
-            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
-            {
-                return data.Value.Select(spo2 => new PostSpo2
-                {
-                    Spo2 = new Spo2
-                    {
-                        SpO2 = spo2.SpO2,
-                        Timestamp = spo2.Timestamp
-                    }
-                }).ToList();
-            }
+            List<Spo2> data = await _healthService.GetHealthData<Spo2>(
+                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
             // Fetch current SpO2 data if historical data is unavailable
-            ActionResult<List<currentSpo2>> currentSpo2Data = await _healthService.GetCurrentHealthData<currentSpo2>(
-                elderEmail, periodEnum, date,
-                m => new currentSpo2
-                {
-                    SpO2 = m.SpO2,
-                    Timestamp = m.Timestamp
-                });
+            List<Max30102> currentSpo2Data =
+                await _healthService.GetHealthData<Max30102>(elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (currentSpo2Data.Result is BadRequestResult || currentSpo2Data.Value == null || !currentSpo2Data.Value.Any())
+            if (data.Count != 0)
             {
-                return BadRequest("No data available for the specified parameters.");
-            }
-
-            if (periodEnum == Period.Hour)
-            {
-                return currentSpo2Data.Value
-                    .Select(spo2 => new PostSpo2
+                return data.Select(spo2 =>
+                    new PostSpo2
                     {
-                        CurrentSpo2 = spo2
+                        CurrentSpo2 = new currentSpo2
+                        {
+                            SpO2 = currentSpo2Data.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.SpO2 ?? 0,
+                            Timestamp = spo2.Timestamp
+                        },
+                        Spo2 = new Spo2
+                        {
+                            SpO2 = spo2.SpO2,
+                            MaxSpO2 = spo2.MaxSpO2,
+                            MinSpO2 = spo2.MinSpO2,
+                            Timestamp = spo2.Timestamp
+                        }
                     }).ToList();
             }
 
-            // Calculate aggregated SpO2 data for longer periods
-            Spo2 spo2Data = await _healthService.CalculateSpo2FromUnprocessed(currentSpo2Data.Value);
-            return new List<PostSpo2>
+            List<Spo2> processedSpo2 = new List<Spo2>();
+            if (periodEnum == Period.Hour)
             {
-                new()
+                Spo2 spo2 = new Spo2
                 {
+                    SpO2 = currentSpo2Data.Average(s => s.SpO2),
+                    MaxSpO2 = currentSpo2Data.Max(s => s.SpO2),
+                    MinSpO2 = currentSpo2Data.Min(s => s.SpO2),
+                    Timestamp = currentSpo2Data.First().Timestamp
+                };
+                return currentSpo2Data.Select(s => new PostSpo2()
+                {
+                     CurrentSpo2= new currentSpo2
+                    {
+                        SpO2 = s.Heartrate,
+                        Timestamp = s.Timestamp
+                    },
+                    Spo2 = spo2
+                }).ToList();
+            }
+            if (periodEnum == Period.Day)
+            {
+                List<Spo2> hourlyData = currentSpo2Data
+                    .GroupBy(s => s.Timestamp.Hour)
+                    .Select(g => new Spo2
+                    {
+                        SpO2 = g.Average(s => s.SpO2),
+                        MaxSpO2 = g.Max(s => s.SpO2),
+                        MinSpO2 = g.Min(s => s.SpO2),
+                        Timestamp = g.First().Timestamp.Date.AddHours(g.Key)
+                    }).ToList();
+
+                processedSpo2.AddRange(hourlyData);
+            }
+            if (periodEnum == Period.Week)
+            {
+                List<Spo2> dailyData = currentSpo2Data
+                    .GroupBy(s => s.Timestamp.Date)
+                    .Select(g => new Spo2
+                    {
+                        SpO2 = g.Average(s => s.SpO2),
+                        MaxSpO2 = g.Max(s => s.SpO2),
+                        MinSpO2 = g.Min(s => s.SpO2),
+                        Timestamp = g.Key
+                    }).ToList();
+
+                processedSpo2.AddRange(dailyData);
+            }
+            _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
+            if (processedSpo2.Count == 0)
+            {
+                return BadRequest("No data available for the specified parameters.");
+            }
+            return processedSpo2.Select(spo2 =>
+                new PostSpo2
+                {
+                    CurrentSpo2 = new currentSpo2
+                    {
+                        SpO2 = currentSpo2Data.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.SpO2 ?? 0,
+                        Timestamp = spo2.Timestamp
+                    },
                     Spo2 = new Spo2
                     {
-                        SpO2 = spo2Data.SpO2,
-                        MaxSpO2 = spo2Data.MaxSpO2,
-                        MinSpO2 = spo2Data.MinSpO2,
-                        Timestamp = spo2Data.Timestamp
+                        SpO2 = spo2.SpO2,
+                        MaxSpO2 = spo2.MaxSpO2,
+                        MinSpO2 = spo2.MinSpO2,
+                        Timestamp = spo2.Timestamp
                     }
-                }
-            };
+                }).ToList();
         }
 
         [HttpGet("Distance")]
@@ -169,12 +261,12 @@ namespace HealthDevice.Controllers
             }
 
             // Fetch historical distance data
-            ActionResult<List<Kilometer>> data = await _healthService.GetHealthData<Kilometer>(
-                elderEmail, periodEnum, date, e => true);
+            List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
+                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            if (data.Count != 0)
             {
-                return data.Value;
+                return data;
             }
 
             return BadRequest("No distance data available for the specified parameters.");
@@ -189,12 +281,14 @@ namespace HealthDevice.Controllers
             }
 
             // Fetch historical steps data
-            ActionResult<List<Steps>> data = await _healthService.GetHealthData<Steps>(
-                elderEmail, periodEnum, date, e => true);
+            List<Steps> data = await _healthService.GetHealthData<Steps>(
+                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            _logger.LogInformation("Steps data count: {Count}", data.Count);
+            
+            if (data.Count != 0)
             {
-                return data.Value;
+                return data;
             }
 
             return BadRequest("No steps data available for the specified parameters.");
@@ -262,12 +356,12 @@ namespace HealthDevice.Controllers
             }
 
             // Fetch historical fall data
-            ActionResult<List<FallInfo>> data = await _healthService.GetHealthData<FallInfo>(
-                elderEmail, periodEnum, date, e => true);
+            List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
+                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            if (data.Count != 0)
             {
-                return data.Value;
+                return data;
             }
 
             return BadRequest("No fall data available for the specified parameters.");
