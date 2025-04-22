@@ -8,10 +8,8 @@
    ```
 
 ## Update the Database
-1. Delete the `migrations` folder inside the `backend` directory.
-2. Create the initial migration:
    ```sh
-   dotnet ef migrations add InitialCreate
+   dotnet ef database update
    ```
 3. Restart the project:
    ```sh
