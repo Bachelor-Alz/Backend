@@ -14,8 +14,6 @@
   healthdevice_app:
     image: ghcr.io/bachelor-alz/backend:latest
     container_name: healthdevice_app
-    volumes:
-      - ./HealthDevice:/app/HealthDevice
     ports:
       - "5171:5171"
     depends_on:
