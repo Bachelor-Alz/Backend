@@ -56,6 +56,8 @@ public class UserController : ControllerBase
                                                     Name = userRegisterDto.Name,
                                                     Email = userRegisterDto.Email, 
                                                     UserName = userRegisterDto.Email, 
+                                                    latitude = userRegisterDto.latitude,
+                                                    longitude = userRegisterDto.longitude
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto, 
                                                 new Caregiver
