@@ -1,4 +1,4 @@
-﻿services:
+services:
   postgres_db:
     image: postgres:15
     container_name: postgres_db
@@ -17,10 +17,7 @@
       retries: 5
 
   healthdevice_app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: healthdevice_app:dev
+    image: ghcr.io/bachelor-alz/backend:latest
     container_name: healthdevice_app
     ports:
       - "5171:5171"
