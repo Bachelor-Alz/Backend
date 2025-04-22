@@ -25,6 +25,8 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
+# Expose the port for the app
 EXPOSE 5171
 
 ENTRYPOINT ["dotnet", "HealthDevice.dll"]
+
