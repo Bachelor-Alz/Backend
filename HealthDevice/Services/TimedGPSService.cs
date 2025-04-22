@@ -27,8 +27,8 @@ namespace HealthDevice.Services
                     ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     GeoService geoService = scope.ServiceProvider.GetRequiredService<GeoService>();
                     List<Elder> elders = elderManager.Users.ToList();
-                    
-                    List<GPS> gpsData = db.GPSData.Where(g => g.Address != null && elders.All(e => e.Arduino != g.Address)).ToList();
+                    List<GPS> gpsData = db.GPSData.ToList();
+                    var filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
                     
                     foreach (Elder elder in elders)
                     {
@@ -38,7 +38,8 @@ namespace HealthDevice.Services
                         
                         Location location = await healthService.GetLocation(currentTime, arduino);
                         db.Location.Add(location);
-                        foreach (GPS gp in gpsData)
+                        foreach (GPS gp in filteredGpsData)
+
                         {
                             string GpsAddress = await geoService.GetAddressFromCoordinates(gp.Latitude, gp.Longitude);
                             if (elder is not { latitude: not null, longitude: not null }) continue;
