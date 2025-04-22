@@ -1,30 +1,30 @@
 # Stage 1: Build the application
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG TARGETARCH
+ARG ENVIRONMENT=Development
 
 WORKDIR /app
 
-ARG ENVIRONMENT=Development
 ENV ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
 
-COPY Backend.sln ./ 
-COPY HealthDevice/*.csproj ./HealthDevice/
-COPY HealthDevice/Migrations/*.cs ./HealthDevice/Migrations/
-
-# Restore dependencies
-RUN dotnet restore Backend.sln -a $TARGETARCH
-
+# Copy everything first to ensure full context (especially for analyzers and props)
 COPY . .
 
-RUN dotnet publish -a $TARGETARCH ./HealthDevice/HealthDevice.csproj -c Release -o /app/publish --no-restore
+# Restore dependencies — make sure it has access to all required files
+RUN dotnet restore ./HealthDevice/HealthDevice.csproj -r linux-x64
 
+# Build for good measure (optional, but best practice)
+RUN dotnet build ./HealthDevice/HealthDevice.csproj -c Release -r linux-x64 --no-restore
+
+# Publish
+RUN dotnet publish ./HealthDevice/HealthDevice.csproj -c Release -r linux-x64 -o /app/publish --self-contained false --no-restore
+
+# Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Copy published output from build stage
 COPY --from=build /app/publish .
 
 EXPOSE 5171
 
-# Start the application
 ENTRYPOINT ["dotnet", "HealthDevice.dll"]

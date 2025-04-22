@@ -85,7 +85,13 @@ public class ArduinoService
             .FirstOrDefaultAsync();
         if (neweststeps != null && neweststeps.Timestamp.Date == receivedAt.Date)
         {
-            neweststeps.StepsCount += data.steps;
+            data.steps += neweststeps.StepsCount;
+            _dbContext.Steps.Add(new Steps()
+            {
+                StepsCount = data.steps,
+                Timestamp = receivedAt,
+                MacAddress = data.MacAddress
+            });
         }
         else
         {
