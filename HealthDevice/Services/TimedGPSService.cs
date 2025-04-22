@@ -39,6 +39,7 @@ namespace HealthDevice.Services
                         Location location = await healthService.GetLocation(currentTime, arduino);
                         db.Location.Add(location);
                         foreach (GPS gp in filteredGpsData)
+
                         {
                             string GpsAddress = await geoService.GetAddressFromCoordinates(gp.Latitude, gp.Longitude);
                             if (elder is not { latitude: not null, longitude: not null }) continue;
