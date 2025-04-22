@@ -212,14 +212,13 @@ public class HealthService
             return new BadRequestResult();
     }
 
-    if (query == null)
-    {
-        return new BadRequestResult();
-    }
-
     List<T> data = query.AsEnumerable().Where(filter).ToList();
     _logger.LogInformation("{data} pik,  pik, pik pik pik pik pik", data);
-    if (data.Count != 0) return new OkObjectResult(data);
+    if (data.Count != 0)
+    {
+        _logger.LogInformation("Data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
+        return new OkObjectResult(data);
+    }
     _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
     return new BadRequestResult();
 

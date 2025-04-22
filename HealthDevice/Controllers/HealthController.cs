@@ -241,7 +241,7 @@ namespace HealthDevice.Controllers
             ActionResult<List<Steps>> data = await _healthService.GetHealthData<Steps>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Any())
+            if (data.Result is not BadRequestResult && data.Value != null && data.Value.Count != 0)
             {
                 return data.Value;
             }
