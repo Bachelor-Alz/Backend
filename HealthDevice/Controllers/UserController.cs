@@ -71,7 +71,15 @@ public class UserController : ControllerBase
 
     [HttpGet("elder")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult<List<Elder>>> GetUsers() => await _elderManager.Users.ToListAsync();
+    public async Task<ActionResult<List<GetElderDTO>>> GetUsers()
+    {
+        List<Elder> elders = await _elderManager.Users.ToListAsync();
+        return elders.Select(e => new GetElderDTO
+        {
+            Email = e.Email,
+            Name = e.Name,
+        }).ToList();
+    }
 
 
     [HttpPost("users/elder")]
