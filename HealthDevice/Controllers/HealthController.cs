@@ -130,7 +130,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("No data available for the specified parameters.");
             }
-            return proccessHeartrates.Select(hr =>
+            return proccessHeartrates.Count != 0 ? proccessHeartrates.Select(hr =>
                 new PostHeartRate
                 {
                     CurrentHeartRate = new currentHeartRate
@@ -145,7 +145,24 @@ namespace HealthDevice.Controllers
                         Minrate = hr.Minrate,
                         Timestamp = hr.Timestamp
                     }
-                }).ToList();
+                }).ToList() : new List<PostHeartRate>
+            {
+                new ()
+                {
+                    CurrentHeartRate = new currentHeartRate
+                    {
+                        Heartrate = 0,
+                        Timestamp = DateTime.UtcNow
+                    },
+                    Heartrate = new Heartrate
+                    {
+                        Avgrate = 0,
+                        Maxrate = 0,
+                        Minrate = 0,
+                        Timestamp = DateTime.UtcNow
+                    }
+                }
+            };
         }
 
         [HttpGet("Spo2")]
@@ -233,11 +250,7 @@ namespace HealthDevice.Controllers
                 processedSpo2.AddRange(dailyData);
             }
             _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
-            if (processedSpo2.Count == 0)
-            {
-                return BadRequest("No data available for the specified parameters.");
-            }
-            return processedSpo2.Select(spo2 =>
+            return processedSpo2.Count != 0 ? processedSpo2.Select(spo2 =>
                 new PostSpo2
                 {
                     CurrentSpo2 = new currentSpo2
@@ -252,7 +265,24 @@ namespace HealthDevice.Controllers
                         MinSpO2 = spo2.MinSpO2,
                         Timestamp = spo2.Timestamp
                     }
-                }).ToList();
+                }).ToList() : new List<PostSpo2>
+            {
+                new()
+                {
+                Spo2 = new Spo2
+                {
+                    SpO2 = 0,
+                    MaxSpO2 = 0,
+                    MinSpO2 = 0,
+                    Timestamp = DateTime.UtcNow
+                },
+                CurrentSpo2 = new currentSpo2
+                {
+                    SpO2 = 0,
+                    Timestamp = DateTime.UtcNow
+                },
+                }
+            };
         }
 
         [HttpGet("Distance")]
@@ -267,12 +297,8 @@ namespace HealthDevice.Controllers
             List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Count != 0)
-            {
-                return data;
-            }
-
-            return BadRequest("No distance data available for the specified parameters.");
+            return data.Count != 0 ? data : new List<Kilometer>();
+            
         }
         
         [HttpGet("Steps")]
@@ -289,12 +315,8 @@ namespace HealthDevice.Controllers
 
             _logger.LogInformation("Steps data count: {Count}", data.Count);
             
-            if (data.Count != 0)
-            {
-                return data;
-            }
-
-            return BadRequest("No steps data available for the specified parameters.");
+            return data.Count != 0 ? data : new List<Steps>();
+            
         }
 
         [HttpGet("Dashboard")]
@@ -305,7 +327,15 @@ namespace HealthDevice.Controllers
             if (elder is null || string.IsNullOrEmpty(elder.Arduino))
             {
                 _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
-                return BadRequest("Elder not found or Arduino not set.");
+                return new DashBoard
+                {
+                    allFall = 0,
+                    distance = 0,
+                    HeartRate = 0,
+                    locationAdress = "Not address found",
+                    SpO2 = 0,
+                    steps = 0
+                };
             }
 
             string macAddress = elder.Arduino;
@@ -331,20 +361,18 @@ namespace HealthDevice.Controllers
                 .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefault();
 
-            if (location is null)
-            {
-                _logger.LogError("Location data not found for MacAddress: {MacAddress}", macAddress);
-                return BadRequest("Location data not found.");
-            }
-
-            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            string address = String.Empty;
+            if(location != null)
+            { 
+                address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            } 
             
             return new DashBoard
             {
                 allFall = _db.FallInfo.Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.Heartrate ?? 0,
-                locationAdress = address,
+                locationAdress = address ?? "Not address found",
                 SpO2 = max30102?.SpO2 ?? 0,
                 steps = steps?.StepsCount ?? 0
             };
@@ -362,12 +390,7 @@ namespace HealthDevice.Controllers
             List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            if (data.Count != 0)
-            {
-                return data;
-            }
-
-            return BadRequest("No fall data available for the specified parameters.");
+            return data.Count != 0 ? data : new List<FallInfo>();
         }
 
         [HttpGet("Coordinates")]
