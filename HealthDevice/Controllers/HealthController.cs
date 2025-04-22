@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
@@ -19,14 +20,16 @@ namespace HealthDevice.Controllers
         private readonly ILogger<HealthController> _logger;
         private readonly GeoService _geoService;
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<Caregiver> _caregiverManager;
         
-        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db)
+        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db, UserManager<Caregiver> caregiverManager)
         {
             _elderManager = elderManager;
             _healthService = healthService;
             _logger = logger;
             _geoService = geoService;
             _db = db;
+            _caregiverManager = caregiverManager;
         }
 
 
@@ -383,6 +386,52 @@ namespace HealthDevice.Controllers
             }
 
             return location;
+        }
+
+        [HttpGet("Coordinates/Elders")]
+        [Authorize(Roles = "Caregiver")]
+        public async Task<ActionResult<List<ElderLocation>>> GetEldersLocation()
+        {
+            Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+            {
+                _logger.LogError("User claim is null or empty.");
+                return BadRequest("User claim is not available.");
+            }
+
+            Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userClaim.Value);
+            if (caregiver == null)
+            {
+                _logger.LogError("Caregiver not found.");
+                return BadRequest("Caregiver not found.");
+            }
+
+            List<Elder>? elders = caregiver.Elders;
+            if (elders != null)
+            {
+                List<ElderLocation> elderLocations = new List<ElderLocation>();
+                foreach (Elder elder in elders)
+                {
+                    Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+                    if (location != null)
+                    {
+                        if (elder.Email != null)
+                            elderLocations.Add(new ElderLocation
+                            {
+                                email = elder.Email,
+                                name = elder.Name,
+                                latitude = location.Latitude,
+                                longitude = location.Longitude
+                            });
+                    }
+                }
+                return elderLocations;
+            }
+            else
+            {
+                _logger.LogError("No elders found for the caregiver.");
+                return BadRequest("No elders found for the caregiver.");
+            }
         }
 
         [HttpGet("Address")]

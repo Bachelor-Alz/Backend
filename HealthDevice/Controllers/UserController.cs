@@ -163,7 +163,7 @@ public class UserController : ControllerBase
 
     [HttpGet("users/getElders")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult<List<Elder>>> GetElders()
+    public async Task<ActionResult<List<GetElderDTO>>> GetElders()
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -185,7 +185,12 @@ public class UserController : ControllerBase
         if (caregiver.Elders != null)
         {
             List<Elder> elders = caregiver.Elders;
-            return elders;
+            List<GetElderDTO> elderDTOs = elders.Select(e => new GetElderDTO
+            {
+                Name = e.Name,
+                Email = e.Email,
+            }).ToList();
+            return elderDTOs;
         }
         _logger.LogError("Caregiver has no elders.");
         return BadRequest("Caregiver has no elders.");
