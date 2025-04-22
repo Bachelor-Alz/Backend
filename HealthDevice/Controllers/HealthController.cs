@@ -84,7 +84,15 @@ namespace HealthDevice.Controllers
                     Minrate = currentHeartRateData.Min(h => h.Heartrate),
                     Timestamp = currentHeartRateData.First().Timestamp
                 };
-                proccessHeartrates.Add(heartrate);
+                return currentHeartRateData.Select(hr => new PostHeartRate
+                {
+                    CurrentHeartRate = new currentHeartRate
+                    {
+                        Heartrate = hr.Heartrate,
+                        Timestamp = hr.Timestamp
+                    },
+                    Heartrate = heartrate
+                }).ToList();
             }
             if(periodEnum == Period.Day)
             {
@@ -183,7 +191,15 @@ namespace HealthDevice.Controllers
                     MinSpO2 = currentSpo2Data.Min(s => s.SpO2),
                     Timestamp = currentSpo2Data.First().Timestamp
                 };
-                processedSpo2.Add(spo2);
+                return currentSpo2Data.Select(s => new PostSpo2()
+                {
+                     CurrentSpo2= new currentSpo2
+                    {
+                        SpO2 = s.Heartrate,
+                        Timestamp = s.Timestamp
+                    },
+                    Spo2 = spo2
+                }).ToList();
             }
             if (periodEnum == Period.Day)
             {
