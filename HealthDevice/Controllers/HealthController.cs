@@ -130,39 +130,25 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("No data available for the specified parameters.");
             }
-            return proccessHeartrates.Count != 0 ? proccessHeartrates.Select(hr =>
-                new PostHeartRate
-                {
-                    CurrentHeartRate = new currentHeartRate
+
+            return proccessHeartrates.Count != 0
+                ? proccessHeartrates.Select(hr =>
+                    new PostHeartRate
                     {
-                        Heartrate = newestHr.Heartrate,
-                        Timestamp = hr.Timestamp
-                    },
-                    Heartrate = new Heartrate
-                    {
-                        Avgrate = hr.Avgrate,
-                        Maxrate = hr.Maxrate,
-                        Minrate = hr.Minrate,
-                        Timestamp = hr.Timestamp
-                    }
-                }).ToList() : new List<PostHeartRate>
-            {
-                new ()
-                {
-                    CurrentHeartRate = new currentHeartRate
-                    {
-                        Heartrate = 0,
-                        Timestamp = DateTime.UtcNow
-                    },
-                    Heartrate = new Heartrate
-                    {
-                        Avgrate = 0,
-                        Maxrate = 0,
-                        Minrate = 0,
-                        Timestamp = DateTime.UtcNow
-                    }
-                }
-            };
+                        CurrentHeartRate = new currentHeartRate
+                        {
+                            Heartrate = newestHr.Heartrate,
+                            Timestamp = hr.Timestamp
+                        },
+                        Heartrate = new Heartrate
+                        {
+                            Avgrate = hr.Avgrate,
+                            Maxrate = hr.Maxrate,
+                            Minrate = hr.Minrate,
+                            Timestamp = hr.Timestamp
+                        }
+                    }).ToList()
+                : new List<PostHeartRate>();
         }
 
         [HttpGet("Spo2")]
@@ -250,39 +236,24 @@ namespace HealthDevice.Controllers
                 processedSpo2.AddRange(dailyData);
             }
             _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
-            return processedSpo2.Count != 0 ? processedSpo2.Select(spo2 =>
-                new PostSpo2
-                {
-                    CurrentSpo2 = new currentSpo2
+            return processedSpo2.Count != 0
+                ? processedSpo2.Select(spo2 =>
+                    new PostSpo2
                     {
-                        SpO2 = currentSpo2Data.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.SpO2 ?? 0,
-                        Timestamp = spo2.Timestamp
-                    },
-                    Spo2 = new Spo2
-                    {
-                        SpO2 = spo2.SpO2,
-                        MaxSpO2 = spo2.MaxSpO2,
-                        MinSpO2 = spo2.MinSpO2,
-                        Timestamp = spo2.Timestamp
-                    }
-                }).ToList() : new List<PostSpo2>
-            {
-                new()
-                {
-                Spo2 = new Spo2
-                {
-                    SpO2 = 0,
-                    MaxSpO2 = 0,
-                    MinSpO2 = 0,
-                    Timestamp = DateTime.UtcNow
-                },
-                CurrentSpo2 = new currentSpo2
-                {
-                    SpO2 = 0,
-                    Timestamp = DateTime.UtcNow
-                },
-                }
-            };
+                        CurrentSpo2 = new currentSpo2
+                        {
+                            SpO2 = currentSpo2Data.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.SpO2 ?? 0,
+                            Timestamp = spo2.Timestamp
+                        },
+                        Spo2 = new Spo2
+                        {
+                            SpO2 = spo2.SpO2,
+                            MaxSpO2 = spo2.MaxSpO2,
+                            MinSpO2 = spo2.MinSpO2,
+                            Timestamp = spo2.Timestamp
+                        }
+                    }).ToList()
+                : new List<PostSpo2>();
         }
 
         [HttpGet("Distance")]
@@ -327,15 +298,7 @@ namespace HealthDevice.Controllers
             if (elder is null || string.IsNullOrEmpty(elder.Arduino))
             {
                 _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
-                return new DashBoard
-                {
-                    allFall = 0,
-                    distance = 0,
-                    HeartRate = 0,
-                    locationAdress = "No address found",
-                    SpO2 = 0,
-                    steps = 0
-                };
+                return new DashBoard();
             }
 
             string macAddress = elder.Arduino;
