@@ -18,6 +18,7 @@ public class ElderLocation
     public double? latitude { get; set; }
     public double? longitude { get; set; }
     public Perimeter? perimeter { get; set; }
+    public DateTime lastUpdated { get; set; }
 }
 
 public class GetElderDTO
