@@ -57,6 +57,12 @@ public class TestController : ControllerBase
         int heartrateMax = 200;
         double spo2Min = 0.7;
         double spo2Max = 1.0;
+        int stepsMin = 0;
+        int stepsMax = 1000;
+        double distanceMin = 0.0;
+        double distanceMax = 10.0;
+        int fallMin = 0;
+        int fallMax = 10;
 
         for (int i = -15000; i < 15000; i++)
         {
@@ -69,7 +75,7 @@ public class TestController : ControllerBase
                 Heartrate = heartrate,
                 SpO2 = spo2,
                 Timestamp = timestamp,
-                Address = macAddress    
+                Address = macAddress
             });
         }
 
@@ -80,20 +86,48 @@ public class TestController : ControllerBase
             Timestamp = currentDate,
             Address = macAddress
         });
-        
-        _dbContext.Distance.Add(new Kilometer
+                       
+        for (int j = 0; j < 100; j++)
         {
-            Distance = 2.7,
-            Timestamp = currentDate,
-            MacAddress = macAddress
-        });
-        
-        _dbContext.Steps.Add(new Steps
-        {
-            StepsCount = 1000,
-            Timestamp = currentDate,
-            MacAddress = macAddress
-        });
+            int steps = Random.Shared.Next(stepsMin, stepsMax);
+            DateTime timestamp = currentDate.Date + TimeSpan.FromDays(j);
+            double distance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
+            
+            _dbContext.Steps.Add(new Steps
+            {
+                StepsCount = steps,
+                Timestamp = timestamp,
+                MacAddress = macAddress
+            });
+            _dbContext.Distance.Add(new Kilometer
+            {
+                Distance = distance,
+                Timestamp = currentDate,
+                MacAddress = macAddress
+            });
+            for (int i = 1; i <= 23; i++)
+            {
+                int newsteps = Random.Shared.Next(stepsMin, stepsMax);
+                steps += newsteps;
+                double newDistance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
+                distance += newDistance;
+                DateTime timestamp2 = timestamp + TimeSpan.FromHours(i);
+                _dbContext.Steps.Add(new Steps
+                {
+                    StepsCount = steps,
+                    Timestamp = timestamp2,
+                    MacAddress = macAddress
+                });
+                _dbContext.Distance.Add(new Kilometer
+                {
+                    Distance = distance,
+                    Timestamp = timestamp2,
+                    MacAddress = macAddress
+                });
+            }
+        }
+
+
         _dbContext.Location.Add(new Location
         {
             Latitude = 57.012153,
@@ -102,6 +136,31 @@ public class TestController : ControllerBase
             MacAddress = macAddress
         });
 
+        for(int k = 0; k < 100; k++)
+        {
+            DateTime timestamp = currentDate.Date + TimeSpan.FromDays(k);
+            for (int j = 1; j <= 24; j++)
+            {
+                int fall = Random.Shared.Next(fallMin, fallMax);
+                DateTime timestamp2 = timestamp + TimeSpan.FromHours(j);
+                if (fall == 7)
+                {
+                    _dbContext.FallInfo.Add(new FallInfo
+                    {
+                        Location = new Location
+                        {
+                            Latitude = 57.012153,
+                            Longitude = 9.991292,
+                            Timestamp = timestamp2,
+                            MacAddress = macAddress
+                        },
+                        Timestamp = timestamp2,
+                        MacAddress = macAddress
+                    });
+                }
+            }
+        }
+        
         try
         {
             await _dbContext.SaveChangesAsync();
