@@ -372,6 +372,9 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<float>("AvgSpO2")
+                        .HasColumnType("real");
+
                     b.Property<string>("MacAddress")
                         .HasColumnType("text");
 
@@ -379,9 +382,6 @@ namespace HealthDevice.Migrations
                         .HasColumnType("real");
 
                     b.Property<float>("MinSpO2")
-                        .HasColumnType("real");
-
-                    b.Property<float>("SpO2")
                         .HasColumnType("real");
 
                     b.Property<DateTime>("Timestamp")
