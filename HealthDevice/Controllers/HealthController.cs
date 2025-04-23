@@ -148,7 +148,7 @@ namespace HealthDevice.Controllers
                             Timestamp = hr.Timestamp
                         }
                     }).ToList()
-                : new List<PostHeartRate>();
+                : [];
         }
 
         [HttpGet("Spo2")]
@@ -197,7 +197,7 @@ namespace HealthDevice.Controllers
                     MinSpO2 = currentSpo2Data.Min(s => s.SpO2),
                     Timestamp = currentSpo2Data.First().Timestamp
                 };
-                return currentSpo2Data.Select(s => new PostSpo2()
+                return currentSpo2Data.Select(s => new PostSpo2
                 {
                      CurrentSpo2= new currentSpo2
                     {
@@ -268,7 +268,7 @@ namespace HealthDevice.Controllers
             List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            return data.Count != 0 ? data : new List<Kilometer>();
+            return data.Count != 0 ? data : [];
             
         }
         
@@ -286,7 +286,7 @@ namespace HealthDevice.Controllers
 
             _logger.LogInformation("Steps data count: {Count}", data.Count);
             
-            return data.Count != 0 ? data : new List<Steps>();
+            return data.Count != 0 ? data : [];
             
         }
 
@@ -353,7 +353,7 @@ namespace HealthDevice.Controllers
             List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
 
-            return data.Count != 0 ? data : new List<FallInfo>();
+            return data.Count != 0 ? data : [];
         }
 
         [HttpGet("Coordinates")]
