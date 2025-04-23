@@ -185,7 +185,7 @@ namespace HealthDevice.Controllers
                         },
                         Spo2 = new Spo2
                         {
-                            SpO2 = spo2.SpO2,
+                            AvgSpO2 = spo2.AvgSpO2,
                             MaxSpO2 = spo2.MaxSpO2,
                             MinSpO2 = spo2.MinSpO2,
                             Timestamp = spo2.Timestamp
@@ -198,7 +198,7 @@ namespace HealthDevice.Controllers
             {
                 Spo2 spo2 = new Spo2
                 {
-                    SpO2 = currentSpo2Data.Average(s => s.SpO2),
+                    AvgSpO2 = currentSpo2Data.Average(s => s.SpO2),
                     MaxSpO2 = currentSpo2Data.Max(s => s.SpO2),
                     MinSpO2 = currentSpo2Data.Min(s => s.SpO2),
                     Timestamp = currentSpo2Data.First().Timestamp
@@ -212,7 +212,7 @@ namespace HealthDevice.Controllers
                     },
                     Spo2 = new Spo2
                     {
-                        SpO2 = spo2.SpO2,
+                        AvgSpO2 = spo2.AvgSpO2,
                         MaxSpO2 = spo2.MaxSpO2,
                         MinSpO2 = spo2.MinSpO2,
                         Timestamp = s.Timestamp
@@ -225,7 +225,7 @@ namespace HealthDevice.Controllers
                     .GroupBy(s => s.Timestamp.Hour)
                     .Select(g => new Spo2
                     {
-                        SpO2 = g.Average(s => s.SpO2),
+                        AvgSpO2 = g.Average(s => s.SpO2),
                         MaxSpO2 = g.Max(s => s.SpO2),
                         MinSpO2 = g.Min(s => s.SpO2),
                         Timestamp = g.First().Timestamp.Date.AddHours(g.Key)
@@ -239,7 +239,7 @@ namespace HealthDevice.Controllers
                     .GroupBy(s => s.Timestamp.Date)
                     .Select(g => new Spo2
                     {
-                        SpO2 = g.Average(s => s.SpO2),
+                        AvgSpO2 = g.Average(s => s.SpO2),
                         MaxSpO2 = g.Max(s => s.SpO2),
                         MinSpO2 = g.Min(s => s.SpO2),
                         Timestamp = g.Key
@@ -259,7 +259,7 @@ namespace HealthDevice.Controllers
                         },
                         Spo2 = new Spo2
                         {
-                            SpO2 = spo2.SpO2,
+                            AvgSpO2 = spo2.AvgSpO2,
                             MaxSpO2 = spo2.MaxSpO2,
                             MinSpO2 = spo2.MinSpO2,
                             Timestamp = spo2.Timestamp

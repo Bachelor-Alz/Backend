@@ -90,7 +90,7 @@ public class HealthService
         {
             MinSpO2 = enumerable.Min(),
             MaxSpO2 = enumerable.Max(),
-            SpO2 = enumerable.Average(),
+            AvgSpO2 = enumerable.Average(),
             Timestamp = DateTime.UtcNow
         });
     }
@@ -113,7 +113,7 @@ public class HealthService
         {
             MinSpO2 = enumerable.Min(),
             MaxSpO2 = enumerable.Max(),
-            SpO2 = enumerable.Average(),
+            AvgSpO2 = enumerable.Average(),
             Timestamp = currentDate
         });
     }

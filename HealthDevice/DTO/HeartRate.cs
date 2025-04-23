@@ -42,7 +42,7 @@ public class currentSpo2 : currentData
 public class Spo2
 {
     public int Id { get; set; }
-    public float SpO2 { get; set; }
+    public float AvgSpO2 { get; set; }
     public float MaxSpO2 { get; set; }
     public float MinSpO2 { get; set; }
     public DateTime Timestamp { get; set; }
