@@ -5,6 +5,7 @@ using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Period = HealthDevice.DTO.Period;
 
 namespace HealthDevice.Controllers
@@ -21,8 +22,9 @@ namespace HealthDevice.Controllers
         private readonly GeoService _geoService;
         private readonly ApplicationDbContext _db;
         private readonly UserManager<Caregiver> _caregiverManager;
+        private readonly EmailService _emailService;
         
-        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db, UserManager<Caregiver> caregiverManager)
+        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db, UserManager<Caregiver> caregiverManager, EmailService emailService)
         {
             _elderManager = elderManager;
             _healthService = healthService;
@@ -30,6 +32,7 @@ namespace HealthDevice.Controllers
             _geoService = geoService;
             _db = db;
             _caregiverManager = caregiverManager;
+            _emailService = emailService;
         }
 
 
@@ -390,19 +393,23 @@ namespace HealthDevice.Controllers
         [Authorize(Roles = "Caregiver")]
         public async Task<ActionResult<List<ElderLocation>>> GetEldersLocation()
         {
-            Claim? emailClaim = User.FindFirst(ClaimTypes.Email);
-            if (emailClaim == null || string.IsNullOrEmpty(emailClaim.Value))
+            Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
             {
-                _logger.LogError("Email claim is null or empty.");
-                return BadRequest("Email claim is not available.");
+                _logger.LogError("User claim is null or empty.");
+                return BadRequest("User claim is not available.");
             }
 
-            Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(emailClaim.Value);
+            // Include Elders when retrieving the Caregiver
+            Caregiver? caregiver = await _caregiverManager.Users
+                .Include(c => c.Elders)
+                .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
             if (caregiver == null)
             {
                 _logger.LogError("Caregiver not found.");
                 return BadRequest("Caregiver not found.");
             }
+
 
             List<Elder>? elders = caregiver.Elders;
             if (elders != null)
@@ -414,13 +421,35 @@ namespace HealthDevice.Controllers
                     if (location != null)
                     {
                         if (elder.Email != null)
-                            elderLocations.Add(new ElderLocation
+                        {
+                            Perimeter? perimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+                            if (perimeter != null)
                             {
-                                email = elder.Email,
-                                name = elder.Name,
-                                latitude = location.Latitude,
-                                longitude = location.Longitude
-                            });
+                                elderLocations.Add(new ElderLocation
+                                {
+                                    email = elder.Email,
+                                    name = elder.Name,
+                                    latitude = location.Latitude,
+                                    longitude = location.Longitude,
+                                    perimeter = new Perimeter
+                                    {
+                                        Latitude = perimeter.Latitude,
+                                        Longitude = perimeter.Longitude,
+                                        Radius = perimeter.Radius
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                elderLocations.Add(new ElderLocation
+                                {
+                                    email = elder.Email,
+                                    name = elder.Name,
+                                    latitude = location.Latitude,
+                                    longitude = location.Longitude
+                                });
+                            }
+                        }
                     }
                 }
                 return elderLocations;
@@ -468,14 +497,41 @@ namespace HealthDevice.Controllers
                 _logger.LogError("No home address set");
                 return BadRequest("No home address set");
             }
-
-            Perimeter perimeter = new Perimeter
+            Perimeter? oldPerimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+            if (oldPerimeter == null)
             {
-                Latitude = elder.latitude,
-                Longitude = elder.longitude,
-                Radius = radius
-            };
-            _db.Perimeter.Add(perimeter);
+                Perimeter perimeter = new Perimeter
+                {
+                    Latitude = elder.latitude,
+                    Longitude = elder.longitude,
+                    Radius = radius,
+                    MacAddress = elder.Arduino
+                };
+                _db.Perimeter.Add(perimeter);
+            }
+            else
+            {
+                oldPerimeter = new Perimeter
+                {
+                    Latitude = elder.latitude,
+                    Longitude = elder.longitude,
+                    Radius = radius,
+                    MacAddress = elder.Arduino
+                };
+                _db.Perimeter.Update(oldPerimeter);
+                
+                // Send email to caregiver
+                var caregivers = await _caregiverManager.Users
+                    .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
+                    .ToListAsync();
+                foreach (var caregiver in caregivers)
+                {
+                    var emailInfo = new Email { name = caregiver.Name, email = caregiver.Email };
+                    _logger.LogInformation("Sending email to {CaregiverEmail}", caregiver.Email);
+                    await _emailService.SendEmail(emailInfo, "Elder changed their perimeter", $"Elder {elder.Name} changed their perimeter to {radius} kilometers.");
+                }
+            }
+            
             try
             {
                 await _db.SaveChangesAsync();

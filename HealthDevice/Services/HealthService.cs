@@ -32,7 +32,7 @@ public class HealthService
         _ => throw new ArgumentException("Invalid period specified")
     };
 
-    public Task<Heartrate> CalculateHeartRate(DateTime currentDate, string Address)
+    public Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string Address)
     {
         List<Max30102> heartRates = _db.MAX30102Data
             .Where(c => c.Timestamp <= currentDate && c.Address == Address)
@@ -40,19 +40,35 @@ public class HealthService
         if (heartRates.Count == 0)
         {
             _logger.LogWarning("No heart rate data found for elder");
-            return Task.FromResult(new Heartrate());
+            return Task.FromResult(new List<Heartrate>());
         }
 
         IEnumerable<int> values = heartRates.Select(h => h.Heartrate);
 
         IEnumerable<int> enumerable = values.ToList();
-        return Task.FromResult(new Heartrate
+        
+        DateTime earliestDate = heartRates.Min(h => h.Timestamp);
+        
+        //What to calc for each hour
+        List<Heartrate> heartRateList = new List<Heartrate>();
+        for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
-            Avgrate = (int)enumerable.Average(),
-            Maxrate = enumerable.Max(),
-            Minrate = enumerable.Min(),
-            Timestamp = currentDate
-        });
+            var date1 = date;
+            var heartRateInHour = heartRates.Where(h => h.Timestamp >= date1 && h.Timestamp < date1.AddHours(1));
+            IEnumerable<Max30102> rateInHour = heartRateInHour.ToList();
+            if (rateInHour.Any())
+            {
+                heartRateList.Add(new Heartrate
+                {
+                    Avgrate = (int)rateInHour.Average(h => h.Heartrate),
+                    Maxrate = rateInHour.Max(h => h.Heartrate),
+                    Minrate = rateInHour.Min(h => h.Heartrate),
+                    Timestamp = date
+                });
+            }
+        }
+        
+        return Task.FromResult(heartRateList);
     }
 
     public Task<Heartrate> CalculateHeartRateFromUnproccessed(List<currentHeartRate> heartRates)
@@ -95,27 +111,37 @@ public class HealthService
         });
     }
 
-    public Task<Spo2> CalculateSpo2(DateTime currentDate, string Arduino)
+    public Task<List<Spo2>> CalculateSpo2(DateTime currentDate, string address)
     {
-        List<Max30102> spo2List = _db.MAX30102Data
-            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
+        List<Max30102> spo2Data = _db.MAX30102Data
+            .Where(c => c.Timestamp <= currentDate && c.Address == address)
             .ToList();
-        if (spo2List.Count == 0)
+
+        if (spo2Data.Count == 0)
         {
             _logger.LogWarning("No SpO2 data found for elder");
-            return Task.FromResult(new Spo2());
+            return Task.FromResult(new List<Spo2>());
         }
 
-        IEnumerable<float> values = spo2List.Select(s => s.SpO2);
+        DateTime earliestDate = spo2Data.Min(s => s.Timestamp);
 
-        IEnumerable<float> enumerable = values.ToList();
-        return Task.FromResult(new Spo2
+        List<Spo2> spo2List = new List<Spo2>();
+        for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
-            MinSpO2 = enumerable.Min(),
-            MaxSpO2 = enumerable.Max(),
-            AvgSpO2 = enumerable.Average(),
-            Timestamp = currentDate
-        });
+            var hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
+            if (hourlyData.Any())
+            {
+                spo2List.Add(new Spo2
+                {
+                    AvgSpO2 = hourlyData.Average(s => s.SpO2),
+                    MaxSpO2 = hourlyData.Max(s => s.SpO2),
+                    MinSpO2 = hourlyData.Min(s => s.SpO2),
+                    Timestamp = date
+                });
+            }
+        }
+
+        return Task.FromResult(spo2List);
     }
 
     public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, string Arduino)

@@ -34,11 +34,11 @@ namespace HealthDevice.Services
                         {
                             DateTime currentTime = DateTime.UtcNow;
                         
-                            Heartrate heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
-                            db.Heartrate.Add(heartRate);
+                            List<Heartrate> heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
+                            db.Heartrate.AddRange(heartRate);
 
-                            Spo2 spo2 = await healthService.CalculateSpo2(currentTime, arduino);
-                            db.SpO2.Add(spo2);
+                            List<Spo2> spo2 = await healthService.CalculateSpo2(currentTime, arduino);
+                            db.SpO2.AddRange(spo2);
 
                             Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, arduino);
                             db.Distance.Add(distance);
