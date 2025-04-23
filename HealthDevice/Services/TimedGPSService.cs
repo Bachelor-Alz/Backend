@@ -51,7 +51,12 @@ namespace HealthDevice.Services
 
                         await db.SaveChangesAsync();
                         await elderManager.UpdateAsync(elder);
-                        await healthService.ComputeOutOfPerimeter(arduino, location);
+                        if(elder.latitude.HasValue && elder.longitude.HasValue)
+                        await healthService.ComputeOutOfPerimeter(arduino, new Location
+                        {
+                            Latitude = (double)elder.latitude,
+                            Longitude = (double)elder.longitude,
+                        });
                     }
                 }
 

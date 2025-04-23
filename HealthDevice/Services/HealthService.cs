@@ -319,6 +319,8 @@ public class HealthService
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         double d = 6371 * c;
 
+        Console.WriteLine($"Location: ({location.Latitude}, {location.Longitude})");
+        Console.WriteLine($"Perimeter: ({perimeter.Latitude.Value}, {perimeter.Longitude.Value})");
 
         _logger.LogInformation("Distance from perimeter: {Distance}", d);
         if (d > perimeter.Radius)
