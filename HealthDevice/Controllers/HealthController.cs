@@ -22,8 +22,9 @@ namespace HealthDevice.Controllers
         private readonly GeoService _geoService;
         private readonly ApplicationDbContext _db;
         private readonly UserManager<Caregiver> _caregiverManager;
+        private readonly EmailService _emailService;
         
-        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db, UserManager<Caregiver> caregiverManager)
+        public HealthController(UserManager<Elder> elderManager, HealthService healthService, ILogger<HealthController> logger, GeoService geoService, ApplicationDbContext db, UserManager<Caregiver> caregiverManager, EmailService emailService)
         {
             _elderManager = elderManager;
             _healthService = healthService;
@@ -31,6 +32,7 @@ namespace HealthDevice.Controllers
             _geoService = geoService;
             _db = db;
             _caregiverManager = caregiverManager;
+            _emailService = emailService;
         }
 
 
@@ -495,7 +497,7 @@ namespace HealthDevice.Controllers
                 _logger.LogError("No home address set");
                 return BadRequest("No home address set");
             }
-            Perimeter oldPerimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+            Perimeter? oldPerimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
             if (oldPerimeter == null)
             {
                 Perimeter perimeter = new Perimeter
@@ -517,6 +519,17 @@ namespace HealthDevice.Controllers
                     MacAddress = elder.Arduino
                 };
                 _db.Perimeter.Update(oldPerimeter);
+                
+                // Send email to caregiver
+                var caregivers = await _caregiverManager.Users
+                    .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
+                    .ToListAsync();
+                foreach (var caregiver in caregivers)
+                {
+                    var emailInfo = new Email { name = caregiver.Name, email = caregiver.Email };
+                    _logger.LogInformation("Sending email to {CaregiverEmail}", caregiver.Email);
+                    await _emailService.SendEmail(emailInfo, "Elder changed their perimeter", $"Elder {elder.Name} changed their perimeter to {radius} kilometers.");
+                }
             }
             
             try
