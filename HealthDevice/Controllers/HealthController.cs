@@ -207,7 +207,7 @@ namespace HealthDevice.Controllers
                 {
                      CurrentSpo2= new currentSpo2
                     {
-                        SpO2 = s.Heartrate,
+                        SpO2 = s.SpO2,
                         Timestamp = s.Timestamp
                     },
                     Spo2 = new Spo2
