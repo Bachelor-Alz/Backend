@@ -431,6 +431,7 @@ namespace HealthDevice.Controllers
                                     name = elder.Name,
                                     latitude = location.Latitude,
                                     longitude = location.Longitude,
+                                    lastUpdated = location.Timestamp,
                                     perimeter = new Perimeter
                                     {
                                         Latitude = perimeter.Latitude,
@@ -446,7 +447,8 @@ namespace HealthDevice.Controllers
                                     email = elder.Email,
                                     name = elder.Name,
                                     latitude = location.Latitude,
-                                    longitude = location.Longitude
+                                    longitude = location.Longitude,
+                                    lastUpdated = location.Timestamp
                                 });
                             }
                         }

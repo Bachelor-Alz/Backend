@@ -28,16 +28,12 @@ public class GeoService
         return "Unknown location";
     }
 
-    public async Task<Location?> GetCoordinatesFromAddress(string street, string city, string state, string country, string? postalCode = null, string? amenity = null)
+    public async Task<Location?> GetCoordinatesFromAddress(string street, string city)
     {
         var queryParams = new Dictionary<string, string?>
         {
             ["street"] = street,
             ["city"] = city,
-            ["state"] = state,
-            ["country"] = country,
-            ["postalcode"] = postalCode,
-            ["amenity"] = amenity
         };
 
         string query = string.Join("&", queryParams

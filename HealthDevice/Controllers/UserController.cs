@@ -273,8 +273,7 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City, address.State,
-            address.Country, address.ZipCode, null);
+        var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City);
         if (result == null)
         {
             _logger.LogError("Failed to get coordinates from address.");

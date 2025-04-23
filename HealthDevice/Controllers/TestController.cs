@@ -31,9 +31,9 @@ public class TestController : ControllerBase
     }
     
     [HttpPost("Coordinates")]
-    public async Task<ActionResult> GetCoordinates(Address address, string? amenity = null)
+    public async Task<ActionResult> GetCoordinates(Address address)
     {
-        var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City, address.State, address.Country, address.ZipCode, amenity);
+        var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City);
         return Ok(result);
     }
     [HttpPost("FakeData")]

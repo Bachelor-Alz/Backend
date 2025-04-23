@@ -308,8 +308,11 @@ public class HealthService
             return;
         }
         if (perimeter.Latitude == null || perimeter.Longitude == null) return;
-
-        double distance = Math.Sqrt(Math.Pow((double)(location.Latitude - perimeter.Latitude), 2) + Math.Pow((double)(location.Longitude - perimeter.Longitude), 2));
+        double distance = 2 * Math.Asin(Math.Sqrt(
+            Math.Pow(Math.Sin((double)(Math.PI * (perimeter.Latitude - location.Latitude) / 360)), 2) +
+            Math.Cos(location.Latitude * Math.PI / 180) * Math.Cos((double)(perimeter.Latitude * Math.PI / 180)) *
+            Math.Pow(Math.Sin((double)(Math.PI * (perimeter.Longitude - location.Longitude) / 360)), 2)));
+        _logger.LogInformation("Distance from perimeter: {Distance}", distance);
         if (distance > perimeter.Radius)
         {
             Elder? elder = _elderManager.Users.FirstOrDefault(e => e.Arduino == Arduino);
