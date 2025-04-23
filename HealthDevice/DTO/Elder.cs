@@ -17,6 +17,7 @@ public class ElderLocation
     public string email { get; set; }
     public double? latitude { get; set; }
     public double? longitude { get; set; }
+    public Perimeter? perimeter { get; set; }
 }
 
 public class GetElderDTO
