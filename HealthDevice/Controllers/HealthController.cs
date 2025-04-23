@@ -382,7 +382,7 @@ namespace HealthDevice.Controllers
 
             if (periodEnum == Period.Hour)
             {
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
                 List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                     elderEmail, periodEnum, newTime, e => true);
 
