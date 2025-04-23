@@ -279,12 +279,22 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            // Fetch historical distance data
-            List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
-                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
+            if (periodEnum == Period.Hour)
+            {
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
+                List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
+                    elderEmail, periodEnum, newTime, e => true);
+                
+                return data.Count != 0 ? data : [];
 
-            return data.Count != 0 ? data : [];
-            
+            }
+            else
+            {
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
+                List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
+                    elderEmail, periodEnum, newTime, e => true);
+                return data.Count != 0 ? data : [];
+            }
         }
         
         [HttpGet("Steps")]
@@ -295,14 +305,20 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            // Fetch historical steps data
-            List<Steps> data = await _healthService.GetHealthData<Steps>(
-                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
-
-            _logger.LogInformation("Steps data count: {Count}", data.Count);
-            
-            return data.Count != 0 ? data : [];
-            
+            if (Period.Hour == periodEnum)
+            {
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
+                List<Steps> data = await _healthService.GetHealthData<Steps>(
+                    elderEmail, periodEnum, newTime, e => true);
+                return data.Count != 0 ? data : [];
+            }
+            else
+            {
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
+                List<Steps> data = await _healthService.GetHealthData<Steps>(
+                    elderEmail, periodEnum, newTime, e => true);
+                return data.Count != 0 ? data : [];
+            }
         }
 
         [HttpGet("Dashboard")]
@@ -364,11 +380,21 @@ namespace HealthDevice.Controllers
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
-            // Fetch historical fall data
-            List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
-                elderEmail, periodEnum, date.ToUniversalTime(), e => true);
+            if (periodEnum == Period.Hour)
+            {
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0);
+                List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
+                    elderEmail, periodEnum, newTime, e => true);
 
-            return data.Count != 0 ? data : [];
+                return data.Count != 0 ? data : [];
+            }
+            else
+            {
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
+                List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
+                    elderEmail, periodEnum, newTime, e => true);
+                return data.Count != 0 ? data : [];
+            }
         }
 
         [HttpGet("Coordinates")]
