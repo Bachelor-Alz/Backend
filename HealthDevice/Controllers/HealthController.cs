@@ -253,7 +253,7 @@ namespace HealthDevice.Controllers
                             Timestamp = spo2.Timestamp
                         }
                     }).ToList()
-                : new List<PostSpo2>();
+                : [];
         }
 
         [HttpGet("Distance")]

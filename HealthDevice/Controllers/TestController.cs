@@ -60,7 +60,7 @@ public class TestController : ControllerBase
 
         for (int i = -15000; i < 15000; i++)
         {
-            DateTime timestamp = currentDate.AddMinutes(i*5);
+            DateTime timestamp = currentDate + TimeSpan.FromMinutes(i*5);
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
 
