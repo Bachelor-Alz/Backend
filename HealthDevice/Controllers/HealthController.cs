@@ -94,7 +94,13 @@ namespace HealthDevice.Controllers
                         Heartrate = hr.Heartrate,
                         Timestamp = hr.Timestamp
                     },
-                    Heartrate = heartrate
+                    Heartrate = new Heartrate
+                    {
+                        Avgrate = heartrate.Avgrate,
+                        Maxrate = heartrate.Maxrate,
+                        Minrate = heartrate.Minrate,
+                        Timestamp = hr.Timestamp
+                    }
                 }).ToList();
             }
             if(periodEnum == Period.Day)
@@ -204,7 +210,13 @@ namespace HealthDevice.Controllers
                         SpO2 = s.Heartrate,
                         Timestamp = s.Timestamp
                     },
-                    Spo2 = spo2
+                    Spo2 = new Spo2
+                    {
+                        SpO2 = spo2.SpO2,
+                        MaxSpO2 = spo2.MaxSpO2,
+                        MinSpO2 = spo2.MinSpO2,
+                        Timestamp = s.Timestamp
+                    }
                 }).ToList();
             }
             if (periodEnum == Period.Day)
