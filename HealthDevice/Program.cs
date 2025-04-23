@@ -95,7 +95,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate(); // Applies any pending migrations
+    await dbContext.Database.MigrateAsync(); // Applies any pending migrations
 }
 
 app.Run();
