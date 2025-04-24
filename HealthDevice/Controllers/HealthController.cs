@@ -373,7 +373,7 @@ namespace HealthDevice.Controllers
         }
         
         [HttpGet("Falls")]
-        public async Task<ActionResult<List<FallInfo>>> GetFalls(string elderEmail, DateTime date, string period = "Hour")
+        public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
@@ -385,15 +385,41 @@ namespace HealthDevice.Controllers
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
                 List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                     elderEmail, periodEnum, newTime, e => true);
-
-                return data.Count != 0 ? data : [];
+                List<FallDTO> result = new List<FallDTO>();
+                int i = 0;
+                
+                foreach (var fall in data)
+                {
+                    i++;
+                    result.Add(new FallDTO
+                    {
+                        Id = i,
+                        Timestamp = fall.Timestamp,
+                        fallCount = i
+                    });
+                }
+                
+                return result.Count != 0 ? result : [];
             }
             else
             {
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
                 List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                     elderEmail, periodEnum, newTime, e => true);
-                return data.Count != 0 ? data : [];
+                List<FallDTO> result = new List<FallDTO>();
+                int i = 0;
+                
+                foreach (var fall in data)
+                {
+                    i++;
+                    result.Add(new FallDTO
+                    {
+                        Id = i,
+                        Timestamp = fall.Timestamp,
+                        fallCount = i
+                    });
+                }
+                return result.Count != 0 ? result : [];
             }
         }
 
