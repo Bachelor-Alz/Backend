@@ -275,14 +275,24 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound();
         }
+        if (string.IsNullOrEmpty(elder.Arduino))
+        {
+            _logger.LogError("Elder has no Arduino address.");
+            return BadRequest("Elder has no Arduino address.");
+        }
+        _logger.LogInformation("Elder found. {elder}", elder);
         Location elderLocation = new Location
         {
             Latitude = elder.latitude,
             Longitude = elder.longitude
         };
+        _logger.LogInformation("Elder location: {elderLocation}", elderLocation);
         List<Elder> elders = _elderManager.Users.ToList();
+        _logger.LogInformation("Elders count: {elders}", elders.Count);
         List<GPS> gpsData = _dbContext.GPSData.ToList();
+        _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
         var filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
+        _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
         List<ArduinoInfo> addressNotAssociated = new List<ArduinoInfo>();
         foreach (GPS gps in filteredGpsData)
         {
@@ -291,6 +301,7 @@ public class UserController : ControllerBase
             int minutesSinceActivity = (int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes;
             if (distance < 0.5)
             {
+                _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
                 if (gps.Address != null)
                 {
                     ArduinoInfo arduinoInfo = new ArduinoInfo
@@ -305,8 +316,7 @@ public class UserController : ControllerBase
                 }
             }
         }
-        
-    
+        _logger.LogInformation("Address not associated count: {addressNotAssociated}", addressNotAssociated.Count);
         return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
     }
     
