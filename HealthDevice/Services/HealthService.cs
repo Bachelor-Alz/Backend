@@ -147,7 +147,7 @@ public class HealthService
     public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, string Arduino)
     {
         List<GPS> gpsData = _db.GPSData
-            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
+            .Where(c => c.Timestamp.Date <= currentDate.Date && c.Address == Arduino)
             .ToList();
         if (gpsData.Count < 2)
         {
