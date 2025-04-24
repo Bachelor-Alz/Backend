@@ -15,3 +15,12 @@ public class ArduinoMax
     public int heartRate { get; set; }
     public float SpO2 { get; set; }
 }
+
+public class ArduinoInfo
+{
+    public int Id { get; set; }
+    public string MacAddress { get; set; }
+    public string Address { get; set; }
+    public double Distance { get; set; }
+    public int lastActivity { get; set; }
+}
