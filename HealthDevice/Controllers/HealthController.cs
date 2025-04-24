@@ -42,19 +42,21 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
+                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             // Fetch historical heart rate data
             List<Heartrate> data = await _healthService.GetHealthData<Heartrate>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
-            
+            _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
             // Fetch current heart rate data if historical data is unavailable
             List<Max30102> currentHeartRateData =
                 await _healthService.GetHealthData<Max30102>(elderEmail, periodEnum, date.ToUniversalTime(), e => true);
-
+            _logger.LogInformation("Fetched current heart rate data: {Count}", currentHeartRateData.Count);
 
             if (data.Count != 0)
             {
+                _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
                 return BadRequest("No data available for the specified parameters.");
             }
 
@@ -62,6 +64,7 @@ namespace HealthDevice.Controllers
 
             if (data.Count != 0)
             {
+                _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
                 return data.Select(hr =>
                     new PostHeartRate
                     {
@@ -83,6 +86,7 @@ namespace HealthDevice.Controllers
             List<Heartrate> proccessHeartrates = new List<Heartrate>();
             if (periodEnum == Period.Hour)
             {
+                _logger.LogInformation("Processing current heart rate data for elder: {ElderEmail}", elderEmail);
                 Heartrate heartrate = new Heartrate
                 {
                     Avgrate = (int)currentHeartRateData.Average(h => h.Heartrate),
@@ -108,6 +112,7 @@ namespace HealthDevice.Controllers
             }
             if(periodEnum == Period.Day)
             {
+                _logger.LogInformation("Processing daily heart rate data for elder: {ElderEmail}", elderEmail);
                 List<Heartrate> hourlyData = currentHeartRateData
                     .GroupBy(h => h.Timestamp.Hour)
                     .Select(g => new Heartrate
@@ -122,6 +127,7 @@ namespace HealthDevice.Controllers
             }
             if(periodEnum == Period.Week)
             {
+                _logger.LogInformation("Processing weekly heart rate data for elder: {ElderEmail}", elderEmail);
                 List<Heartrate> dailyData = currentHeartRateData
                     .GroupBy(h => h.Timestamp.Date)
                     .Select(g => new Heartrate
@@ -137,9 +143,10 @@ namespace HealthDevice.Controllers
             _logger.LogInformation("ProcessedData {Count}", proccessHeartrates.Count);
             if (proccessHeartrates.Count == 0)
             {
+                _logger.LogError("No processed heart rate data available for elder: {ElderEmail}", elderEmail);
                 return BadRequest("No data available for the specified parameters.");
             }
-
+            
             return proccessHeartrates.Count != 0
                 ? proccessHeartrates.Select(hr =>
                     new PostHeartRate
@@ -165,19 +172,21 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
+                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
             // Fetch historical SpO2 data
             List<Spo2> data = await _healthService.GetHealthData<Spo2>(
                 elderEmail, periodEnum, date.ToUniversalTime(), e => true);
-
+            _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
             // Fetch current SpO2 data if historical data is unavailable
             List<Max30102> currentSpo2Data =
                 await _healthService.GetHealthData<Max30102>(elderEmail, periodEnum, date.ToUniversalTime(), e => true);
-
+            _logger.LogInformation("Fetched current SpO2 data: {Count}", currentSpo2Data.Count);
             if (data.Count != 0)
             {
+                _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
                 return data.Select(spo2 =>
                     new PostSpo2
                     {
@@ -199,6 +208,7 @@ namespace HealthDevice.Controllers
             List<Spo2> processedSpo2 = new List<Spo2>();
             if (periodEnum == Period.Hour)
             {
+                _logger.LogInformation("Processing current SpO2 data for elder: {ElderEmail}", elderEmail);
                 Spo2 spo2 = new Spo2
                 {
                     AvgSpO2 = currentSpo2Data.Average(s => s.SpO2),
@@ -224,6 +234,7 @@ namespace HealthDevice.Controllers
             }
             if (periodEnum == Period.Day)
             {
+                _logger.LogInformation("Processing daily SpO2 data for elder: {ElderEmail}", elderEmail);
                 List<Spo2> hourlyData = currentSpo2Data
                     .GroupBy(s => s.Timestamp.Hour)
                     .Select(g => new Spo2
@@ -238,6 +249,7 @@ namespace HealthDevice.Controllers
             }
             if (periodEnum == Period.Week)
             {
+                _logger.LogInformation("Processing weekly SpO2 data for elder: {ElderEmail}", elderEmail);
                 List<Spo2> dailyData = currentSpo2Data
                     .GroupBy(s => s.Timestamp.Date)
                     .Select(g => new Spo2
@@ -276,23 +288,27 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
+                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
             if (periodEnum == Period.Hour)
             {
+                _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
                 List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
                     elderEmail, periodEnum, newTime, e => true);
-                
+                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
 
             }
             else
             {
+                _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
                 List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
                     elderEmail, periodEnum, newTime, e => true);
+                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
             }
         }
@@ -302,21 +318,26 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
+                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
             if (Period.Hour == periodEnum)
             {
+                _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
                 List<Steps> data = await _healthService.GetHealthData<Steps>(
                     elderEmail, periodEnum, newTime, e => true);
+                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
             }
             else
             {
+                _logger.LogInformation("Processing daily steps data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
                 List<Steps> data = await _healthService.GetHealthData<Steps>(
                     elderEmail, periodEnum, newTime, e => true);
+                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
             }
         }
@@ -331,6 +352,7 @@ namespace HealthDevice.Controllers
                 _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
                 return new DashBoard();
             }
+            _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderEmail);
 
             string macAddress = elder.Arduino;
 
@@ -361,6 +383,8 @@ namespace HealthDevice.Controllers
                 address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
             } 
             
+            _logger.LogInformation("Fetched data for elder: {ElderEmail}", elderEmail);
+            
             return new DashBoard
             {
                 allFall = _db.FallInfo.Count(f => f.MacAddress == macAddress),
@@ -371,57 +395,72 @@ namespace HealthDevice.Controllers
                 steps = steps?.StepsCount ?? 0
             };
         }
-        
+
         [HttpGet("Falls")]
-        public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, string period = "Hour")
+        public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date,
+            string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(typeof(Period), periodEnum))
             {
+                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
 
             if (periodEnum == Period.Hour)
             {
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
+                _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
                 List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                     elderEmail, periodEnum, newTime, e => true);
+                _logger.LogInformation("Fetched fall data: {Count}", data.Count);
                 List<FallDTO> result = new List<FallDTO>();
-                int i = 0;
-                
                 foreach (var fall in data)
                 {
-                    i++;
                     result.Add(new FallDTO
                     {
-                        Id = i,
                         Timestamp = fall.Timestamp,
-                        fallCount = i
+                        fallCount = 1
                     });
                 }
-                
+                _logger.LogInformation("Processed fall data: {Count}", result.Count);
                 return result.Count != 0 ? result : [];
             }
             else
             {
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
+                _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
                 List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                     elderEmail, periodEnum, newTime, e => true);
                 List<FallDTO> result = new List<FallDTO>();
                 int i = 0;
-                
+                DateTime fallDate = data.First().Timestamp.Date;
                 foreach (var fall in data)
                 {
-                    i++;
-                    result.Add(new FallDTO
+                    if (fall.Timestamp.Date == fallDate.Date)
                     {
-                        Id = i,
-                        Timestamp = fall.Timestamp,
-                        fallCount = i
-                    });
+                        i++;
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = fall.Timestamp,
+                            fallCount = i
+                        });
+                    }
+                    else
+                    {
+                        i = 0;
+                        fallDate = fall.Timestamp.Date;
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = fall.Timestamp,
+                            fallCount = i
+                        });
+                    }
                 }
+                _logger.LogInformation("Processed fall data: {Count}", result.Count);
                 return result.Count != 0 ? result : [];
             }
         }
+        
 
         [HttpGet("Coordinates")]
         public async Task<ActionResult<Location>> GetLocaiton(string elderEmail)
@@ -429,15 +468,22 @@ namespace HealthDevice.Controllers
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
             if (elder is null)
             {
-                return BadRequest();
+                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                return BadRequest("Elder not found.");
             }
-
+            if (string.IsNullOrEmpty(elder.Arduino))
+            {
+                _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
+                return BadRequest("Elder Arduino not set.");
+            }
+            _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elderEmail);
             Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
             if (location is null)
             {
-                return BadRequest();
+                _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
+                return BadRequest("Location not found.");
             }
-
+            _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elderEmail);
             return location;
         }
 
@@ -451,8 +497,7 @@ namespace HealthDevice.Controllers
                 _logger.LogError("User claim is null or empty.");
                 return BadRequest("User claim is not available.");
             }
-
-            // Include Elders when retrieving the Caregiver
+            _logger.LogInformation("Fetching elder locations for caregiver: {CaregiverEmail}", userClaim.Value);
             Caregiver? caregiver = await _caregiverManager.Users
                 .Include(c => c.Elders)
                 .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
@@ -461,58 +506,70 @@ namespace HealthDevice.Controllers
                 _logger.LogError("Caregiver not found.");
                 return BadRequest("Caregiver not found.");
             }
-
-
             List<Elder>? elders = caregiver.Elders;
-            if (elders != null)
-            {
-                List<ElderLocation> elderLocations = new List<ElderLocation>();
-                foreach (Elder elder in elders)
-                {
-                    Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
-                    if (location != null)
-                    {
-                        if (elder.Email != null)
-                        {
-                            Perimeter? perimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
-                            if (perimeter != null)
-                            {
-                                elderLocations.Add(new ElderLocation
-                                {
-                                    email = elder.Email,
-                                    name = elder.Name,
-                                    latitude = location.Latitude,
-                                    longitude = location.Longitude,
-                                    lastUpdated = location.Timestamp,
-                                    perimeter = new Perimeter
-                                    {
-                                        Latitude = perimeter.Latitude,
-                                        Longitude = perimeter.Longitude,
-                                        Radius = perimeter.Radius
-                                    }
-                                });
-                            }
-                            else
-                            {
-                                elderLocations.Add(new ElderLocation
-                                {
-                                    email = elder.Email,
-                                    name = elder.Name,
-                                    latitude = location.Latitude,
-                                    longitude = location.Longitude,
-                                    lastUpdated = location.Timestamp
-                                });
-                            }
-                        }
-                    }
-                }
-                return elderLocations;
-            }
-            else
+            if (elders == null || elders.Count == 0)
             {
                 _logger.LogError("No elders found for the caregiver.");
                 return BadRequest("No elders found for the caregiver.");
             }
+            _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count, userClaim.Value);
+            List<ElderLocation> elderLocations = new List<ElderLocation>();
+            foreach (Elder elder in elders)
+            {
+                if (string.IsNullOrEmpty(elder.Arduino))
+                {
+                    _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elder.Email);
+                    continue;
+                }
+                _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elder.Email);
+                Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+                if (location != null)
+                {
+                    _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elder.Email);
+                    if (elder.Email != null)
+                    {
+                        _logger.LogInformation("Fetching perimeter data for elder: {ElderEmail}", elder.Email);
+                        Perimeter? perimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+                        if (perimeter != null)
+                        {
+                            _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
+                            elderLocations.Add(new ElderLocation
+                            {
+                                email = elder.Email,
+                                name = elder.Name,
+                                latitude = location.Latitude,
+                                longitude = location.Longitude,
+                                lastUpdated = location.Timestamp,
+                                perimeter = new Perimeter
+                                {
+                                    Latitude = perimeter.Latitude,
+                                    Longitude = perimeter.Longitude,
+                                    Radius = perimeter.Radius
+                                }
+                            });
+                        }
+                        else
+                        {
+                            _logger.LogInformation("No perimeter data found for elder: {ElderEmail}", elder.Email);
+                            elderLocations.Add(new ElderLocation
+                            {
+                                email = elder.Email,
+                                name = elder.Name,
+                                latitude = location.Latitude,
+                                longitude = location.Longitude,
+                                lastUpdated = location.Timestamp
+                            });
+                        }
+                    }
+                }
+            }
+            if (elderLocations.Count == 0)
+            {
+                _logger.LogError("No location data found for the elders.");
+                return BadRequest("No location data found for the elders.");
+            }
+            _logger.LogInformation("Fetched location data for {ElderCount} elders.", elderLocations.Count);
+            return elderLocations;
         }
 
         [HttpGet("Address")]
@@ -521,19 +578,29 @@ namespace HealthDevice.Controllers
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
             if (elder is null)
             {
-                return BadRequest();
+                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                return BadRequest("Elder not found.");
             }
+            if (string.IsNullOrEmpty(elder.Arduino))
+            {
+                _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
+                return BadRequest("Elder Arduino not set.");
+            }
+            _logger.LogInformation("Fetching address data for elder: {ElderEmail}", elderEmail);
             Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
             if (location is null)
             {
-                return BadRequest();
+                _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
+                return BadRequest("Location not found.");
             }
             string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            _logger.LogInformation("Fetched address data for elder: {ElderEmail}", elder.Email);
             if (string.IsNullOrEmpty(address))
             {
-                return BadRequest();
+                _logger.LogError("Address not found for elder: {ElderEmail}", elderEmail);
+                return BadRequest("Address not found.");
             }
-
+            _logger.LogInformation("Fetched address data for elder: {ElderEmail}", elder.Email);
             return address;
         }
 
@@ -541,19 +608,32 @@ namespace HealthDevice.Controllers
         public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
         {
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+            _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
             if (elder is null)
             {
-                return BadRequest();
+                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                return BadRequest("Elder not found.");
             }
-
+            if (string.IsNullOrEmpty(elder.Arduino))
+            {
+                _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
+                return BadRequest("Elder Arduino not set.");
+            }
+            if (radius < 0)
+            {
+                _logger.LogError("Invalid radius value: {Radius}", radius);
+                return BadRequest("Invalid radius value.");
+            }
             if (elder.latitude == null || elder.longitude == null)
             {
                 _logger.LogError("No home address set");
                 return BadRequest("No home address set");
             }
+            _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
             Perimeter? oldPerimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
             if (oldPerimeter == null)
             {
+                _logger.LogInformation("Creating new perimeter for elder: {ElderEmail}", elderEmail);
                 Perimeter perimeter = new Perimeter
                 {
                     Latitude = elder.latitude,
@@ -565,6 +645,7 @@ namespace HealthDevice.Controllers
             }
             else
             {
+                _logger.LogInformation("Updating existing perimeter for elder: {ElderEmail}", elderEmail);
                 oldPerimeter = new Perimeter
                 {
                     Latitude = elder.latitude,
@@ -588,8 +669,9 @@ namespace HealthDevice.Controllers
             
             try
             {
+                _logger.LogInformation("Saving perimeter data for elder: {ElderEmail}", elderEmail);
                 await _db.SaveChangesAsync();
-                return Ok();
+                return Ok("Perimeter set successfully");
             }
             catch (Exception e)
             {

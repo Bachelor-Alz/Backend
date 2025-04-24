@@ -42,6 +42,22 @@ public class UserController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDto)
     {
+        if (string.IsNullOrEmpty(userLoginDto.Email) || string.IsNullOrEmpty(userLoginDto.Password))
+        {
+            _logger.LogWarning("Login attempt with empty email or password.");
+            return BadRequest("Email and password are required.");
+        }
+        if (!userLoginDto.Email.Contains("@"))
+        {
+            _logger.LogWarning("Invalid email format: {Email}", userLoginDto.Email);
+            return BadRequest("Invalid email format.");
+        }
+        if (userLoginDto.Password.Length < 6)
+        {
+            _logger.LogWarning("Password too short: {PasswordLength} characters", userLoginDto.Password.Length);
+            return BadRequest("Password must be at least 6 characters long.");
+        }
+        _logger.LogInformation("Login attempt for email: {Email}", userLoginDto.Email);
         return await _userService.HandleLogin(userLoginDto, HttpContext);
     }
 
@@ -49,6 +65,37 @@ public class UserController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDto)
     {
+        if (string.IsNullOrEmpty(userRegisterDto.Email) || string.IsNullOrEmpty(userRegisterDto.Password))
+        {
+            _logger.LogWarning("Registration attempt with empty email or password.");
+            return BadRequest("Email and password are required.");
+        }
+        if (!userRegisterDto.Email.Contains("@"))
+        {
+            _logger.LogWarning("Invalid email format: {Email}", userRegisterDto.Email);
+            return BadRequest("Invalid email format.");
+        }
+        if (userRegisterDto.Password.Length < 6)
+        {
+            _logger.LogWarning("Password too short: {PasswordLength} characters", userRegisterDto.Password.Length);
+            return BadRequest("Password must be at least 6 characters long.");
+        }
+        if (userRegisterDto.Role != Roles.Elder && userRegisterDto.Role != Roles.Caregiver)
+        {
+            _logger.LogWarning("Invalid role: {Role}", userRegisterDto.Role);
+            return BadRequest("Invalid role.");
+        }
+        if (userRegisterDto.Role == Roles.Elder && (userRegisterDto.latitude == null || userRegisterDto.longitude == null))
+        {
+            _logger.LogWarning("Elder registration requires latitude and longitude.");
+            return BadRequest("Elder registration requires latitude and longitude.");
+        }
+        if (userRegisterDto.Role == Roles.Caregiver && userRegisterDto.latitude != null && userRegisterDto.longitude != null)
+        {
+            _logger.LogWarning("Caregiver registration should not include latitude and longitude.");
+            return BadRequest("Caregiver registration should not include latitude and longitude.");
+        }
+        _logger.LogInformation("Registration attempt for email: {Email} with role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
         return userRegisterDto.Role == Roles.Elder 
             ? await _userService.HandleRegister(_elderManager, userRegisterDto, 
                                                 new Elder
@@ -73,7 +120,9 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<GetElderDTO>>> GetUsers()
     {
+        _logger.LogInformation("Fetching all elders.");
         List<Elder> elders = await _elderManager.Users.ToListAsync();
+        _logger.LogInformation("Fetched {Count} elders.", elders.Count);
         return elders.Select(e => new GetElderDTO
         {
             Email = e.Email,
@@ -97,13 +146,13 @@ public class UserController : ControllerBase
         Caregiver? caregiver = await _caregiverManager.Users
             .Include(c => c.Invites)
             .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
-
+        
         if (caregiver == null)
         {
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
-
+        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
         Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
         if (elder == null)
         {
@@ -111,23 +160,23 @@ public class UserController : ControllerBase
             return NotFound("Elder not found.");
         }
 
-        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
+        _logger.LogInformation("Elder found. {elder}", elder);
 
         // Add the elder to the caregiver's Elders collection
         caregiver.Invites ??= new List<Elder>();
         caregiver.Invites.Add(elder);
-
+        _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
         try
         {
             // Save changes explicitly
             await _dbContext.SaveChangesAsync();
             _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
-            return Ok();
+            return Ok("Caregiver invited successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update caregiver.");
-            return BadRequest("Failed to update caregiver.");
+            return BadRequest("Failed to invite caregiver.");
         }
     }
 
@@ -148,24 +197,26 @@ public class UserController : ControllerBase
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
+        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
         Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
         if(elder == null)
         {
             _logger.LogError("Elder not found.");
-            return NotFound();
+            return NotFound("Elder not found.");
         }
+        _logger.LogInformation("Elder found. {elder}", elder);
 
         if (caregiver.Elders != null) caregiver.Elders.Remove(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
             _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
-            return Ok();
+            return Ok("Caregiver removed successfully.");
         }
         catch
         {
             _logger.LogError("Failed to update caregiver.");
-            return BadRequest();
+            return BadRequest("Failed to remove caregiver.");
         }
     }
 
@@ -189,10 +240,12 @@ public class UserController : ControllerBase
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
+        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
         
         if (caregiver.Elders != null)
         {
             List<Elder> elders = caregiver.Elders;
+            _logger.LogInformation("Caregiver has {Count} elders.", elders.Count);
             List<GetElderDTO> elderDTOs = elders.Select(e => new GetElderDTO
             {
                 Name = e.Name,
@@ -230,17 +283,23 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound();
         }
+        if (string.IsNullOrEmpty(address))
+        {
+            _logger.LogError("Arduino address is null or empty.");
+            return BadRequest("Arduino address cannot be null or empty.");
+        }
+        _logger.LogInformation("Setting Arduino address for elder {elder.Email} to {address}.", elder.Email, address);
         elder.Arduino = address;
         try
         {
             await _elderManager.UpdateAsync(elder);
             _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
-            return Ok();
+            return Ok("Arduino address set successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update elder.");
-            return BadRequest();
+            return BadRequest("Failed to update elder.");
         }
     }
 
@@ -251,14 +310,14 @@ public class UserController : ControllerBase
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
-            return NotFound();
+            return NotFound("Elder not found.");
         }
-
-        if (elder.Arduino == null)
+        if (string.IsNullOrEmpty(elder.Arduino))
         {
             _logger.LogError("Elder has no Arduino address.");
-            return false;
+            return BadRequest("Elder has no Arduino address.");
         }
+        _logger.LogInformation("Connected to elder {elder.Email}.", elder.Email);
 
         return true;
     }
@@ -270,10 +329,17 @@ public class UserController : ControllerBase
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
-            return NotFound();
+            return NotFound("Elder not found.");
+        }
+        _logger.LogInformation("Elder found. {elder}", elder);
+        if (string.IsNullOrEmpty(address.Street) || string.IsNullOrEmpty(address.City))
+        {
+            _logger.LogError("Address is null or empty.");
+            return BadRequest("Address cannot be null or empty.");
         }
 
         var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City);
+        _logger.LogInformation("Coordinates retrieved: {result}", result);
         if (result == null)
         {
             _logger.LogError("Failed to get coordinates from address.");
@@ -281,12 +347,12 @@ public class UserController : ControllerBase
         }
         elder.latitude = result.Latitude;
         elder.longitude = result.Longitude;
-
+        _logger.LogInformation("Setting address for elder {elder.Email} to {address}.", elder.Email, address);
         try
         {
             await _elderManager.UpdateAsync(elder);
             _logger.LogInformation("Address added for elder {elder.Email}.", elder.Email);
-            return Ok();
+            return Ok("Address added successfully.");
         }
         catch (Exception e)
         {
@@ -315,9 +381,11 @@ public class UserController : ControllerBase
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
+        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
         
         if (caregiver.Invites != null)
         {
+            _logger.LogInformation("Caregiver has {Count} invites.", caregiver.Invites.Count);
             List<Elder> invites = caregiver.Invites;
             return invites;
         }
@@ -345,12 +413,14 @@ public class UserController : ControllerBase
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
+        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
         Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
             return NotFound();
         }
+        _logger.LogInformation("Elder found. {elder}", elder);
         if (caregiver.Invites != null)
         {
             caregiver.Elders ??= new List<Elder>();
@@ -366,13 +436,12 @@ public class UserController : ControllerBase
         {
             await _caregiverManager.UpdateAsync(caregiver);
             _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+            return Ok("Invite accepted successfully.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update caregiver.");
             return BadRequest("Failed to update caregiver.");
         }
-        _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
-        return Ok();
     }
 }
