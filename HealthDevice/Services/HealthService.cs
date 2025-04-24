@@ -257,6 +257,13 @@ public class HealthService
             _logger.LogWarning("No perimeter found for elder with Arduino {Arduino}", Arduino);
             return;
         }
+        
+        Elder? elder = _elderManager.Users.FirstOrDefault(e => e.Arduino == Arduino);
+        if (elder == null)
+        {
+            _logger.LogWarning("Elder with Arduino {Arduino} not found", Arduino);
+            return;
+        }
         if (perimeter.Latitude == null || perimeter.Longitude == null) return;
         double dLat = (perimeter.Latitude.Value - location.Latitude) * Math.PI / 180;
         double dLon = (perimeter.Longitude.Value - location.Longitude) * Math.PI / 180;
@@ -273,14 +280,21 @@ public class HealthService
         Console.WriteLine($"Perimeter: ({perimeter.Latitude.Value}, {perimeter.Longitude.Value})");
 
         _logger.LogInformation("Distance from perimeter: {Distance}", d);
-        if (d > perimeter.Radius)
+        if (elder.outOfPerimeter)
         {
-            Elder? elder = _elderManager.Users.FirstOrDefault(e => e.Arduino == Arduino);
-            if (elder == null)
+            if (d < perimeter.Radius)
             {
-                _logger.LogWarning("Elder with Arduino {Arduino} not found", Arduino);
+                elder.outOfPerimeter = false;
+                await _elderManager.UpdateAsync(elder);
+                _logger.LogInformation("Elder {Email} is back in perimeter", elder.Email);
                 return;
             }
+            _logger.LogInformation("Elder {Email} is already out of perimeter", elder.Email);
+            return;
+        }
+        if (d > perimeter.Radius)
+        {
+            _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
             List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders != null && c.Elders.Contains(elder)).ToList();
             if (caregivers.Count == 0)
             {
@@ -296,6 +310,8 @@ public class HealthService
                 _logger.LogInformation("Sending email to {CaregiverEmail}", caregiver.Email);
                 await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {address}.");
             }
+            elder.outOfPerimeter = true;
+            await _elderManager.UpdateAsync(elder);
         }
     }
 
