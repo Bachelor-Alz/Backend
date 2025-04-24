@@ -22,7 +22,9 @@ public class GeoService
         string url = $"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}&zoom=18&addressdetails=1";
         HttpResponseMessage response = await _httpClient.GetAsync(url);
         string json = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation("Response from Nominatim: {json}", json);
         var data = JsonSerializer.Deserialize<NominatimResponse>(json);
+        _logger.LogInformation("Response from Nominatim: {data}", data);
         if(data != null)
             return FormatAddress(data);
         return "Unknown location";
@@ -46,6 +48,7 @@ public class GeoService
         _logger.LogInformation("Response from Nominatim: {json}", json);
 
         var data = JsonSerializer.Deserialize<List<NominatimSearchResponse>>(json);
+        _logger.LogInformation("Response from Nominatim: {data}", data);
         string[]? box = data?.FirstOrDefault()?.BoundingBox;
 
         if (box?.Length >= 4 && double.TryParse(box[0], out double lat) && double.TryParse(box[2], out double lon))

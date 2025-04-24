@@ -22,6 +22,7 @@ public class ArduinoService
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
+        _logger.LogInformation("{Timestamp}: Received {SensorType} data from IP: {IP}.", receivedAt, typeof(T).Name, ip);
         
         if (data.Count == 0)
         {
@@ -33,12 +34,14 @@ public class ArduinoService
         
         if (elder == null)
         {
+            _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().Address, ip);
             _dbContext.Set<T>().AddRange(data);
         }
         else
         {
             if (typeof(Elder).GetProperty(typeof(T).Name)?.GetValue(elder) is List<T> elderDataList)
             {
+                _logger.LogInformation("{Timestamp}: Found elder {ElderEmail} with MacAddress {MacAddress} from IP: {IP}.", receivedAt, elder.Email, elder.Arduino, ip);
                 elderDataList.AddRange(data);
             }
         }
@@ -64,6 +67,7 @@ public class ArduinoService
     {
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
+        _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
         Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.MacAddress);
         if (elder == null)
         {
@@ -86,6 +90,7 @@ public class ArduinoService
         if (neweststeps != null && neweststeps.Timestamp.Date == receivedAt.Date)
         {
             data.steps += neweststeps.StepsCount;
+            _logger.LogInformation("{Timestamp}: Found existing steps for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             _dbContext.Steps.Add(new Steps()
             {
                 StepsCount = data.steps,
@@ -95,6 +100,7 @@ public class ArduinoService
         }
         else
         {
+            _logger.LogInformation("{Timestamp}: No existing steps found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             _dbContext.Steps.Add(new Steps()
             {
                 StepsCount = data.steps,
@@ -110,7 +116,11 @@ public class ArduinoService
            totalHr += entry.heartRate;
            totalSpO2 += entry.SpO2;
         }
-
+        if (data.Max30102.Count == 0)
+        {
+            _logger.LogWarning("{Timestamp}: No Max30102 data found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
+            return;
+        }
         _dbContext.MAX30102Data.Add(new Max30102
         {
             Heartrate = totalHr / data.Max30102.Count,

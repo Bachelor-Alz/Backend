@@ -10,14 +10,12 @@ namespace HealthDevice.Services;
 public class UserService
 {
     private readonly ILogger<UserService> _logger;
-    private readonly EmailService _emailService;
     private readonly UserManager<Elder> _elderManager;
     private readonly UserManager<Caregiver> _caregiverManager;
     
-    public UserService(ILogger<UserService> logger, EmailService emailService, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager)
+    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager)
     {
         _logger = logger;
-        _emailService = emailService;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
     }

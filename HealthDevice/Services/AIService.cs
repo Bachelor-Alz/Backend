@@ -28,6 +28,7 @@ public class AiService
     {
        if (request.Contains(1))
        {
+              _logger.LogInformation("Fall detected for elder {address}", address);
            await HandleFall(address);
        }
     }
