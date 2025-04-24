@@ -77,7 +77,7 @@ public class UserService
         if (!result.Succeeded)
             return new BadRequestObjectResult(new { Message = "Registration failed.", result.Errors });
         _logger.LogInformation("{timestamp}: Registration successful for email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
-        return new OkResult();
+        return new OkObjectResult("Registration successful.");
 
     }
 
