@@ -77,6 +77,22 @@ public class GeoService
         }
         return "Unknown location";
     }
+
+    public double CalculateDistance(Location locationA, Location locationB)
+    {
+        double dLat = (locationA.Latitude - locationB.Latitude) * Math.PI / 180;
+        double dLon = (locationA.Longitude - locationB.Longitude) * Math.PI / 180;
+        double lat1 = locationB.Latitude * Math.PI / 180;
+        double lat2 = locationA.Latitude * Math.PI / 180;
+
+        double a = Math.Pow(Math.Sin(dLat / 2), 2) +
+                   Math.Cos(lat1) * Math.Cos(lat2) *
+                   Math.Pow(Math.Sin(dLon / 2), 2);
+        double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        double d = 6371 * c;
+        
+        return d; // Distance in kilometers
+    }
 }
 
 public class NominatimResponse

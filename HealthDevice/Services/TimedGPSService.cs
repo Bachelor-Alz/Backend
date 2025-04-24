@@ -30,7 +30,7 @@ namespace HealthDevice.Services
                     List<GPS> gpsData = db.GPSData.ToList();
                     var filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
                     
-                    foreach (Elder elder in elders)
+                    /*foreach (Elder elder in elders)
                     {
                         string? arduino = elder.Arduino;
                         if (arduino == null) continue;
@@ -42,8 +42,7 @@ namespace HealthDevice.Services
 
                         {
                             string GpsAddress = await geoService.GetAddressFromCoordinates(gp.Latitude, gp.Longitude);
-                            if (elder is not { latitude: not null, longitude: not null }) continue;
-                            string elderAddress = await geoService.GetAddressFromCoordinates((double)elder.latitude, (double)elder.longitude);
+                            string elderAddress = await geoService.GetAddressFromCoordinates(elder.latitude, elder.longitude);
                             if (GpsAddress != elderAddress) continue;
                             elder.Arduino = gp.Address;
                             _logger.LogInformation("Elder {ElderEmail} assigned to Arduino {Arduino}", elder.Email, gp.Address);
@@ -51,13 +50,9 @@ namespace HealthDevice.Services
 
                         await db.SaveChangesAsync();
                         await elderManager.UpdateAsync(elder);
-                        if(elder.latitude.HasValue && elder.longitude.HasValue)
-                        await healthService.ComputeOutOfPerimeter(arduino, new Location
-                        {
-                            Latitude = (double)elder.latitude,
-                            Longitude = (double)elder.longitude,
-                        });
+                        await healthService.ComputeOutOfPerimeter(arduino, location);
                     }
+                    */
                 }
 
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);

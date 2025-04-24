@@ -20,6 +20,7 @@ public class UserController : ControllerBase
     private readonly ILogger<UserController> _logger;
     private readonly ApplicationDbContext _dbContext;
     private readonly GeoService _geoService;
+    private readonly HealthService _healthService;
     
     public UserController(
         UserManager<Elder> elderManager,
@@ -27,7 +28,8 @@ public class UserController : ControllerBase
         UserService userService,
         ILogger<UserController> logger,
         ApplicationDbContext dbContext,
-        GeoService geoService)
+        GeoService geoService,
+        HealthService healthService)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
@@ -35,6 +37,7 @@ public class UserController : ControllerBase
         _logger = logger;
         _dbContext = dbContext;
         _geoService = geoService;
+        _healthService = healthService;
     }
     
     
@@ -103,8 +106,8 @@ public class UserController : ControllerBase
                                                     Name = userRegisterDto.Name,
                                                     Email = userRegisterDto.Email, 
                                                     UserName = userRegisterDto.Email, 
-                                                    latitude = userRegisterDto.latitude,
-                                                    longitude = userRegisterDto.longitude
+                                                    latitude = (double)userRegisterDto.latitude,
+                                                    longitude = (double)userRegisterDto.longitude
                                                 }, HttpContext)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto, 
                                                 new Caregiver
@@ -258,26 +261,66 @@ public class UserController : ControllerBase
     }
     
     [HttpGet("users/arduino")]
-    public async Task<ActionResult<List<string>>> GetUnusedArduino()
+    public async Task<ActionResult<List<ArduinoInfo>>> GetUnusedArduino()
     {
-        List<string?> address = await _dbContext.MAX30102Data
-            .Select(a => a.Address)
-            .Distinct()
-            .ToListAsync();
-
-        List<string> addressNotAssociated = address
-            .Where(a => a != null)
-            .Select(a => a!)
-            .Except(_elderManager.Users.Select(e => e.Arduino ?? string.Empty))
-            .ToList();
-
-        return addressNotAssociated;
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+        Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+        Location elderLocation = new Location
+        {
+            Latitude = elder.latitude,
+            Longitude = elder.longitude
+        };
+        List<Elder> elders = _elderManager.Users.ToList();
+        List<GPS> gpsData = _dbContext.GPSData.ToList();
+        var filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
+        List<ArduinoInfo> addressNotAssociated = new List<ArduinoInfo>();
+        foreach (GPS gps in filteredGpsData)
+        {
+            string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
+            double distance = _geoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
+            int minutesSinceActivity = (int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes;
+            if (distance < 0.5)
+            {
+                if (gps.Address != null)
+                {
+                    ArduinoInfo arduinoInfo = new ArduinoInfo
+                    {
+                        Id = gps.Id,
+                        MacAddress = gps.Address,
+                        Address = GpsAddress,
+                        Distance = distance,
+                        lastActivity = minutesSinceActivity
+                    };
+                    addressNotAssociated.Add(arduinoInfo);
+                }
+            }
+        }
+        
+    
+        return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
     }
     
     [HttpPost("users/arduino")]
-    public async Task<ActionResult> SetArduino(string email, string address)
+    public async Task<ActionResult> SetArduino(string address)
     {
-        Elder? elder = await _elderManager.FindByEmailAsync(email);
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+        
+        Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -296,10 +339,10 @@ public class UserController : ControllerBase
             _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
             return Ok("Arduino address set successfully.");
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "Failed to update elder.");
-            return BadRequest("Failed to update elder.");
+            _logger.LogError(e, "Failed to set Arduino address for elder {elder.Email}.", elder.Email);
+            return BadRequest("Failed to set Arduino address.");
         }
     }
 
