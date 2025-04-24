@@ -53,16 +53,16 @@ public class TestController : ControllerBase
             return BadRequest("Elder does not have a MAC address");
         }
         DateTime currentDate = DateTime.UtcNow;
-        int heartrateMin = 40;
-        int heartrateMax = 200;
-        double spo2Min = 0.7;
-        double spo2Max = 1.0;
-        int stepsMin = 0;
-        int stepsMax = 1000;
-        double distanceMin = 0.0;
-        double distanceMax = 10.0;
-        int fallMin = 0;
-        int fallMax = 10;
+        const int heartrateMin = 40;
+        const int heartrateMax = 200;
+        const double spo2Min = 0.7;
+        const double spo2Max = 1.0;
+        const int stepsMin = 0;
+        const int stepsMax = 1000;
+        const double distanceMin = 0.0;
+        const double distanceMax = 10.0;
+        const int fallMin = 0;
+        const int fallMax = 10;
 
         for (int i = -15000; i < 15000; i++)
         {

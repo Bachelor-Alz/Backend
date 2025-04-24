@@ -45,7 +45,7 @@ public class AiService
         try
         {
             await _db.SaveChangesAsync();
-            Elder elder = _elderManager.Users.FirstOrDefault(elder => elder.Arduino == addrees);
+            Elder? elder = _elderManager.Users.FirstOrDefault(elder => elder.Arduino == addrees);
             if (elder == null)
             {
                 _logger.LogWarning("Elder {address} does not exist", addrees);
@@ -70,21 +70,19 @@ public class AiService
                     return;
                 }
                 Location? location = _db.Location.Where(a => a.MacAddress == elder.Arduino).OrderByDescending(a => a.Timestamp).FirstOrDefault();
-                if (location != null)
-                {
-                    string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
+                if (location == null) continue;
+                string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
 
-                    _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
-                    try
-                    {
-                        await _emailService.SendEmail(emailInfo, "Fall detected",
-                            $"Fall detected for elder {elder.Name} at location {address}.");
-                    }
-                    catch
-                    {
-                        _logger.LogError("Failed to send email to {caregiver}", caregiver.Email);
-                        return;
-                    }
+                _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
+                try
+                {
+                    await _emailService.SendEmail(emailInfo, "Fall detected",
+                        $"Fall detected for elder {elder.Name} at location {address}.");
+                }
+                catch
+                {
+                    _logger.LogError("Failed to send email to {caregiver}", caregiver.Email);
+                    return;
                 }
             }
         }
