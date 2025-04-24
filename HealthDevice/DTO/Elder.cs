@@ -9,6 +9,7 @@ public class Elder : IdentityUser
     public string? Arduino { get; set; }
     public double latitude { get; set; }
     public double longitude { get; set; }
+    public bool outOfPerimeter { get; set; }
 }
 
 public class ElderLocation
