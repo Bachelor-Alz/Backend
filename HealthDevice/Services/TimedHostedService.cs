@@ -30,25 +30,23 @@ namespace HealthDevice.Services
                     foreach (Elder elder in elders)
                     {
                         string? arduino = elder.Arduino;
-                        if(arduino != null)
-                        {
-                            DateTime currentTime = DateTime.UtcNow;
+                        if (arduino == null) continue;
+                        DateTime currentTime = DateTime.UtcNow;
                         
-                            List<Heartrate> heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
-                            db.Heartrate.AddRange(heartRate);
+                        List<Heartrate> heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
+                        db.Heartrate.AddRange(heartRate);
 
-                            List<Spo2> spo2 = await healthService.CalculateSpo2(currentTime, arduino);
-                            db.SpO2.AddRange(spo2);
+                        List<Spo2> spo2 = await healthService.CalculateSpo2(currentTime, arduino);
+                        db.SpO2.AddRange(spo2);
 
-                            Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, arduino);
-                            db.Distance.Add(distance);
+                        Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, arduino);
+                        db.Distance.Add(distance);
 
-                            await healthService.DeleteMax30102Data(currentTime, arduino);
-                            await healthService.DeleteGpsData(currentTime, arduino);
+                        await healthService.DeleteMax30102Data(currentTime, arduino);
+                        await healthService.DeleteGpsData(currentTime, arduino);
                         
-                            await elderManager.UpdateAsync(elder);
-                        }
-                     
+                        await elderManager.UpdateAsync(elder);
+
                     }
                 }
 

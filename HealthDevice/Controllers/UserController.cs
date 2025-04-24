@@ -20,7 +20,6 @@ public class UserController : ControllerBase
     private readonly ILogger<UserController> _logger;
     private readonly ApplicationDbContext _dbContext;
     private readonly GeoService _geoService;
-    private readonly HealthService _healthService;
     
     public UserController(
         UserManager<Elder> elderManager,
@@ -28,8 +27,7 @@ public class UserController : ControllerBase
         UserService userService,
         ILogger<UserController> logger,
         ApplicationDbContext dbContext,
-        GeoService geoService,
-        HealthService healthService)
+        GeoService geoService)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
@@ -37,7 +35,6 @@ public class UserController : ControllerBase
         _logger = logger;
         _dbContext = dbContext;
         _geoService = geoService;
-        _healthService = healthService;
     }
     
     
@@ -50,7 +47,7 @@ public class UserController : ControllerBase
             _logger.LogWarning("Login attempt with empty email or password.");
             return BadRequest("Email and password are required.");
         }
-        if (!userLoginDto.Email.Contains("@"))
+        if (!userLoginDto.Email.Contains('@'))
         {
             _logger.LogWarning("Invalid email format: {Email}", userLoginDto.Email);
             return BadRequest("Invalid email format.");
@@ -73,7 +70,7 @@ public class UserController : ControllerBase
             _logger.LogWarning("Registration attempt with empty email or password.");
             return BadRequest("Email and password are required.");
         }
-        if (!userRegisterDto.Email.Contains("@"))
+        if (!userRegisterDto.Email.Contains('@'))
         {
             _logger.LogWarning("Invalid email format: {Email}", userRegisterDto.Email);
             return BadRequest("Invalid email format.");
@@ -93,7 +90,7 @@ public class UserController : ControllerBase
             _logger.LogWarning("Elder registration requires latitude and longitude.");
             return BadRequest("Elder registration requires latitude and longitude.");
         }
-        if (userRegisterDto.Role == Roles.Caregiver && userRegisterDto.latitude != null && userRegisterDto.longitude != null)
+        if (userRegisterDto is { Role: Roles.Caregiver, latitude: not null, longitude: not null })
         {
             _logger.LogWarning("Caregiver registration should not include latitude and longitude.");
             return BadRequest("Caregiver registration should not include latitude and longitude.");
@@ -166,7 +163,7 @@ public class UserController : ControllerBase
         _logger.LogInformation("Elder found. {elder}", elder);
 
         // Add the elder to the caregiver's Elders collection
-        caregiver.Invites ??= new List<Elder>();
+        caregiver.Invites ??= [];
         caregiver.Invites.Add(elder);
         _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
         try
@@ -209,7 +206,7 @@ public class UserController : ControllerBase
         }
         _logger.LogInformation("Elder found. {elder}", elder);
 
-        if (caregiver.Elders != null) caregiver.Elders.Remove(elder);
+        caregiver.Elders?.Remove(elder);
         try
         {
             await _caregiverManager.UpdateAsync(caregiver);
@@ -291,30 +288,26 @@ public class UserController : ControllerBase
         _logger.LogInformation("Elders count: {elders}", elders.Count);
         List<GPS> gpsData = _dbContext.GPSData.ToList();
         _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
-        var filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
+        List<GPS> filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
         _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
         List<ArduinoInfo> addressNotAssociated = new List<ArduinoInfo>();
         foreach (GPS gps in filteredGpsData)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
-            double distance = _geoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
+            double distance = GeoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
             int minutesSinceActivity = (int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes;
-            if (distance < 0.5)
+            if (!(distance < 0.5)) continue;
+            _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
+            if (gps.Address == null) continue;
+            ArduinoInfo arduinoInfo = new ArduinoInfo
             {
-                _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
-                if (gps.Address != null)
-                {
-                    ArduinoInfo arduinoInfo = new ArduinoInfo
-                    {
-                        Id = gps.Id,
-                        MacAddress = gps.Address,
-                        Address = GpsAddress,
-                        Distance = distance,
-                        lastActivity = minutesSinceActivity
-                    };
-                    addressNotAssociated.Add(arduinoInfo);
-                }
-            }
+                Id = gps.Id,
+                MacAddress = gps.Address,
+                Address = GpsAddress,
+                Distance = distance,
+                lastActivity = minutesSinceActivity
+            };
+            addressNotAssociated.Add(arduinoInfo);
         }
         _logger.LogInformation("Address not associated count: {addressNotAssociated}", addressNotAssociated.Count);
         return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
@@ -476,7 +469,7 @@ public class UserController : ControllerBase
         _logger.LogInformation("Elder found. {elder}", elder);
         if (caregiver.Invites != null)
         {
-            caregiver.Elders ??= new List<Elder>();
+            caregiver.Elders ??= [];
             caregiver.Elders.Add(elder);
             caregiver.Invites.Remove(elder);
         }

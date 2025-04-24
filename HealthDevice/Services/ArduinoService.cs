@@ -91,23 +91,18 @@ public class ArduinoService
         {
             data.steps += neweststeps.StepsCount;
             _logger.LogInformation("{Timestamp}: Found existing steps for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
-            _dbContext.Steps.Add(new Steps()
-            {
-                StepsCount = data.steps,
-                Timestamp = receivedAt,
-                MacAddress = data.MacAddress
-            });
         }
         else
         {
             _logger.LogInformation("{Timestamp}: No existing steps found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
-            _dbContext.Steps.Add(new Steps()
-            {
-                StepsCount = data.steps,
-                Timestamp = receivedAt,
-                MacAddress = data.MacAddress
-            });
         }
+
+        _dbContext.Steps.Add(new Steps()
+        {
+            StepsCount = data.steps,
+            Timestamp = receivedAt,
+            MacAddress = data.MacAddress
+        });
 
         int totalHr = 0;
         float totalSpO2 = 0;

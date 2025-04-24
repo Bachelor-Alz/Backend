@@ -25,14 +25,12 @@ public class GeoService
         _logger.LogInformation("Response from Nominatim: {json}", json);
         var data = JsonSerializer.Deserialize<NominatimResponse>(json);
         _logger.LogInformation("Response from Nominatim: {data}", data);
-        if(data != null)
-            return FormatAddress(data);
-        return "Unknown location";
+        return data != null ? FormatAddress(data) : "Unknown location";
     }
 
     public async Task<Location?> GetCoordinatesFromAddress(string street, string city)
     {
-        var queryParams = new Dictionary<string, string?>
+        Dictionary<string, string?> queryParams = new()
         {
             ["street"] = street,
             ["city"] = city,
@@ -40,14 +38,14 @@ public class GeoService
 
         string query = string.Join("&", queryParams
             .Where(kvp => !string.IsNullOrWhiteSpace(kvp.Value))
-            .Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value!)}"));
+            .Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value ?? string.Empty)}"));
 
         string url = $"https://nominatim.openstreetmap.org/search?format=json&{query}";
         string json = await (await _httpClient.GetAsync(url)).Content.ReadAsStringAsync();
 
         _logger.LogInformation("Response from Nominatim: {json}", json);
 
-        var data = JsonSerializer.Deserialize<List<NominatimSearchResponse>>(json);
+        List<NominatimSearchResponse>? data = JsonSerializer.Deserialize<List<NominatimSearchResponse>>(json);
         _logger.LogInformation("Response from Nominatim: {data}", data);
         string[]? box = data?.FirstOrDefault()?.BoundingBox;
 
@@ -62,23 +60,20 @@ public class GeoService
     }
 
 
-    private string FormatAddress(NominatimResponse response)
+    private static string FormatAddress(NominatimResponse response)
     {
-        if (response.DisplayName != null)
-        {
-            string[] addressParts = response.DisplayName.Split(", ");
-            string houseNumber = addressParts[0];
-            string street = addressParts[1];
-            string city = addressParts[3];
-            string postalCode = addressParts[6];
-            string country = addressParts[7];
-            string formattedAddress = $"{street} {houseNumber}, {city}, {postalCode}, {country}";
-            return formattedAddress;
-        }
-        return "Unknown location";
+        if (response.DisplayName == null) return "Unknown location";
+        string[] addressParts = response.DisplayName.Split(", ");
+        string houseNumber = addressParts[0];
+        string street = addressParts[1];
+        string city = addressParts[3];
+        string postalCode = addressParts[6];
+        string country = addressParts[7];
+        string formattedAddress = $"{street} {houseNumber}, {city}, {postalCode}, {country}";
+        return formattedAddress;
     }
 
-    public double CalculateDistance(Location locationA, Location locationB)
+    public static double CalculateDistance(Location locationA, Location locationB)
     {
         double dLat = (locationA.Latitude - locationB.Latitude) * Math.PI / 180;
         double dLon = (locationA.Longitude - locationB.Longitude) * Math.PI / 180;
@@ -98,7 +93,7 @@ public class GeoService
 public class NominatimResponse
 {
     [JsonPropertyName("display_name")]
-    public string? DisplayName { get; set; }
+    public string? DisplayName { get; init; }
 }
 
 public class NominatimSearchResponse

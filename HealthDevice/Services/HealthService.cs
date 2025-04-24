@@ -1,8 +1,6 @@
 ﻿using HealthDevice.Data;
 using HealthDevice.DTO;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
@@ -42,21 +40,17 @@ public class HealthService
             _logger.LogWarning("No heart rate data found for elder {Address}", Address);
             return Task.FromResult(new List<Heartrate>());
         }
-
-        IEnumerable<int> values = heartRates.Select(h => h.Heartrate);
-
-        IEnumerable<int> enumerable = values.ToList();
         
         DateTime earliestDate = heartRates.Min(h => h.Timestamp);
         
         //What to calc for each hour
-        List<Heartrate> heartRateList = new List<Heartrate>();
+        List<Heartrate> heartRateList = [];
         for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
             var date1 = date;
             var heartRateInHour = heartRates.Where(h => h.Timestamp >= date1 && h.Timestamp < date1.AddHours(1));
             IEnumerable<Max30102> rateInHour = heartRateInHour.ToList();
-            if (rateInHour.Any())
+            if (!rateInHour.Any()) continue;
             {
                 _logger.LogInformation("Heart rate data found for mac-address {Address} in hour {Hour}", Address, date);
                 heartRateList.Add(new Heartrate
@@ -91,11 +85,11 @@ public class HealthService
 
         DateTime earliestDate = spo2Data.Min(s => s.Timestamp);
 
-        List<Spo2> spo2List = new List<Spo2>();
+        List<Spo2> spo2List = [];
         for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
-            var hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
-            if (hourlyData.Any())
+            List<Max30102> hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
+            if (hourlyData.Count == 0) continue;
             {
                 _logger.LogInformation("SpO2 data found for mac-address {Address} in hour {Hour}", address, date);
                 spo2List.Add(new Spo2
@@ -163,14 +157,14 @@ public class HealthService
     }
 
     public async Task<List<T>> GetHealthData<T>(
-    string elderEmail, Period period, DateTime date, Func<T, bool> filter) where T : class
+    string elderEmail, Period period, DateTime date) where T : class
 {
     DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
     Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
     if (elder == null || string.IsNullOrEmpty(elder.Arduino))
     {
         _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
-        return new List<T>();
+        return [];
     }
 
     string arduino = elder.Arduino;
@@ -216,7 +210,7 @@ public class HealthService
                 break;
         default:
             _logger.LogError("Unsupported type {Type}", typeof(T).Name);
-            return new List<T>();
+            return [];
     }
 
     _logger.LogInformation("Get health data complete{SensorData}", sensorData);
@@ -228,13 +222,11 @@ public class HealthService
     if (data.Count != 0)
     {
         _logger.LogInformation("Data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
-        return data; // Ensure this is returned
+        return data;
     }
-    else
-    {
-        _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
-        return new List<T>();
-    }
+
+    _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
+    return [];
 
 }
 
