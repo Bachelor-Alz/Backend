@@ -1,6 +1,7 @@
 ﻿using HealthDevice.Data;
 using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
 
@@ -12,7 +13,8 @@ public class HealthService : IHealthService
     private readonly GeoService _geoService;
     private readonly ApplicationDbContext _db;
     private readonly UserManager<Elder> _elderManager;
-    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db, UserManager<Elder> elderManager)
+    private readonly IRepositoryFactory _repositoryFactory;
+    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db, UserManager<Elder> elderManager, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
         _caregiverManager = caregiverManager;
@@ -20,6 +22,7 @@ public class HealthService : IHealthService
         _geoService = geoService;
         _db = db;
         _elderManager = elderManager;
+        _repositoryFactory = repositoryFactory;
     }
 
     private DateTime GetEarlierDate(DateTime date, Period period) => period switch
@@ -143,79 +146,28 @@ public class HealthService : IHealthService
         });
     }
 
-    public async Task<List<T>> GetHealthData<T>(
-    string elderEmail, Period period, DateTime date) where T : class
-{
-    DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
-    Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-    if (elder == null || string.IsNullOrEmpty(elder.Arduino))
+    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date) where T : class
     {
-        _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
-        return [];
-    }
+        DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
+        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        if (elder == null || string.IsNullOrEmpty(elder.Arduino))
+        {
+            _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
+            return new List<T>();
+        }
 
-    string arduino = elder.Arduino;
-    IQueryable<T> sensorData;
+        string arduino = elder.Arduino;
+        IRepository<T> repository = _repositoryFactory.GetRepository<T>();
 
-    // Determine the correct DbSet to query based on the type T
-    switch (typeof(T).Name)
-    {
-        case nameof(Max30102):
-            sensorData = _db.MAX30102Data
-                .Where(d => d.Address == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-            break;
-        case nameof(GPS):
-            sensorData = _db.GPSData
-                .Where(d => d.Address == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-            break;
-        case nameof(FallInfo):
-            sensorData = _db.FallInfo
-                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-            break;
-        case nameof(Kilometer):
-            sensorData = _db.Distance
-                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-            break;
-        case nameof(Steps):
-            sensorData = _db.Steps
-                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-            break;
-        case nameof(Heartrate):
-            sensorData = _db.Heartrate
-                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-                break;
-        case nameof(Spo2):
-            sensorData = _db.SpO2
-                .Where(d => d.MacAddress == arduino && d.Timestamp >= earlierDate && d.Timestamp <= date)
-                .Cast<T>();
-                break;
-        default:
-            _logger.LogError("Unsupported type {Type}", typeof(T).Name);
-            return [];
-    }
+        List<T> data = await repository.Query()
+            .Where(d => EF.Property<string>(d, "MacAddress") == arduino &&
+                        EF.Property<DateTime>(d, "Timestamp") >= earlierDate &&
+                        EF.Property<DateTime>(d, "Timestamp") <= date)
+            .ToListAsync();
 
-    _logger.LogInformation("Get health data complete{SensorData}", sensorData);
-    _logger.LogInformation("Querying Steps data for Arduino {Arduino} between {Start} and {End}", arduino, earlierDate, date);
-
-    List<T> data = sensorData.ToList();
-
-    _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
-    if (data.Count != 0)
-    {
-        _logger.LogInformation("Data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
+        _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
         return data;
     }
-
-    _logger.LogWarning("No data found for elder {Email} and type {Type}", elderEmail, typeof(T).Name);
-    return [];
-
-}
 
     public Task DeleteMax30102Data(DateTime currentDate, string Arduino)
     {
