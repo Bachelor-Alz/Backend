@@ -130,19 +130,6 @@ public class HealthService
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             d += 6371 * c;
         }
-        Kilometer? newestKilometer = _db.Distance
-            .Where(c => c.Timestamp <= currentDate && c.MacAddress == Arduino)
-            .ToList().LastOrDefault();
-        if (newestKilometer != null && newestKilometer.Timestamp.Date == currentDate.Date)
-        {
-            _logger.LogInformation("Found existing distance data for mac-address {Arduino} on date {Date}", Arduino, currentDate);
-            d += newestKilometer.Distance;
-        }
-        else
-        {
-            _logger.LogInformation("No existing distance data found for mac-address {Arduino} on date {Date}, So creating a new", Arduino, currentDate);
-            d += 0;
-        }
         if (d == 0)
         {
             _logger.LogWarning("No distance data found for elder {Arduino}", Arduino);

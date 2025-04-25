@@ -273,11 +273,6 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound();
         }
-        if (string.IsNullOrEmpty(elder.Arduino))
-        {
-            _logger.LogError("Elder has no Arduino address.");
-            return BadRequest("Elder has no Arduino address.");
-        }
         _logger.LogInformation("Elder found. {elder}", elder);
         Location elderLocation = new Location
         {
@@ -296,7 +291,7 @@ public class UserController : ControllerBase
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
             double distance = GeoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
-            int minutesSinceActivity = (int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes;
+            int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes)*-1;
             if (!(distance < 0.5)) continue;
             _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
             if (gps.Address == null) continue;

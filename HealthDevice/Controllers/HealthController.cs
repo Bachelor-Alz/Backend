@@ -294,34 +294,56 @@ namespace HealthDevice.Controllers
         }
 
         [HttpGet("Distance")]
-        public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, string period = "Hour")
-        {
-            if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
-            {
-                _logger.LogError("Invalid period specified: {Period}", period);
-                return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
-            }
+public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, string period = "Hour")
+{
+    if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
+    {
+        _logger.LogError("Invalid period specified: {Period}", period);
+        return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+    }
 
-            if (periodEnum == Period.Hour)
+    if (Period.Hour == periodEnum)
+    {
+        _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
+        DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
+        List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
+            elderEmail, periodEnum, newTime);
+        _logger.LogInformation("Fetched distance data: {Count}", data.Count);
+        return data.Count != 0 ? data : [];
+    }
+    if (Period.Day == periodEnum)
+    {
+        _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
+        DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+        List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
+            elderEmail, periodEnum, newTime);
+        List<Kilometer> result = data
+            .GroupBy(d => d.Timestamp.Hour) // Group by the hour
+            .Select(g => new Kilometer
             {
-                _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
-                List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
-                    elderEmail, periodEnum, newTime);
-                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                return data.Count != 0 ? data : [];
-
-            }
-            else
+                Timestamp = g.First().Timestamp.Date.AddHours(g.Key), // Use the hour as the timestamp
+                Distance = g.Sum(d => d.Distance) // Sum the distance for each hour
+            }).ToList();
+        _logger.LogInformation("Fetched distance data: {Count}", data.Count);
+        return result.Count != 0 ? result : [];
+    }
+    else
+    {
+        _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
+        DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+        List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
+            elderEmail, periodEnum, newTime);
+        List<Kilometer> result = data
+            .GroupBy(d => d.Timestamp.Date) // Group by the date
+            .Select(g => new Kilometer
             {
-                _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
-                List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
-                    elderEmail, periodEnum, newTime);
-                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                return data.Count != 0 ? data : [];
-            }
-        }
+                Timestamp = g.Key, // Use the date as the timestamp
+                Distance = g.Sum(d => d.Distance) // Sum the distance for each day
+            }).ToList();
+        _logger.LogInformation("Fetched distance data: {Count}", data.Count);
+        return result.Count != 0 ? result : [];
+    }
+}
         
         [HttpGet("Steps")]
         public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string period = "Hour")
@@ -341,14 +363,38 @@ namespace HealthDevice.Controllers
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
             }
-            else
+            if(Period.Day == periodEnum)
             {
                 _logger.LogInformation("Processing daily steps data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
                 List<Steps> data = await _healthService.GetHealthData<Steps>(
                     elderEmail, periodEnum, newTime);
+                List<Steps> result = data
+                    .GroupBy(s => s.Timestamp.Hour) // Group by the date (ignoring time)
+                    .Select(g => new Steps
+                    {
+                        Timestamp = new DateTime(g.Key), // Use the date as the timestamp
+                        StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
+                    }).ToList();
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
-                return data.Count != 0 ? data : [];
+                return result.Count != 0 ? data : [];
+            }
+            else
+            {
+                _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+                List<Steps> data = await _healthService.GetHealthData<Steps>(
+                    elderEmail, periodEnum, newTime);
+                List<Steps> result = data
+                    .GroupBy(s => s.Timestamp.Date) // Group by the date (ignoring time)
+                    .Select(g => new Steps
+                    {
+                        Timestamp = g.Key, // Use the date as the timestamp
+                        StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
+                    })
+                    .ToList();
+                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+                return result.Count != 0 ? result : [];
             }
         }
 
@@ -381,17 +427,6 @@ namespace HealthDevice.Controllers
                 .Where(s => s.MacAddress == macAddress)
                 .OrderByDescending(s => s.Timestamp)
                 .FirstOrDefault();
-
-            Location? location = _db.Location
-                .Where(m => m.MacAddress == macAddress)
-                .OrderByDescending(m => m.Timestamp)
-                .FirstOrDefault();
-
-            string address = "No address found";
-            if(location != null)
-            { 
-                address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-            } 
             
             _logger.LogInformation("Fetched data for elder: {ElderEmail}", elderEmail);
             
@@ -400,7 +435,6 @@ namespace HealthDevice.Controllers
                 allFall = _db.FallInfo.Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.Heartrate ?? 0,
-                locationAdress = address,
                 SpO2 = max30102?.SpO2 ?? 0,
                 steps = steps?.StepsCount ?? 0
             };
@@ -427,35 +461,68 @@ namespace HealthDevice.Controllers
                 _logger.LogInformation("Processed fall data: {Count}", result.Count);
                 return result.Count != 0 ? result : [];
             }
+            if(Period.Day == periodEnum)
+            {
+                _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+                List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
+                    elderEmail, periodEnum, newTime);
+                // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
+                List<FallDTO> result = data
+                    .GroupBy(f => f.Timestamp.Hour)
+                    .Select(g => new FallDTO
+                    {
+                        Timestamp = g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp,
+                        fallCount = g.Count()
+                    }).ToList();
+
+// Add missing days with no falls
+                DateTime startDate = date.Date - TimeSpan.FromDays(1); // Adjust based on the period
+                DateTime endDate = date.Date; // Adjust based on the period
+                for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
+                {
+                    if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
+                    {
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = currentDate,
+                            fallCount = 0
+                        });
+                    }
+                }
+
+                return result.OrderBy(r => r.Timestamp.Hour).ToList();
+            }
             else
             {
                 _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
                 List<FallInfo> data = await _healthService.GetHealthData<FallInfo>(
                     elderEmail, periodEnum, newTime);
-                List<FallDTO> result = [];
-                int i = 0;
-                DateTime fallDate = data.First().Timestamp.Date;
-                foreach (var fall in data)
-                {
-                    if (fall.Timestamp.Date == fallDate.Date)
+                List<FallDTO> result = data
+                    .GroupBy(f => f.Timestamp.Date)
+                    .Select(g => new FallDTO
                     {
-                        i++;
-                    }
-                    else
-                    {
-                        i = 0;
-                        fallDate = fall.Timestamp.Date;
-                    }
+                        Timestamp = g.OrderByDescending(f => f.Timestamp).First().Timestamp.Date,
+                        fallCount = g.Count()
+                    }).ToList();
 
-                    result.Add(new FallDTO
+// Add missing days with no falls
+                DateTime startDate = date.Date - TimeSpan.FromDays(7); // Adjust based on the period
+                DateTime endDate = date.Date; // Adjust based on the period
+                for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddDays(1))
+                {
+                    if (result.All(r => r.Timestamp.Date != currentDate.Date))
                     {
-                        Timestamp = fall.Timestamp,
-                        fallCount = i
-                    });
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = currentDate,
+                            fallCount = 0
+                        });
+                    }
                 }
-                _logger.LogInformation("Processed fall data: {Count}", result.Count);
-                return result.Count != 0 ? result : [];
+
+                return result.OrderBy(r => r.Timestamp.Date).ToList();
             }
         }
         
