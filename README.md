@@ -39,7 +39,7 @@ To access the Swagger documentation, visit:
 ## Delete the database
    To delete the data in the database run
    ```sh
-   docker-compose down
+   docker-compose down -v
    ```
 
 ## Update to the newest version of the HealthDevice
