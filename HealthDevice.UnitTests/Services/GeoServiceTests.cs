@@ -1,0 +1,120 @@
+using System.Globalization;
+using HealthDevice.DTO;
+using HealthDevice.Services;
+using RichardSzalay.MockHttp;
+using Microsoft.Extensions.Logging.Abstractions;
+
+public class GeoServiceTests
+{
+    // Ensure consistent culture settings for tests
+    // This avoids issues with number formatting (e.g., ',' vs '.') in coordinates across different locales
+    public GeoServiceTests()
+    {
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+        Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+    }
+
+    [Fact]
+    public void CalculateDistance_ShouldReturnCorrectDistance()
+    {
+        // Arrange
+        var location1 = new Location
+            { Latitude = 57.0124, Longitude = 9.9915 }; // Selma Lagerløfs Vej 300, 9220 Aalborg
+        var location2 = new Location 
+            { Latitude = 57.0235, Longitude = 9.9771 }; // Ribevej 3, 9220 Aalborg
+        var expectedDistance = 1.5; // Approximate distance in kilometers
+
+        // Act
+        var distance = GeoService.CalculateDistance(location1, location2);
+
+        // Assert
+        Assert.InRange(distance, expectedDistance - 0.05, expectedDistance + 0.05); // Allowing a small margin of error
+    }
+
+    [Fact]
+    public void CalculateDistance_IdenticalLocations_ShouldReturnZero()
+    {
+        // Arrange
+        var location = new Location { Latitude = 57.0488, Longitude = 9.9217 };
+
+        // Act
+        var distance = GeoService.CalculateDistance(location, location);
+
+        // Assert
+        Assert.Equal(0, distance);
+    }
+
+    [Fact]
+    public async Task GetAddressFromCoordinates_ShouldReturnValidAddress()
+    {
+        // Arrange
+        var mockHttp = new MockHttpMessageHandler();
+        mockHttp.When(
+                "https://nominatim.openstreetmap.org/reverse?format=json&lat=57.0488&lon=9.9217&zoom=18&addressdetails=1")
+            .Respond("application/json",
+                "{\"display_name\":\"300, Selma Lagerløfs Vej, x, Aalborg, x, x, 9220, Denmark\"}");
+
+        var httpClient = mockHttp.ToHttpClient();
+        var logger = NullLogger<GeoService>.Instance;
+        var geoService = new GeoService(httpClient, logger);
+
+        var latitude = 57.0488;
+        var longitude = 9.9217;
+
+        // Act
+        var address = await geoService.GetAddressFromCoordinates(latitude, longitude);
+
+        // Assert
+        Assert.NotNull(address);
+        Assert.Contains("Selma Lagerløfs Vej 300", address);
+        Assert.Contains("Aalborg", address);
+        Assert.Contains("9220", address);
+    }
+
+    [Fact]
+    public async Task GetCoordinatesFromAddress_ShouldReturnValidCoordinates()
+    {
+        // Arrange
+        var mockHttp = new MockHttpMessageHandler();
+        mockHttp.When(
+                "https://nominatim.openstreetmap.org/search?format=json&street=Selma%20Lagerl%C3%B8fs%20Vej%20300&city=Aalborg")
+            .Respond("application/json", "[{\"boundingbox\":[\"57.0488\",\"57.0489\",\"9.9216\",\"9.9217\"]}]");
+
+        var httpClient = mockHttp.ToHttpClient();
+        var logger = NullLogger<GeoService>.Instance;
+        var geoService = new GeoService(httpClient, logger);
+
+        var street = "Selma Lagerløfs Vej 300";
+        var city = "Aalborg";
+
+        // Act
+        var location = await geoService.GetCoordinatesFromAddress(street, city);
+
+        // Assert
+        Assert.NotNull(location);
+        Assert.InRange(location!.Latitude, 57.0487, 57.0490);
+        Assert.InRange(location.Longitude, 9.9215, 9.9218);
+    }
+
+    [Fact]
+    public async Task GetCoordinatesFromAddress_NoResults_ShouldReturnNull()
+    {
+        // Arrange
+        var mockHttp = new MockHttpMessageHandler();
+        mockHttp.When("https://nominatim.openstreetmap.org/*")
+                .Respond("application/json", "[]");
+
+        var httpClient = mockHttp.ToHttpClient();
+        var logger = NullLogger<GeoService>.Instance;
+        var geoService = new GeoService(httpClient, logger);
+
+        var street = "Nonexistent Street";
+        var city = "Nowhere";
+
+        // Act
+        var location = await geoService.GetCoordinatesFromAddress(street, city);
+
+        // Assert
+        Assert.Null(location);
+    }
+}
