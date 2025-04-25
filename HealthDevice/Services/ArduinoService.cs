@@ -30,7 +30,7 @@ public class ArduinoService : IArduinoService
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
         
-            _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().Address, ip);
+            _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
             _dbContext.Set<T>().AddRange(data);
         try
         {
@@ -51,7 +51,7 @@ public class ArduinoService : IArduinoService
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.MacAddress);
+        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.MacAddress == data.MacAddress);
         if (elder == null)
         {
             _logger.LogWarning("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
@@ -63,7 +63,7 @@ public class ArduinoService : IArduinoService
             Latitude = data.Latitude,
             Longitude = data.Longitude,
             Timestamp = receivedAt,
-            Address = data.MacAddress
+            MacAddress = data.MacAddress
         });
         
         _dbContext.Steps.Add(new Steps()
@@ -90,7 +90,7 @@ public class ArduinoService : IArduinoService
             Heartrate = totalHr / data.Max30102.Count,
             SpO2 = totalSpO2 / data.Max30102.Count,
             Timestamp = receivedAt,
-            Address = data.MacAddress
+            MacAddress = data.MacAddress
         });
         try
         {

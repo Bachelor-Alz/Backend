@@ -403,18 +403,18 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
         public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderEmail)
         {
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
-            if (elder is null || string.IsNullOrEmpty(elder.Arduino))
+            if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
                 return new DashBoard();
             }
             _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderEmail);
 
-            string macAddress = elder.Arduino;
+            string macAddress = elder.MacAddress;
 
             // Query data objects using the MacAddress
             Max30102? max30102 = _db.MAX30102Data
-                .Where(m => m.Address == macAddress)
+                .Where(m => m.MacAddress == macAddress)
                 .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefault();
 
@@ -544,13 +544,13 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
                 return BadRequest("Elder not found.");
             }
-            if (string.IsNullOrEmpty(elder.Arduino))
+            if (string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
                 return BadRequest("Elder Arduino not set.");
             }
             _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elderEmail);
-            Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+            Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.MacAddress);
             if (location is null)
             {
                 _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
@@ -589,19 +589,19 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             List<ElderLocation> elderLocations = [];
             foreach (Elder elder in elders)
             {
-                if (string.IsNullOrEmpty(elder.Arduino))
+                if (string.IsNullOrEmpty(elder.MacAddress))
                 {
                     _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elder.Email);
                     continue;
                 }
                 _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elder.Email);
-                Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+                Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.MacAddress);
                 if (location == null) continue;
                 {
                     _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elder.Email);
                     if (elder.Email == null) continue;
                     _logger.LogInformation("Fetching perimeter data for elder: {ElderEmail}", elder.Email);
-                    Perimeter? perimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+                    Perimeter? perimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.MacAddress);
                     if (perimeter != null)
                     {
                         _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
@@ -652,13 +652,13 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
                 return BadRequest("Elder not found.");
             }
-            if (string.IsNullOrEmpty(elder.Arduino))
+            if (string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
                 return BadRequest("Elder Arduino not set.");
             }
             _logger.LogInformation("Fetching address data for elder: {ElderEmail}", elderEmail);
-            Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+            Location? location = _db.Location.FirstOrDefault(m => m.MacAddress == elder.MacAddress);
             if (location is null)
             {
                 _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
@@ -685,7 +685,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
                 return BadRequest("Elder not found.");
             }
-            if (string.IsNullOrEmpty(elder.Arduino))
+            if (string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
                 return BadRequest("Elder Arduino not set.");
@@ -696,7 +696,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 return BadRequest("Invalid radius value.");
             }
             _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
-            Perimeter? oldPerimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.Arduino);
+            Perimeter? oldPerimeter = _db.Perimeter.FirstOrDefault(m => m.MacAddress == elder.MacAddress);
             if (oldPerimeter == null)
             {
                 _logger.LogInformation("Creating new perimeter for elder: {ElderEmail}", elderEmail);
@@ -705,7 +705,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                     Latitude = elder.latitude,
                     Longitude = elder.longitude,
                     Radius = radius,
-                    MacAddress = elder.Arduino
+                    MacAddress = elder.MacAddress
                 };
                 _db.Perimeter.Add(perimeter);
             }
@@ -717,7 +717,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                     Latitude = elder.latitude,
                     Longitude = elder.longitude,
                     Radius = radius,
-                    MacAddress = elder.Arduino
+                    MacAddress = elder.MacAddress
                 };
                 _db.Perimeter.Update(oldPerimeter);
                 

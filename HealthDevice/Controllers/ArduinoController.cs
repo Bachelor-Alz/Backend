@@ -25,7 +25,7 @@ public class ArduinoController : ControllerBase
             _logger.LogWarning("Received empty GPS data.");
             return BadRequest("GPS data cannot be empty.");
         }
-        if (string.IsNullOrEmpty(data.First().Address))
+        if (string.IsNullOrEmpty(data.First().MacAddress))
         {
             _logger.LogWarning("Received empty MAC address.");
             return BadRequest("MAC address cannot be empty.");
@@ -42,7 +42,7 @@ public class ArduinoController : ControllerBase
             _logger.LogWarning("Received empty Max30102 data.");
             return BadRequest("Max30102 data cannot be empty.");
         }
-        if (string.IsNullOrEmpty(data.First().Address))
+        if (string.IsNullOrEmpty(data.First().MacAddress))
         {
             _logger.LogWarning("Received empty MAC address.");
             return BadRequest("MAC address cannot be empty.");

@@ -284,7 +284,7 @@ public class UserController : ControllerBase
         _logger.LogInformation("Elders count: {elders}", elders.Count);
         List<GPS> gpsData = _dbContext.GPSData.ToList();
         _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
-        List<GPS> filteredGpsData = gpsData.Where(g => elders.All(e => e.Arduino != g.Address)).ToList();
+        List<GPS> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
         _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
         List<ArduinoInfo> addressNotAssociated = new List<ArduinoInfo>();
         foreach (GPS gps in filteredGpsData)
@@ -294,11 +294,11 @@ public class UserController : ControllerBase
             int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes)*-1;
             if (!(distance < 0.5)) continue;
             _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
-            if (gps.Address == null) continue;
+            if (gps.MacAddress == null) continue;
             ArduinoInfo arduinoInfo = new ArduinoInfo
             {
                 Id = gps.Id,
-                MacAddress = gps.Address,
+                MacAddress = gps.MacAddress,
                 Address = GpsAddress,
                 Distance = distance,
                 lastActivity = minutesSinceActivity
@@ -331,7 +331,7 @@ public class UserController : ControllerBase
             return BadRequest("Arduino address cannot be null or empty.");
         }
         _logger.LogInformation("Setting Arduino address for elder {elder.Email} to {address}.", elder.Email, address);
-        elder.Arduino = address;
+        elder.MacAddress = address;
         try
         {
             await _elderManager.UpdateAsync(elder);
@@ -354,7 +354,7 @@ public class UserController : ControllerBase
             _logger.LogError("Elder not found.");
             return NotFound("Elder not found.");
         }
-        if (string.IsNullOrEmpty(elder.Arduino))
+        if (string.IsNullOrEmpty(elder.MacAddress))
         {
             _logger.LogError("Elder has no Arduino address.");
             return BadRequest("Elder has no Arduino address.");

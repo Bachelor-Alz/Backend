@@ -45,7 +45,7 @@ public class AiService : IAIService
         try
         {
             await _db.SaveChangesAsync();
-            Elder? elder = _elderManager.Users.FirstOrDefault(elder => elder.Arduino == addrees);
+            Elder? elder = _elderManager.Users.FirstOrDefault(elder => elder.MacAddress == addrees);
             if (elder == null)
             {
                 _logger.LogWarning("Elder {address} does not exist", addrees);
@@ -69,7 +69,7 @@ public class AiService : IAIService
                     _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
-                Location? location = _db.Location.Where(a => a.MacAddress == elder.Arduino).OrderByDescending(a => a.Timestamp).FirstOrDefault();
+                Location? location = _db.Location.Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefault();
                 if (location == null) continue;
                 string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
 

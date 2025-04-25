@@ -46,7 +46,7 @@ public class TestController : ControllerBase
             return NotFound("Elder not found");
         }
 
-        string? macAddress = elder.Arduino;
+        string? macAddress = elder.MacAddress;
         
         if (string.IsNullOrEmpty(macAddress))
         {
@@ -75,7 +75,7 @@ public class TestController : ControllerBase
                 Heartrate = heartrate,
                 SpO2 = spo2,
                 Timestamp = timestamp,
-                Address = macAddress
+                MacAddress = macAddress
             });
         }
 
@@ -84,7 +84,7 @@ public class TestController : ControllerBase
             Latitude = 57.012153,
             Longitude = 9.991292,
             Timestamp = currentDate,
-            Address = macAddress
+            MacAddress = macAddress
         });
                        
         for (int j = -15000; j < 15000; j++)
