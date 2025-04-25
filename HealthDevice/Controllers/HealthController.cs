@@ -314,15 +314,15 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
     if (Period.Day == periodEnum)
     {
         _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
-        DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+        DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
+        DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
         List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
-            elderEmail, periodEnum, newTime);
-        List<Kilometer> result = data.Where(t => t.Timestamp.Date == date.Date)
-            .GroupBy(d => d.Timestamp.Hour)// Group by the hour 
-            .Select(g => new Kilometer
+            elderEmail, periodEnum, endTime);
+        List<Kilometer> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
+            .Select(hour => new Kilometer
             {
-                Timestamp = g.First().Timestamp.Date.AddHours(g.Key), // Use the hour as the timestamp
-                Distance = g.Sum(d => d.Distance) // Sum the distance for each hour
+                Timestamp = startTime.AddHours(hour),
+                Distance = data.Where(d => d.Timestamp.Hour == hour).Sum(d => d.Distance)
             }).ToList();
         _logger.LogInformation("Fetched distance data: {Count}", data.Count);
         return result.Count != 0 ? result : [];
@@ -330,78 +330,78 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
     else
     {
         _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
-        DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+        DateTime startTime = date.Date.ToUniversalTime();
+        DateTime endTime = startTime.AddDays(7).AddSeconds(-1); // End of the week
         List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
-            elderEmail, periodEnum, newTime);
-        List<Kilometer> result = data.Where(t => t.Timestamp.Date <= date.Date)
-            .GroupBy(d => d.Timestamp.Date) // Group by the date
+            elderEmail, periodEnum, endTime);
+        List<Kilometer> result = data.Where(t => t.Timestamp.Date >= startTime && t.Timestamp.Date <= endTime)
+            .GroupBy(s => s.Timestamp.Date) // Group by the date
             .Select(g => new Kilometer
             {
                 Timestamp = g.Key, // Use the date as the timestamp
-                Distance = g.Sum(d => d.Distance) // Sum the distance for each day
+                Distance = g.Sum(s => s.Distance),
             }).ToList();
         _logger.LogInformation("Fetched distance data: {Count}", data.Count);
         return result.Count != 0 ? result : [];
     }
 }
         
-        [HttpGet("Steps")]
-        public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string period = "Hour")
-        {
-            if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
-            {
-                _logger.LogError("Invalid period specified: {Period}", period);
-                return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
-            }
+       [HttpGet("Steps")]
+public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string period = "Hour")
+{
+    if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
+    {
+        _logger.LogError("Invalid period specified: {Period}", period);
+        return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+    }
 
-            if (Period.Hour == periodEnum)
+    if (Period.Hour == periodEnum)
+    {
+        _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
+        DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
+        List<Steps> data = await _healthService.GetHealthData<Steps>(
+            elderEmail, periodEnum, newTime);
+        _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+        return data.Count != 0 ? data : [];
+    }
+    if (Period.Day == periodEnum)
+    {
+        _logger.LogInformation("Processing daily steps data for elder: {ElderEmail}", elderEmail);
+        DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
+        DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
+        List<Steps> data = await _healthService.GetHealthData<Steps>(
+            elderEmail, periodEnum, endTime);
+        List<Steps> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
+            .Select(hour => new Steps
             {
-                _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour+1, 0, 0).ToUniversalTime();
-                List<Steps> data = await _healthService.GetHealthData<Steps>(
-                    elderEmail, periodEnum, newTime);
-                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
-                return data.Count != 0 ? data : [];
-            }
-            if(Period.Day == periodEnum)
+                Timestamp = startTime.AddHours(hour),
+                StepsCount = data.Where(s => s.Timestamp.Hour == hour).Sum(s => s.StepsCount)
+            }).ToList();
+        _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+        return result.Count != 0 ? result : [];
+    }
+    else
+    {
+        _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
+        DateTime startTime = date.Date.ToUniversalTime();
+        DateTime endTime = startTime.AddDays(7).AddSeconds(-1); // End of the week
+        List<Steps> data = await _healthService.GetHealthData<Steps>(
+            elderEmail, periodEnum, endTime);
+        List<Steps> result = data.Where(t => t.Timestamp.Date >= startTime && t.Timestamp.Date <= endTime)
+            .GroupBy(s => s.Timestamp.Date) // Group by the date
+            .Select(g => new Steps
             {
-                _logger.LogInformation("Processing daily steps data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
-                List<Steps> data = await _healthService.GetHealthData<Steps>(
-                    elderEmail, periodEnum, newTime);
-                List<Steps> result = data.Where(t => t.Timestamp.Date == date.Date)
-                    .GroupBy(s => s.Timestamp.Hour) // Group by the date (ignoring time)
-                    .Select(g => new Steps
-                    {
-                        Timestamp = new DateTime(g.Key), // Use the date as the timestamp
-                        StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
-                    }).ToList();
-                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
-                return result.Count != 0 ? data : [];
-            }
-            else
-            {
-                _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
-                List<Steps> data = await _healthService.GetHealthData<Steps>(
-                    elderEmail, periodEnum, newTime);
-                List<Steps> result = data.Where(t => t.Timestamp.Date <= date.Date)
-                    .GroupBy(s => s.Timestamp.Date) // Group by the date (ignoring time)
-                    .Select(g => new Steps
-                    {
-                        Timestamp = g.Key, // Use the date as the timestamp
-                        StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
-                    })
-                    .ToList();
-                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
-                return result.Count != 0 ? result : [];
-            }
-        }
+                Timestamp = g.Key, // Use the date as the timestamp
+                StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
+            }).ToList();
+        _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+        return result.Count != 0 ? result : [];
+    }
+}
 
         [HttpGet("Dashboard")]
         public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderEmail)
         {
-            // Fetch the elder by email
             Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
             if (elder is null || string.IsNullOrEmpty(elder.Arduino))
             {

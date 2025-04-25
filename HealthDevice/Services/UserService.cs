@@ -98,7 +98,7 @@ public class UserService
             issuer: "api.healthdevice.com",
             audience: "user.healthdevice.com",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.Now.AddMinutes(300),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
