@@ -29,7 +29,7 @@ namespace HealthDevice.Services
 
                     foreach (Elder elder in elders)
                     {
-                        string? arduino = elder.Arduino;
+                        string? arduino = elder.MacAddress;
                         if (arduino == null) continue;
                         DateTime currentTime = DateTime.UtcNow;
                         

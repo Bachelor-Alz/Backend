@@ -26,7 +26,7 @@ namespace HealthDevice.Services
                     HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
                     List<Elder> elders = elderManager.Users.ToList();
                     
-                    foreach (string arduino in elders.Select(elder => elder.Arduino).OfType<string>())
+                    foreach (string arduino in elders.Select(elder => elder.MacAddress).OfType<string>())
                     {
                         Location location = await healthService.GetLocation(DateTime.UtcNow, arduino);
                         await healthService.ComputeOutOfPerimeter(arduino, location);

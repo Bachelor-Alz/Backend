@@ -8,19 +8,11 @@ namespace HealthDevice.Services;
 public class HealthService : IHealthService
 {
     private readonly ILogger<HealthService> _logger;
-    private readonly UserManager<Caregiver> _caregiverManager;
-    private readonly EmailService _emailService;
-    private readonly GeoService _geoService;
-    private readonly ApplicationDbContext _db;
     private readonly UserManager<Elder> _elderManager;
     private readonly IRepositoryFactory _repositoryFactory;
-    public HealthService(ILogger<HealthService> logger, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db, UserManager<Elder> elderManager, IRepositoryFactory repositoryFactory)
+    public HealthService(ILogger<HealthService> logger, UserManager<Elder> elderManager, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
-        _caregiverManager = caregiverManager;
-        _emailService = emailService;
-        _geoService = geoService;
-        _db = db;
         _elderManager = elderManager;
         _repositoryFactory = repositoryFactory;
     }
@@ -37,7 +29,7 @@ public class HealthService : IHealthService
     {
         IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
         List<Max30102> heartRates = await repository.Query()
-            .Where(c => c.Timestamp <= currentDate && c.Address == address)
+            .Where(c => c.Timestamp <= currentDate && c.MacAddress == address)
             .ToListAsync();
 
         if (heartRates.Count == 0)
@@ -73,7 +65,7 @@ public class HealthService : IHealthService
     {
         IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
         List<Max30102> spo2Data = await repository.Query()
-            .Where(c => c.Timestamp <= currentDate && c.Address == address)
+            .Where(c => c.Timestamp <= currentDate && c.MacAddress == address)
             .ToListAsync();
 
         if (spo2Data.Count == 0)
@@ -107,7 +99,7 @@ public class HealthService : IHealthService
     {
         IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
         List<GPS> gpsData = await repository.Query()
-            .Where(c => c.Timestamp.Date <= currentDate.Date && c.Address == arduino)
+            .Where(c => c.Timestamp.Date <= currentDate.Date && c.MacAddress == arduino)
             .ToListAsync();
 
         if (gpsData.Count < 2)
@@ -146,13 +138,13 @@ public class HealthService : IHealthService
 
         Elder? elder = await elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
-        if (elder == null || string.IsNullOrEmpty(elder.Arduino))
+        if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
             _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
             return new List<T>();
         }
 
-        string arduino = elder.Arduino;
+        string arduino = elder.MacAddress;
         IRepository<T> repository = _repositoryFactory.GetRepository<T>();
 
         List<T> data = await repository.Query()
@@ -169,7 +161,7 @@ public class HealthService : IHealthService
 {
     IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
     List<Max30102> data = await repository.Query()
-        .Where(c => c.Timestamp <= currentDate && c.Address == arduino)
+        .Where(c => c.Timestamp <= currentDate && c.MacAddress == arduino)
         .ToListAsync();
 
     if (data.Count == 0)
@@ -185,7 +177,7 @@ public class HealthService : IHealthService
     {
         IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
         List<GPS> data = await repository.Query()
-            .Where(c => c.Timestamp <= currentDate && c.Address == arduino)
+            .Where(c => c.Timestamp <= currentDate && c.MacAddress == arduino)
             .ToListAsync();
 
         if (data.Count == 0)
@@ -212,7 +204,7 @@ public class HealthService : IHealthService
         }
 
         Elder? elder = await elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Arduino == Arduino);
+            .FirstOrDefaultAsync(e => e.MacAddress == Arduino);
         if (elder == null)
         {
             _logger.LogWarning("Elder with Arduino {Arduino} not found", Arduino);
@@ -260,7 +252,7 @@ public class HealthService : IHealthService
     {
         IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
         GPS? gpsData = await repository.Query()
-            .Where(c => c.Timestamp <= currentTime && c.Address == arduino)
+            .Where(c => c.Timestamp <= currentTime && c.MacAddress == arduino)
             .OrderByDescending(c => c.Timestamp)
             .FirstOrDefaultAsync();
 
