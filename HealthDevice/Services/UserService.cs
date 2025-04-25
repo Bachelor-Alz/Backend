@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace HealthDevice.Services;
 
 
-public class UserService
+public class UserService : IUserService
 {
     private readonly ILogger<UserService> _logger;
     private readonly UserManager<Elder> _elderManager;

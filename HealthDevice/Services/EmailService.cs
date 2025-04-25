@@ -5,7 +5,7 @@ using MimeKit;
 
 namespace HealthDevice.Services;
 
-public class EmailService
+public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
     private readonly string smtpHost;

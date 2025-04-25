@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
 
-public class AiService
+public class AiService : IAIService
 {
     
     private readonly ILogger<AiService> _logger;

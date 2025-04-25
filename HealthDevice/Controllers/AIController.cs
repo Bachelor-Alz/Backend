@@ -1,15 +1,16 @@
 ﻿using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
+
 namespace HealthDevice.Controllers;
 
 [ApiController]
 [Route("[controller]")]
 public class AiController : ControllerBase
 {
-    private readonly AiService _aiService;
+    private readonly IAIService _aiService;
     private readonly ILogger<AiController> _logger;
-    
-    public AiController(AiService aiService, ILogger<AiController> logger)
+
+    public AiController(IAIService aiService, ILogger<AiController> logger)
     {
         _logger = logger;
         _aiService = aiService;
@@ -32,5 +33,4 @@ public class AiController : ControllerBase
         await _aiService.HandleAiRequest(predictions, mac);
         return Ok();
     }
-    
 }

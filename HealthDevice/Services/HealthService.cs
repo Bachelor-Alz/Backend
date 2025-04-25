@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Services;
 
-public class HealthService
+public class HealthService : IHealthService
 {
     private readonly ILogger<HealthService> _logger;
     private readonly UserManager<Caregiver> _caregiverManager;

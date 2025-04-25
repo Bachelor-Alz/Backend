@@ -5,7 +5,7 @@ using HealthDevice.DTO;
 
 namespace HealthDevice.Services;
 
-public class GeoService
+public class GeoService : IGeoService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<GeoService> _logger;

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
 
-public class ArduinoService
+public class ArduinoService : IArduinoService
 {
     private readonly ILogger<ArduinoService> _logger;
     private readonly UserManager<Elder> _elderManager;
