@@ -87,10 +87,10 @@ public class TestController : ControllerBase
             Address = macAddress
         });
                        
-        for (int j = 0; j < 100; j++)
+        for (int j = -15000; j < 15000; j++)
         {
             int steps = Random.Shared.Next(stepsMin, stepsMax);
-            DateTime timestamp = currentDate.Date + TimeSpan.FromDays(j);
+            DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j);
             double distance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
             
             _dbContext.Steps.Add(new Steps
@@ -105,26 +105,6 @@ public class TestController : ControllerBase
                 Timestamp = currentDate,
                 MacAddress = macAddress
             });
-            for (int i = 1; i <= 23; i++)
-            {
-                int newsteps = Random.Shared.Next(stepsMin, stepsMax);
-                steps += newsteps;
-                double newDistance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
-                distance += newDistance;
-                DateTime timestamp2 = timestamp + TimeSpan.FromHours(i);
-                _dbContext.Steps.Add(new Steps
-                {
-                    StepsCount = steps,
-                    Timestamp = timestamp2,
-                    MacAddress = macAddress
-                });
-                _dbContext.Distance.Add(new Kilometer
-                {
-                    Distance = distance,
-                    Timestamp = timestamp2,
-                    MacAddress = macAddress
-                });
-            }
         }
 
 

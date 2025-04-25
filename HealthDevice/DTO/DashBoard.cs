@@ -8,5 +8,4 @@ public class DashBoard
     public int steps { get; set; }
     public double distance { get; set; }
     public int allFall { get; set; }
-    public string locationAdress { get; set; } = string.Empty;
 }

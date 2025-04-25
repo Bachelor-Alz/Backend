@@ -30,28 +30,11 @@ public class ArduinoService
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
         
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.Arduino == data.First().Address);
-        
-        if (elder == null)
-        {
             _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().Address, ip);
             _dbContext.Set<T>().AddRange(data);
-        }
-        else
-        {
-            if (typeof(Elder).GetProperty(typeof(T).Name)?.GetValue(elder) is List<T> elderDataList)
-            {
-                _logger.LogInformation("{Timestamp}: Found elder {ElderEmail} with MacAddress {MacAddress} from IP: {IP}.", receivedAt, elder.Email, elder.Arduino, ip);
-                elderDataList.AddRange(data);
-            }
-        }
-
         try
         {
-            if (elder == null)
                 await _dbContext.SaveChangesAsync();
-            else
-                await _elderManager.UpdateAsync(elder);
             
             _logger.LogInformation("{Timestamp}: Saved {Count} {SensorType} entries from IP: {IP}.", receivedAt, data.Count, typeof(T).Name, ip);
             return new OkResult();
@@ -83,20 +66,6 @@ public class ArduinoService
             Address = data.MacAddress
         });
         
-        Steps? neweststeps = await _dbContext.Steps
-            .Where(s => s.MacAddress == data.MacAddress)
-            .OrderByDescending(s => s.Timestamp)
-            .FirstOrDefaultAsync();
-        if (neweststeps != null && neweststeps.Timestamp.Date == receivedAt.Date)
-        {
-            data.steps += neweststeps.StepsCount;
-            _logger.LogInformation("{Timestamp}: Found existing steps for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
-        }
-        else
-        {
-            _logger.LogInformation("{Timestamp}: No existing steps found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
-        }
-
         _dbContext.Steps.Add(new Steps()
         {
             StepsCount = data.steps,
