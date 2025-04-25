@@ -333,7 +333,7 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
         DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
         List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
             elderEmail, periodEnum, newTime);
-        List<Kilometer> result = data
+        List<Kilometer> result = data.Where(t => t.Timestamp.Date <= date.Date)
             .GroupBy(d => d.Timestamp.Date) // Group by the date
             .Select(g => new Kilometer
             {
@@ -385,7 +385,7 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
                 List<Steps> data = await _healthService.GetHealthData<Steps>(
                     elderEmail, periodEnum, newTime);
-                List<Steps> result = data
+                List<Steps> result = data.Where(t => t.Timestamp.Date <= date.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date (ignoring time)
                     .Select(g => new Steps
                     {
