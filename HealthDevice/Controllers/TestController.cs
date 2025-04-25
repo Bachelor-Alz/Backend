@@ -90,7 +90,7 @@ public class TestController : ControllerBase
         for (int j = -15000; j < 15000; j++)
         {
             int steps = Random.Shared.Next(stepsMin, stepsMax);
-            DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j);
+            DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j*5);
             double distance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
             
             _dbContext.Steps.Add(new Steps
@@ -102,7 +102,7 @@ public class TestController : ControllerBase
             _dbContext.Distance.Add(new Kilometer
             {
                 Distance = distance,
-                Timestamp = currentDate,
+                Timestamp = timestamp,
                 MacAddress = macAddress
             });
         }

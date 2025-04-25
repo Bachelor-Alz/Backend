@@ -317,8 +317,8 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
         DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
         List<Kilometer> data = await _healthService.GetHealthData<Kilometer>(
             elderEmail, periodEnum, newTime);
-        List<Kilometer> result = data
-            .GroupBy(d => d.Timestamp.Hour) // Group by the hour
+        List<Kilometer> result = data.Where(t => t.Timestamp.Date == date.Date)
+            .GroupBy(d => d.Timestamp.Hour)// Group by the hour 
             .Select(g => new Kilometer
             {
                 Timestamp = g.First().Timestamp.Date.AddHours(g.Key), // Use the hour as the timestamp
@@ -369,7 +369,7 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day+1, 0, 0, 0).ToUniversalTime();
                 List<Steps> data = await _healthService.GetHealthData<Steps>(
                     elderEmail, periodEnum, newTime);
-                List<Steps> result = data
+                List<Steps> result = data.Where(t => t.Timestamp.Date == date.Date)
                     .GroupBy(s => s.Timestamp.Hour) // Group by the date (ignoring time)
                     .Select(g => new Steps
                     {
@@ -418,15 +418,23 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
                 .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefault();
 
-            Kilometer? kilometer = _db.Distance
-                .Where(d => d.MacAddress == macAddress)
-                .OrderByDescending(d => d.Timestamp)
-                .FirstOrDefault();
+            //Get the total amounts of steps on the newest date using kilometer
+            Kilometer? kilometer = _db.Distance.Where(s => s.MacAddress == macAddress)
+                .GroupBy(s => s.Timestamp)
+                .Select(g => new Kilometer
+                {
+                    Distance = g.Sum(s => s.Distance),
+                    Timestamp = g.Key
+                }).FirstOrDefault();
 
             Steps? steps = _db.Steps
                 .Where(s => s.MacAddress == macAddress)
-                .OrderByDescending(s => s.Timestamp)
-                .FirstOrDefault();
+                .GroupBy(s => s.Timestamp)
+                .Select(g => new Steps
+                {
+                    StepsCount = g.Sum(s => s.StepsCount),
+                    Timestamp = g.Key
+                }).FirstOrDefault();
             
             _logger.LogInformation("Fetched data for elder: {ElderEmail}", elderEmail);
             
