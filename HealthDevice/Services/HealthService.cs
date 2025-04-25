@@ -33,123 +33,119 @@ public class HealthService : IHealthService
         _ => throw new ArgumentException("Invalid period specified")
     };
 
-    public Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string Address)
+    public async Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address)
     {
-        List<Max30102> heartRates = _db.MAX30102Data
-            .Where(c => c.Timestamp <= currentDate && c.Address == Address)
-            .ToList();
+        IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
+        List<Max30102> heartRates = await repository.Query()
+            .Where(c => c.Timestamp <= currentDate && c.Address == address)
+            .ToListAsync();
+
         if (heartRates.Count == 0)
         {
-            _logger.LogWarning("No heart rate data found for elder {Address}", Address);
-            return Task.FromResult(new List<Heartrate>());
+            _logger.LogWarning("No heart rate data found for elder {Address}", address);
+            return new List<Heartrate>();
         }
-        
+
         DateTime earliestDate = heartRates.Min(h => h.Timestamp);
-        
-        //What to calc for each hour
-        List<Heartrate> heartRateList = [];
+        List<Heartrate> heartRateList = new();
+
         for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
             var date1 = date;
             var heartRateInHour = heartRates.Where(h => h.Timestamp >= date1 && h.Timestamp < date1.AddHours(1));
-            IEnumerable<Max30102> rateInHour = heartRateInHour.ToList();
-            if (!rateInHour.Any()) continue;
+            List<Max30102> rateInHour = heartRateInHour.ToList();
+            if (rateInHour.Count == 0) continue;
+
+            _logger.LogInformation("Heart rate data found for mac-address {Address} in hour {Hour}", address, date);
+            heartRateList.Add(new Heartrate
             {
-                _logger.LogInformation("Heart rate data found for mac-address {Address} in hour {Hour}", Address, date);
-                heartRateList.Add(new Heartrate
-                {
-                    Avgrate = (int)rateInHour.Average(h => h.Heartrate),
-                    Maxrate = rateInHour.Max(h => h.Heartrate),
-                    Minrate = rateInHour.Min(h => h.Heartrate),
-                    Timestamp = date
-                });
-            }
+                Avgrate = (int)rateInHour.Average(h => h.Heartrate),
+                Maxrate = rateInHour.Max(h => h.Heartrate),
+                Minrate = rateInHour.Min(h => h.Heartrate),
+                Timestamp = date
+            });
         }
-        if (heartRateList.Count == 0)
-        {
-            _logger.LogWarning("No heart rate data found for elder {Address}", Address);
-            return Task.FromResult(new List<Heartrate>());
-        }
-        _logger.LogInformation("Heart rate data found for elder {Address}", Address);
-        return Task.FromResult(heartRateList);
+
+        return heartRateList;
     }
 
-    public Task<List<Spo2>> CalculateSpo2(DateTime currentDate, string address)
+    public async Task<List<Spo2>> CalculateSpo2(DateTime currentDate, string address)
     {
-        List<Max30102> spo2Data = _db.MAX30102Data
+        IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
+        List<Max30102> spo2Data = await repository.Query()
             .Where(c => c.Timestamp <= currentDate && c.Address == address)
-            .ToList();
+            .ToListAsync();
 
         if (spo2Data.Count == 0)
         {
             _logger.LogWarning("No SpO2 data found for elder {Address}", address);
-            return Task.FromResult(new List<Spo2>());
+            return new List<Spo2>();
         }
 
         DateTime earliestDate = spo2Data.Min(s => s.Timestamp);
+        List<Spo2> spo2List = new();
 
-        List<Spo2> spo2List = [];
         for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
-            List<Max30102> hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
+            var hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
             if (hourlyData.Count == 0) continue;
+
+            _logger.LogInformation("SpO2 data found for mac-address {Address} in hour {Hour}", address, date);
+            spo2List.Add(new Spo2
             {
-                _logger.LogInformation("SpO2 data found for mac-address {Address} in hour {Hour}", address, date);
-                spo2List.Add(new Spo2
-                {
-                    AvgSpO2 = hourlyData.Average(s => s.SpO2),
-                    MaxSpO2 = hourlyData.Max(s => s.SpO2),
-                    MinSpO2 = hourlyData.Min(s => s.SpO2),
-                    Timestamp = date
-                });
-            }
+                AvgSpO2 = hourlyData.Average(s => s.SpO2),
+                MaxSpO2 = hourlyData.Max(s => s.SpO2),
+                MinSpO2 = hourlyData.Min(s => s.SpO2),
+                Timestamp = date
+            });
         }
-        if (spo2List.Count == 0)
-        {
-            _logger.LogWarning("No SpO2 data found for elder {Address}", address);
-            return Task.FromResult(new List<Spo2>());
-        }
-        _logger.LogInformation("SpO2 data found for elder {Address}", address);
-        return Task.FromResult(spo2List);
+
+        return spo2List;
     }
 
-    public Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, string Arduino)
+    public async Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, string arduino)
     {
-        List<GPS> gpsData = _db.GPSData
-            .Where(c => c.Timestamp.Date <= currentDate.Date && c.Address == Arduino)
-            .ToList();
+        IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
+        List<GPS> gpsData = await repository.Query()
+            .Where(c => c.Timestamp.Date <= currentDate.Date && c.Address == arduino)
+            .ToListAsync();
+
         if (gpsData.Count < 2)
         {
-            _logger.LogWarning("Not enough GPS data to calculate distance for elder {Arduino}", Arduino);
-            return Task.FromResult(new Kilometer());
+            _logger.LogWarning("Not enough GPS data to calculate distance for elder {Arduino}", arduino);
+            return new Kilometer();
         }
-        
-        double d = 0;
+
+        double distance = 0;
         for (int i = 0; i < gpsData.Count - 1; i++)
         {
             double a = Math.Pow(Math.Sin((gpsData[i + 1].Latitude - gpsData[i].Latitude) / 2), 2) +
                        Math.Cos(gpsData[i].Latitude) * Math.Cos(gpsData[i + 1].Latitude) *
                        Math.Pow(Math.Sin((gpsData[i + 1].Longitude - gpsData[i].Longitude) / 2), 2);
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            d += 6371 * c;
+            distance += 6371 * c; // Earth's radius in kilometers
         }
-        if (d == 0)
-        {
-            _logger.LogWarning("No distance data found for elder {Arduino}", Arduino);
-            return Task.FromResult(new Kilometer());
-        }
-        _logger.LogInformation("Distance data found for elder {Arduino}", Arduino);
-        return Task.FromResult(new Kilometer
-        {
-            Distance = d,
-            Timestamp = currentDate
-        });
-    }
 
+        if (distance == 0)
+        {
+            _logger.LogWarning("No distance data found for elder {Arduino}", arduino);
+            return new Kilometer();
+        }
+
+        _logger.LogInformation("Distance data found for elder {Arduino}", arduino);
+        return new Kilometer
+        {
+            Distance = distance,
+            Timestamp = currentDate
+        };
+    }
     public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date) where T : class
     {
         DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
-        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+
+        Elder? elder = await elderRepository.Query()
+            .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null || string.IsNullOrEmpty(elder.Arduino))
         {
             _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
@@ -169,35 +165,54 @@ public class HealthService : IHealthService
         return data;
     }
 
-    public Task DeleteMax30102Data(DateTime currentDate, string Arduino)
+   public async Task DeleteMax30102Data(DateTime currentDate, string arduino)
+{
+    IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
+    List<Max30102> data = await repository.Query()
+        .Where(c => c.Timestamp <= currentDate && c.Address == arduino)
+        .ToListAsync();
+
+    if (data.Count == 0)
     {
-        List<Max30102> data = _db.MAX30102Data
-            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
-            .ToList();
-        _db.MAX30102Data.RemoveRange(data);
-        _logger.LogInformation("Deleted {Count} Max30102 records for elder {Arduino}", data.Count, Arduino);
-        return Task.CompletedTask;
+        _logger.LogWarning("No Max30102 data found to delete for elder {Arduino}", arduino);
+        return;
     }
-    public Task DeleteGpsData(DateTime currentDate, string Arduino)
+
+    repository.RemoveRange(data);
+    _logger.LogInformation("Deleted {Count} Max30102 records for elder {Arduino}", data.Count, arduino);
+}
+    public async Task DeleteGpsData(DateTime currentDate, string arduino)
     {
-        List<GPS> data = _db.GPSData
-            .Where(c => c.Timestamp <= currentDate && c.Address == Arduino)
-            .ToList();
-        _db.GPSData.RemoveRange(data);
-        _logger.LogInformation("Deleted {Count} GPS records for elder {Arduino}", data.Count, Arduino);
-        return Task.CompletedTask;
+        IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
+        List<GPS> data = await repository.Query()
+            .Where(c => c.Timestamp <= currentDate && c.Address == arduino)
+            .ToListAsync();
+
+        if (data.Count == 0)
+        {
+            _logger.LogWarning("No GPS data found to delete for elder {Arduino}", arduino);
+            return;
+        }
+
+        repository.RemoveRange(data);
+        _logger.LogInformation("Deleted {Count} GPS records for elder {Arduino}", data.Count, arduino);
     }
 
     public async Task ComputeOutOfPerimeter(string Arduino, Location location)
     {
-        Perimeter? perimeter = _db.Perimeter.FirstOrDefault(p => p.MacAddress == Arduino);
+        IRepository<Perimeter> perimeterRepository = _repositoryFactory.GetRepository<Perimeter>();
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+
+        Perimeter? perimeter = await perimeterRepository.Query()
+            .FirstOrDefaultAsync(p => p.MacAddress == Arduino);
         if (perimeter == null)
         {
             _logger.LogWarning("No perimeter found for elder with Arduino {Arduino}", Arduino);
             return;
         }
-        
-        Elder? elder = _elderManager.Users.FirstOrDefault(e => e.Arduino == Arduino);
+
+        Elder? elder = await elderRepository.Query()
+            .FirstOrDefaultAsync(e => e.Arduino == Arduino);
         if (elder == null)
         {
             _logger.LogWarning("Elder with Arduino {Arduino} not found", Arduino);
@@ -224,6 +239,7 @@ public class HealthService : IHealthService
             if (d < perimeter.Radius)
             {
                 elder.outOfPerimeter = false;
+                elderRepository.Update(elder);
                 await _elderManager.UpdateAsync(elder);
                 _logger.LogInformation("Elder {Email} is back in perimeter", elder.Email);
                 return;
@@ -234,43 +250,32 @@ public class HealthService : IHealthService
         if (d > perimeter.Radius)
         {
             _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
-            List<Caregiver> caregivers = _caregiverManager.Users.Where(c => c.Elders != null && c.Elders.Contains(elder)).ToList();
-            if (caregivers.Count == 0)
-            {
-                _logger.LogWarning("No caregivers found for elder {Email}", elder.Email);
-                return;
-            }
-
-            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-
-            foreach (var caregiver in caregivers.Where(c => c.Email != null))
-            {
-                var emailInfo = new Email { name = caregiver.Name, email = caregiver.Email };
-                _logger.LogInformation("Sending email to {CaregiverEmail}", caregiver.Email);
-                await _emailService.SendEmail(emailInfo, "Elder out of perimeter", $"Elder {elder.Name} is out of perimeter, at location {address}.");
-            }
             elder.outOfPerimeter = true;
+            elderRepository.Update(elder);
             await _elderManager.UpdateAsync(elder);
         }
     }
 
-    public Task<Location> GetLocation(DateTime currentTime, string Arduino)
+    public async Task<Location> GetLocation(DateTime currentTime, string arduino)
     {
-        GPS? gpsData = _db.GPSData
-            .Where(c => c.Timestamp <= currentTime && c.Address == Arduino)
-            .ToList().LastOrDefault();
+        IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
+        GPS? gpsData = await repository.Query()
+            .Where(c => c.Timestamp <= currentTime && c.Address == arduino)
+            .OrderByDescending(c => c.Timestamp)
+            .FirstOrDefaultAsync();
+
         if (gpsData != null)
         {
-            _logger.LogInformation("GPS data found for elder {Arduino} at {Time}", Arduino, currentTime);
-            return Task.FromResult(new Location
+            _logger.LogInformation("GPS data found for elder {Arduino} at {Time}", arduino, currentTime);
+            return new Location
             {
                 Latitude = gpsData.Latitude,
                 Longitude = gpsData.Longitude,
                 Timestamp = gpsData.Timestamp
-            });
+            };
         }
 
-        _logger.LogWarning("No GPS data found for elder");
-        return Task.FromResult(new Location());
+        _logger.LogWarning("No GPS data found for elder {Arduino}", arduino);
+        return new Location();
     }
 }

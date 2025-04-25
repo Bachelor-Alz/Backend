@@ -15,4 +15,14 @@ public class Repository<T> : IRepository<T> where T : class
     {
         return _dbContext.Set<T>();
     }
+    
+    public void RemoveRange(IEnumerable<T> entities)
+    {
+        _dbContext.Set<T>().RemoveRange(entities);
+    }
+    
+    public void Update(T entity)
+    {
+        _dbContext.Set<T>().Update(entity);
+    }
 }
