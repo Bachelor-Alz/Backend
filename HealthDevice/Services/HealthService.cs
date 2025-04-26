@@ -232,7 +232,6 @@ public class HealthService : IHealthService
             {
                 elder.outOfPerimeter = false;
                 elderRepository.Update(elder);
-                await _elderManager.UpdateAsync(elder);
                 _logger.LogInformation("Elder {Email} is back in perimeter", elder.Email);
                 return;
             }
@@ -244,7 +243,6 @@ public class HealthService : IHealthService
             _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
             elder.outOfPerimeter = true;
             elderRepository.Update(elder);
-            await _elderManager.UpdateAsync(elder);
         }
     }
 

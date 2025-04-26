@@ -1,6 +1,7 @@
 ﻿using HealthDevice.Data;
 using HealthDevice.DTO;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services
 {
@@ -22,9 +23,10 @@ namespace HealthDevice.Services
 
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
-                    UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
-                    HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
-                    List<Elder> elders = elderManager.Users.ToList();
+                    var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
+                    var elderRepository = repositoryFactory.GetRepository<Elder>();
+                    var healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
+                    List<Elder> elders = await elderRepository.Query().Where(e => e.MacAddress != null).ToListAsync(cancellationToken: stoppingToken);
                     
                     foreach (string arduino in elders.Select(elder => elder.MacAddress).OfType<string>())
                     {

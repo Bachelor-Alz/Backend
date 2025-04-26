@@ -12,19 +12,24 @@ public class UserService : IUserService
     private readonly ILogger<UserService> _logger;
     private readonly UserManager<Elder> _elderManager;
     private readonly UserManager<Caregiver> _caregiverManager;
+    private readonly IRepositoryFactory _repositoryFactory;
     
-    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager)
+    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
+        _repositoryFactory = repositoryFactory;
     }
     
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, HttpContext httpContext)
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
-        Elder? elder = await _elderManager.FindByEmailAsync(userLoginDto.Email);
+        Elder? elder = elderRepository.Query().FirstOrDefault(m => m.Email == userLoginDto.Email);
         if (elder != null)
         {
             if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
@@ -41,7 +46,7 @@ public class UserService : IUserService
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userLoginDto.Email);
+        Caregiver? caregiver = caregiverRepository.Query().FirstOrDefault(m => m.Email == userLoginDto.Email);
         if (caregiver == null)
         {
             _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
@@ -63,15 +68,15 @@ public class UserService : IUserService
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, HttpContext httpContext) where T : IdentityUser
     {
+        IRepository<T> userRepository = _repositoryFactory.GetRepository<T>();
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
 
-        if (await userManager.FindByEmailAsync(userRegisterDto.Email) != null)
+        if (userRepository.Query().FirstOrDefault(m => m.Email == userRegisterDto.Email) != null)
         {
             _logger.LogWarning("{timestamp}: Registration failed for email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
             return new BadRequestObjectResult("Email already exists.");
         }
-
         IdentityResult result = await userManager.CreateAsync(user, userRegisterDto.Password);
 
         if (!result.Succeeded)

@@ -1,6 +1,4 @@
-﻿using HealthDevice.Data;
-using HealthDevice.DTO;
-using Microsoft.AspNetCore.Identity;
+﻿using HealthDevice.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,17 +7,16 @@ namespace HealthDevice.Services;
 public class ArduinoService : IArduinoService
 {
     private readonly ILogger<ArduinoService> _logger;
-    private readonly UserManager<Elder> _elderManager;
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IRepositoryFactory _repositoryFactory;
     
-    public ArduinoService(ILogger<ArduinoService> logger, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
+    public ArduinoService(ILogger<ArduinoService> logger, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
-        _elderManager = elderManager;
-        _dbContext = dbContext;
+        _repositoryFactory = repositoryFactory;
     }
     public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
     {
+        IRepository<T> sensorRepository = _repositoryFactory.GetRepository<T>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
         _logger.LogInformation("{Timestamp}: Received {SensorType} data from IP: {IP}.", receivedAt, typeof(T).Name, ip);
@@ -30,35 +27,28 @@ public class ArduinoService : IArduinoService
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
         
-            _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
-            _dbContext.Set<T>().AddRange(data);
-        try
-        {
-                await _dbContext.SaveChangesAsync();
-            
-            _logger.LogInformation("{Timestamp}: Saved {Count} {SensorType} entries from IP: {IP}.", receivedAt, data.Count, typeof(T).Name, ip);
-            return new OkResult();
-        }
-        catch (Exception)
-        {
-            _logger.LogError("{Timestamp}: Error saving {SensorType} entries from IP: {IP}.", receivedAt, typeof(T).Name, ip);
-            return new BadRequestObjectResult($"Error saving {typeof(T).Name} entries.");
-        }
+        _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
+        sensorRepository.AddRange(data);
+        return new OkResult();
     }
 
     public async Task HandleArduinoData(Arduino data, HttpContext httpContext)
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
+        IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = DateTime.UtcNow;
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
-        Elder? elder = await _elderManager.Users.FirstOrDefaultAsync(e => e.MacAddress == data.MacAddress);
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(e => e.MacAddress == data.MacAddress);
         if (elder == null)
         {
             _logger.LogWarning("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             return;
         }
 
-        _dbContext.GPSData.Add(new GPS
+        gpsRepository.Add(new GPS
         {
             Latitude = data.Latitude,
             Longitude = data.Longitude,
@@ -66,7 +56,7 @@ public class ArduinoService : IArduinoService
             MacAddress = data.MacAddress
         });
         
-        _dbContext.Steps.Add(new Steps()
+        stepsRepository.Add(new Steps
         {
             StepsCount = data.steps,
             Timestamp = receivedAt,
@@ -85,21 +75,12 @@ public class ArduinoService : IArduinoService
             _logger.LogWarning("{Timestamp}: No Max30102 data found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             return;
         }
-        _dbContext.MAX30102Data.Add(new Max30102
+        max30102Repository.Add(new Max30102
         {
             Heartrate = totalHr / data.Max30102.Count,
             SpO2 = totalSpO2 / data.Max30102.Count,
             Timestamp = receivedAt,
             MacAddress = data.MacAddress
         });
-        try
-        {
-            await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("{Timestamp}: Successfully saved Arduino data from IP: {IP}.", receivedAt, ip);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Timestamp}: Error saving Arduino data from IP: {IP}.", receivedAt, ip);
-        }
     }
 }

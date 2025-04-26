@@ -1,6 +1,4 @@
-﻿using HealthDevice.Data;
-using HealthDevice.DTO;
-using Microsoft.AspNetCore.Identity;
+﻿using HealthDevice.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Services;
@@ -9,20 +7,16 @@ public class AiService : IAIService
 {
     
     private readonly ILogger<AiService> _logger;
-    private readonly UserManager<Elder> _elderManager;
-    private readonly UserManager<Caregiver> _caregiverManager;
     private readonly EmailService _emailService;
     private readonly GeoService _geoService;
-    private readonly ApplicationDbContext _db;
+    private readonly IRepositoryFactory _repositoryFactory;
     
-    public AiService(ILogger<AiService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, EmailService emailService, GeoService geoService, ApplicationDbContext db)
+    public AiService(ILogger<AiService> logger, EmailService emailService, GeoService geoService, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
-        _elderManager = elderManager;
-        _caregiverManager = caregiverManager;
         _emailService = emailService;
         _geoService = geoService;
-        _db = db;
+        _repositoryFactory = repositoryFactory;
     }
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
@@ -35,23 +29,26 @@ public class AiService : IAIService
 
     private async Task HandleFall(string addrees)
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
+        IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
         FallInfo fallInfo = new FallInfo()
         {
             Timestamp = DateTime.UtcNow,
             Location = new Location(),
             MacAddress = addrees
         };
-        _db.FallInfo.Add(fallInfo);
+        fallInfoRepository.Add(fallInfo);
         try
         {
-            await _db.SaveChangesAsync();
-            Elder? elder = _elderManager.Users.FirstOrDefault(elder => elder.MacAddress == addrees);
+            Elder? elder = elderRepository.Query().FirstOrDefault(m => m.MacAddress == addrees);
             if (elder == null)
             {
                 _logger.LogWarning("Elder {address} does not exist", addrees);
                 return;
             }
-            List<Caregiver> caregivers = _caregiverManager.Users.Where(e => e.Elders != null && e.Elders.Contains(elder)).ToList();
+            List<Caregiver> caregivers = caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToList();
             if(caregivers.Count == 0)
             {
                 _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
@@ -69,7 +66,7 @@ public class AiService : IAIService
                     _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
-                Location? location = _db.Location.Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefault();
+                Location? location = locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefault();
                 if (location == null) continue;
                 string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
 

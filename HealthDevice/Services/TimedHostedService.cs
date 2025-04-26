@@ -22,10 +22,14 @@ namespace HealthDevice.Services
 
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
-                    UserManager<Elder> elderManager = scope.ServiceProvider.GetRequiredService<UserManager<Elder>>();
-                    HealthService healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
+                    var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
+                    var elderRepository = repositoryFactory.GetRepository<Elder>();
+                    var healthService = scope.ServiceProvider.GetRequiredService<HealthService>();
+                    var hrRepository = repositoryFactory.GetRepository<Heartrate>();
+                    var spo2Repository = repositoryFactory.GetRepository<Spo2>();
+                    var distanceRepository = repositoryFactory.GetRepository<Kilometer>();
                     ApplicationDbContext db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    List<Elder> elders = elderManager.Users.ToList();
+                    List<Elder> elders = elderRepository.Query().ToList();
 
                     foreach (Elder elder in elders)
                     {
@@ -34,18 +38,18 @@ namespace HealthDevice.Services
                         DateTime currentTime = DateTime.UtcNow;
                         
                         List<Heartrate> heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
-                        db.Heartrate.AddRange(heartRate);
+                        hrRepository.AddRange(heartRate);
 
                         List<Spo2> spo2 = await healthService.CalculateSpo2(currentTime, arduino);
-                        db.SpO2.AddRange(spo2);
+                        spo2Repository.AddRange(spo2);
 
                         Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, arduino);
-                        db.Distance.Add(distance);
+                        distanceRepository.Add(distance);
 
                         await healthService.DeleteMax30102Data(currentTime, arduino);
                         await healthService.DeleteGpsData(currentTime, arduino);
-                        
-                        await elderManager.UpdateAsync(elder);
+
+                        elderRepository.Update(elder);
 
                     }
                 }
