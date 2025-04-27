@@ -67,7 +67,7 @@ public class TestController : ControllerBase
         const int fallMin = 0;
         const int fallMax = 10;
 
-        for (int i = -15000; i < 15000; i++)
+        for (int i = -1500; i < 1500; i++)
         {
             DateTime timestamp = currentDate + TimeSpan.FromMinutes(i*5);
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
@@ -90,7 +90,7 @@ public class TestController : ControllerBase
             MacAddress = macAddress
         });
                        
-        for (int j = -15000; j < 15000; j++)
+        for (int j = -1500; j < 1500; j++)
         {
             int steps = Random.Shared.Next(stepsMin, stepsMax);
             DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j*5);

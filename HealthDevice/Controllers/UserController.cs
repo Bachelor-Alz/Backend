@@ -1,10 +1,12 @@
 ﻿using System.Security.Claims;
+using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace HealthDevice.Controllers;
 
@@ -19,6 +21,7 @@ public class UserController : ControllerBase
     private readonly ILogger<UserController> _logger;
     private readonly IGeoService _geoService;
     private readonly IRepositoryFactory _repositoryFactory;
+    private readonly ApplicationDbContext _dbContext;
     
     public UserController(
         UserManager<Elder> elderManager,
@@ -26,7 +29,8 @@ public class UserController : ControllerBase
         IUserService userService,
         ILogger<UserController> logger,
         IGeoService geoService,
-        IRepositoryFactory repositoryFactory)
+        IRepositoryFactory repositoryFactory,
+        ApplicationDbContext dbContext)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
@@ -34,6 +38,7 @@ public class UserController : ControllerBase
         _logger = logger;
         _geoService = geoService;
         _repositoryFactory = repositoryFactory;
+        _dbContext = dbContext;
     }
     
     
@@ -131,100 +136,113 @@ public class UserController : ControllerBase
         }).ToList();
     }
 
+ [HttpPost("users/elder")]
+[Authorize(Roles = "Elder")]
+public async Task<ActionResult> PutCaregiver(string caregiverEmail)
+{
+    IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+    IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
 
-    [HttpPost("users/elder")]
-    [Authorize(Roles = "Elder")]
-    public async Task<ActionResult> PutCaregiver(string caregiverEmail)
+    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
     {
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        
-        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
-        {
-            _logger.LogError("User claim is null or empty.");
-            return BadRequest("User claim is not available.");
-        }
-
-        // Use Include to ensure Elders are loaded with the Caregiver
-        Caregiver? caregiver = await caregiverRepository.Query()
-            .Include(c => c.Invites)
-            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
-        
-        if (caregiver == null)
-        {
-            _logger.LogError("Caregiver not found.");
-            return BadRequest("Caregiver not found.");
-        }
-        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        Elder? elder =  await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-        if (elder == null)
-        {
-            _logger.LogError("Elder not found.");
-            return NotFound("Elder not found.");
-        }
-
-        _logger.LogInformation("Elder found. {elder}", elder);
-
-        // Add the elder to the caregiver's Elders collection
-        caregiver.Invites ??= [];
-        caregiver.Invites.Add(elder);
-        _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
-        try
-        {
-            await caregiverRepository.Update(caregiver);
-            _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
-            return Ok("Caregiver invited successfully.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update caregiver.");
-            return BadRequest("Failed to invite caregiver.");
-        }
+        _logger.LogError("User claim is null or empty.");
+        return BadRequest("User claim is not available.");
     }
+
+    Caregiver? caregiver = await caregiverRepository.Query()
+        .Include(c => c.Invites)
+        .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+
+    if (caregiver == null)
+    {
+        _logger.LogError("Caregiver not found.");
+        return BadRequest("Caregiver not found.");
+    }
+
+    Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(e => e.Email == userClaim.Value);
+    if (elder == null)
+    {
+        _logger.LogError("Elder not found.");
+        return NotFound("Elder not found.");
+    }
+    
+
+    if (caregiver.Invites != null && caregiver.Invites.Any(e => e.Id == elder.Id))
+    {
+        _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+        return BadRequest("Elder is already invited by this caregiver.");
+    }
+
+    caregiver.Invites ??= new List<Elder>();
+    caregiver.Invites.Add(elder);
+
+    try
+    {
+        _dbContext.Update(caregiver);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+        return Ok("Caregiver invited successfully.");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to update caregiver.");
+        return BadRequest("Failed to invite caregiver.");
+    }
+}
 
     [HttpDelete("users/elder")]
-    [Authorize(Roles = "Elder")]
-    public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
+[Authorize(Roles = "Elder")]
+public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
+{
+    IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+    IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+
+    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
     {
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        
-        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
-        {
-            _logger.LogError("User claim is null or empty.");
-            return BadRequest("User claim is not available.");
-        }
-
-        Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == caregiverEmail);
-        if (caregiver == null)
-        {
-            _logger.LogError("Caregiver not found.");
-            return BadRequest("Caregiver not found.");
-        }
-        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        Elder? elder =  await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-        if(elder == null)
-        {
-            _logger.LogError("Elder not found.");
-            return NotFound("Elder not found.");
-        }
-        _logger.LogInformation("Elder found. {elder}", elder);
-
-        caregiver.Elders?.Remove(elder);
-        try
-        {
-            await caregiverRepository.Update(caregiver);
-            _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
-            return Ok("Caregiver removed successfully.");
-        }
-        catch
-        {
-            _logger.LogError("Failed to update caregiver.");
-            return BadRequest("Failed to remove caregiver.");
-        }
+        _logger.LogError("User claim is null or empty.");
+        return BadRequest("User claim is not available.");
     }
+
+    Caregiver? caregiver = await caregiverRepository.Query()
+        .Include(c => c.Elders) // Ensure Elders collection is included
+        .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+
+    if (caregiver == null)
+    {
+        _logger.LogError("Caregiver not found.");
+        return BadRequest("Caregiver not found.");
+    }
+
+    Elder? elder = await elderRepository.Query()
+        .FirstOrDefaultAsync(e => e.Email == userClaim.Value);
+
+    if (elder == null)
+    {
+        _logger.LogError("Elder not found.");
+        return NotFound("Elder not found.");
+    }
+
+    // Remove the relationship
+    if (caregiver.Elders != null && caregiver.Elders.Contains(elder))
+    {
+        caregiver.Elders.Remove(elder);
+    }
+
+    try
+    {
+        _dbContext.Caregiver.Update(caregiver); // Update the Caregiver entity
+        await _dbContext.SaveChangesAsync();   // Persist changes to the database
+        _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+        return Ok("Caregiver removed successfully.");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to remove caregiver.");
+        return BadRequest("Failed to remove caregiver.");
+    }
+}
 
     [HttpGet("users/getElders")]
     [Authorize(Roles = "Caregiver")]
@@ -421,7 +439,7 @@ public class UserController : ControllerBase
 
     [HttpGet("caregiver/invites")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult<List<Elder>>> GetInvites()
+    public async Task<ActionResult<List<GetElderDTO>>> GetInvites()
     {
         IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
         
@@ -446,65 +464,81 @@ public class UserController : ControllerBase
         if (caregiver.Invites != null)
         {
             _logger.LogInformation("Caregiver has {Count} invites.", caregiver.Invites.Count);
-            List<Elder> invites = caregiver.Invites;
+            List<GetElderDTO> invites = new List<GetElderDTO>();
+            foreach (Elder elder in caregiver.Invites)
+            {
+                invites.Add(new GetElderDTO
+                {
+                    Name = elder.Name,
+                    Email = elder.Email
+                });
+            }
             return invites;
         }
         _logger.LogError("Caregiver has no invites.");
         return BadRequest("Caregiver has no invites.");
     }
 
-    [HttpPost("caregiver/invites/accept")]
-    [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> AcceptInvite(string elderEmail)
+[HttpPost("caregiver/invites/accept")]
+[Authorize(Roles = "Caregiver")]
+public async Task<ActionResult> AcceptInvite(string elderEmail)
+{
+    IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+
+    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
     {
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        
-        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
-        {
-            _logger.LogError("User claim is null or empty.");
-            return BadRequest("User claim is not available.");
-        }
-        
-        Caregiver? caregiver = await caregiverRepository.Query()
-            .Include(c => c.Invites)
-            .Include(e => e.Elders)
-            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
-        if (caregiver == null)
-        {
-            _logger.LogError("Caregiver not found.");
-            return BadRequest("Caregiver not found.");
-        }
-        _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
-        if (elder == null)
-        {
-            _logger.LogError("Elder not found.");
-            return NotFound();
-        }
-        _logger.LogInformation("Elder found. {elder}", elder);
-        if (caregiver.Invites != null)
-        {
-            caregiver.Elders ??= [];
-            caregiver.Elders.Add(elder);
-            caregiver.Invites.Remove(elder);
-        }
-        else
-        {
-            _logger.LogError("Caregiver has no invites.");
-            return BadRequest("Caregiver has no invites.");
-        }
-        try
-        {
-            await caregiverRepository.Update(caregiver);
-            _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
-            return Ok("Invite accepted successfully.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update caregiver.");
-            return BadRequest("Failed to update caregiver.");
-        }
+        _logger.LogError("User claim is null or empty.");
+        return BadRequest("User claim is not available.");
     }
+
+    // Include Invites and Elders collections
+    Caregiver? caregiver = await caregiverRepository.Query()
+        .Include(c => c.Invites)
+        .Include(c => c.Elders)
+        .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+    if (caregiver == null)
+    {
+        _logger.LogError("Caregiver not found.");
+        return BadRequest("Caregiver not found.");
+    }
+
+    if (caregiver.Invites == null || caregiver.Invites.Count == 0)
+    {
+        _logger.LogError("No invites found.");
+        return BadRequest("No invites found.");
+    }
+
+    Elder? elder = caregiver.Invites.FirstOrDefault(m => m.Email == elderEmail);
+    if (elder == null)
+    {
+        _logger.LogError("Elder not found.");
+        return NotFound("Elder not found.");
+    }
+
+    _logger.LogInformation("Invites found. {invites}", caregiver.Invites.Select(i => i.Email));
+    _logger.LogInformation("Elders found. {elders}", caregiver.Elders?.Select(e => e.Email));
+    _logger.LogInformation("Elder found. {elder}", elder.Email);
+
+    caregiver.Elders ??= new List<Elder>();
+    caregiver.Elders.Add(elder);
+    caregiver.Invites?.Remove(elder);
+    
+    _logger.LogInformation("Invites found. {invites}", caregiver.Invites?.Select(i => i.Email));
+    _logger.LogInformation("Elders found. {elders}", caregiver.Elders?.Select(e => e.Email));
+    _logger.LogInformation("Elder found. {elder}", elder.Email);
+
+    try
+    {
+        _dbContext.Update(caregiver);
+        await _dbContext.SaveChangesAsync();
+        _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+        return Ok("Invite accepted successfully.");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to update caregiver.");
+        return BadRequest("Failed to update caregiver.");
+    }
+}
 }
