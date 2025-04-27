@@ -1,5 +1,4 @@
 ﻿using System.Security.Claims;
-using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -16,25 +15,25 @@ public class UserController : ControllerBase
 {
     private readonly UserManager<Elder> _elderManager;
     private readonly UserManager<Caregiver> _caregiverManager;
-    private readonly UserService _userService;
+    private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
-    private readonly ApplicationDbContext _dbContext;
-    private readonly GeoService _geoService;
+    private readonly IGeoService _geoService;
+    private readonly IRepositoryFactory _repositoryFactory;
     
     public UserController(
         UserManager<Elder> elderManager,
         UserManager<Caregiver> caregiverManager,
-        UserService userService,
+        IUserService userService,
         ILogger<UserController> logger,
-        ApplicationDbContext dbContext,
-        GeoService geoService)
+        IGeoService geoService,
+        IRepositoryFactory repositoryFactory)
     {
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _userService = userService;
         _logger = logger;
-        _dbContext = dbContext;
         _geoService = geoService;
+        _repositoryFactory = repositoryFactory;
     }
     
     
@@ -121,8 +120,9 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<GetElderDTO>>> GetUsers()
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
         _logger.LogInformation("Fetching all elders.");
-        List<Elder> elders = await _elderManager.Users.ToListAsync();
+        List<Elder> elders = await elderRepository.Query().ToListAsync();
         _logger.LogInformation("Fetched {Count} elders.", elders.Count);
         return elders.Select(e => new GetElderDTO
         {
@@ -136,6 +136,9 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Elder")]
     public async Task<ActionResult> PutCaregiver(string caregiverEmail)
     {
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -144,7 +147,7 @@ public class UserController : ControllerBase
         }
 
         // Use Include to ensure Elders are loaded with the Caregiver
-        Caregiver? caregiver = await _caregiverManager.Users
+        Caregiver? caregiver = await caregiverRepository.Query()
             .Include(c => c.Invites)
             .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
         
@@ -154,7 +157,7 @@ public class UserController : ControllerBase
             return BadRequest("Caregiver not found.");
         }
         _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
+        Elder? elder =  await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -169,8 +172,7 @@ public class UserController : ControllerBase
         _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
         try
         {
-            // Save changes explicitly
-            await _dbContext.SaveChangesAsync();
+            await caregiverRepository.Update(caregiver);
             _logger.LogInformation("{elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
             return Ok("Caregiver invited successfully.");
         }
@@ -185,6 +187,9 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Elder")]
     public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
     {
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -192,14 +197,14 @@ public class UserController : ControllerBase
             return BadRequest("User claim is not available.");
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(caregiverEmail);
+        Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == caregiverEmail);
         if (caregiver == null)
         {
             _logger.LogError("Caregiver not found.");
             return BadRequest("Caregiver not found.");
         }
         _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
+        Elder? elder =  await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if(elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -210,7 +215,7 @@ public class UserController : ControllerBase
         caregiver.Elders?.Remove(elder);
         try
         {
-            await _caregiverManager.UpdateAsync(caregiver);
+            await caregiverRepository.Update(caregiver);
             _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.name}.", elder.Email, caregiver.Name);
             return Ok("Caregiver removed successfully.");
         }
@@ -225,6 +230,8 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<GetElderDTO>>> GetElders()
     {
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -233,7 +240,7 @@ public class UserController : ControllerBase
         }
 
         // Include Elders when retrieving the Caregiver
-        Caregiver? caregiver = await _caregiverManager.Users
+        Caregiver? caregiver = await caregiverRepository.Query()
             .Include(c => c.Elders)
             .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
         if (caregiver == null)
@@ -261,13 +268,16 @@ public class UserController : ControllerBase
     [HttpGet("users/arduino")]
     public async Task<ActionResult<List<ArduinoInfo>>> GetUnusedArduino()
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
-        Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -280,13 +290,13 @@ public class UserController : ControllerBase
             Longitude = elder.longitude
         };
         _logger.LogInformation("Elder location: {elderLocation}", elderLocation);
-        List<Elder> elders = _elderManager.Users.ToList();
+        List<Elder> elders = await elderRepository.Query().ToListAsync();
         _logger.LogInformation("Elders count: {elders}", elders.Count);
-        List<GPS> gpsData = _dbContext.GPSData.ToList();
+        List<GPS> gpsData = await gpsRepository.Query().ToListAsync();
         _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
         List<GPS> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
         _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
-        List<ArduinoInfo> addressNotAssociated = new List<ArduinoInfo>();
+        List<ArduinoInfo> addressNotAssociated = [];
         foreach (GPS gps in filteredGpsData)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
@@ -312,6 +322,8 @@ public class UserController : ControllerBase
     [HttpPost("users/arduino")]
     public async Task<ActionResult> SetArduino(string address)
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -319,7 +331,7 @@ public class UserController : ControllerBase
             return BadRequest("User claim is not available.");
         }
         
-        Elder? elder = await _elderManager.FindByEmailAsync(userClaim.Value);
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -334,7 +346,7 @@ public class UserController : ControllerBase
         elder.MacAddress = address;
         try
         {
-            await _elderManager.UpdateAsync(elder);
+            await elderRepository.Update(elder);
             _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
             return Ok("Arduino address set successfully.");
         }
@@ -348,7 +360,9 @@ public class UserController : ControllerBase
     [HttpGet("connected")]
     public async Task<ActionResult<bool>> IsConnected(string elderEmail)
     {
-        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -367,7 +381,9 @@ public class UserController : ControllerBase
     [HttpPost("elder/address")]
     public async Task<ActionResult> AddAddress(Address address, string elderEmail)
     {
-        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -392,7 +408,7 @@ public class UserController : ControllerBase
         _logger.LogInformation("Setting address for elder {elder.Email} to {address}.", elder.Email, address);
         try
         {
-            await _elderManager.UpdateAsync(elder);
+            await elderRepository.Update(elder);
             _logger.LogInformation("Address added for elder {elder.Email}.", elder.Email);
             return Ok("Address added successfully.");
         }
@@ -407,6 +423,8 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<Elder>>> GetInvites()
     {
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -415,7 +433,7 @@ public class UserController : ControllerBase
         }
 
         // Include Elders when retrieving the Caregiver
-        Caregiver? caregiver = await _caregiverManager.Users
+        Caregiver? caregiver = await caregiverRepository.Query()
             .Include(c => c.Invites)
             .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
         if (caregiver == null)
@@ -439,6 +457,9 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult> AcceptInvite(string elderEmail)
     {
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -446,7 +467,7 @@ public class UserController : ControllerBase
             return BadRequest("User claim is not available.");
         }
         
-        Caregiver? caregiver = await _caregiverManager.Users
+        Caregiver? caregiver = await caregiverRepository.Query()
             .Include(c => c.Invites)
             .Include(e => e.Elders)
             .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
@@ -456,7 +477,7 @@ public class UserController : ControllerBase
             return BadRequest("Caregiver not found.");
         }
         _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        Elder? elder = await _elderManager.FindByEmailAsync(elderEmail);
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
         if (elder == null)
         {
             _logger.LogError("Elder not found.");
@@ -476,7 +497,7 @@ public class UserController : ControllerBase
         }
         try
         {
-            await _caregiverManager.UpdateAsync(caregiver);
+            await caregiverRepository.Update(caregiver);
             _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
             return Ok("Invite accepted successfully.");
         }

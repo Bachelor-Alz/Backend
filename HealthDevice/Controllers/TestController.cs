@@ -1,7 +1,5 @@
-using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,15 +10,13 @@ namespace HealthDevice.Controllers;
 //This controller is used to test what ever endpoint we what to test if it works without implementing it in a main controller
 public class TestController : ControllerBase
 {
-    private readonly GeoService _geoService;
-    private readonly UserManager<Elder> _elderManager;
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IGeoService _geoService;
+    private readonly IRepositoryFactory _repositoryFactory;
     
-    public TestController(GeoService geoService, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
+    public TestController(IGeoService geoService, IRepositoryFactory repositoryFactory)
     {
         _geoService = geoService;
-        _elderManager = elderManager;
-        _dbContext = dbContext;
+        _repositoryFactory = repositoryFactory;
     }
     
     [HttpPost("Address")]
@@ -39,7 +35,14 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        Elder? elder = await _elderManager.Users
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
+        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
+        IRepository<Kilometer> kilometerRepository = _repositoryFactory.GetRepository<Kilometer>();
+        IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
+        IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
+        Elder? elder = await elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
@@ -70,7 +73,7 @@ public class TestController : ControllerBase
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
 
-            _dbContext.MAX30102Data.Add(new Max30102
+            await max30102Repository.Add(new Max30102
             {
                 Heartrate = heartrate,
                 SpO2 = spo2,
@@ -79,7 +82,7 @@ public class TestController : ControllerBase
             });
         }
 
-        _dbContext.GPSData.Add(new GPS
+        await gpsRepository.Add(new GPS
         {
             Latitude = 57.012153,
             Longitude = 9.991292,
@@ -93,13 +96,13 @@ public class TestController : ControllerBase
             DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j*5);
             double distance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
             
-            _dbContext.Steps.Add(new Steps
+            await stepsRepository.Add(new Steps
             {
                 StepsCount = steps,
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
-            _dbContext.Distance.Add(new Kilometer
+            await kilometerRepository.Add(new Kilometer
             {
                 Distance = distance,
                 Timestamp = timestamp,
@@ -108,7 +111,7 @@ public class TestController : ControllerBase
         }
 
 
-        _dbContext.Location.Add(new Location
+        await locationRepository.Add(new Location
         {
             Latitude = 57.012153,
             Longitude = 9.991292,
@@ -125,7 +128,7 @@ public class TestController : ControllerBase
                 DateTime timestamp2 = timestamp + TimeSpan.FromHours(j);
                 if (fall == 7)
                 {
-                    _dbContext.FallInfo.Add(new FallInfo
+                    await fallInfoRepository.Add(new FallInfo
                     {
                         Location = new Location
                         {
@@ -140,16 +143,7 @@ public class TestController : ControllerBase
                 }
             }
         }
-        
-        try
-        {
-            await _dbContext.SaveChangesAsync();
-            await _elderManager.UpdateAsync(elder);
-            return Ok("Fake data generated successfully");
-        }
-        catch (Exception ex)
-        {
-            return BadRequest($"Failed to generate fake data: {ex.Message}");
-        }
+
+        return Ok("Fake data generated successfully");
     }
 }

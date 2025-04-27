@@ -28,7 +28,7 @@ public class ArduinoService : IArduinoService
         }
         
         _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
-        sensorRepository.AddRange(data);
+        await sensorRepository.AddRange(data);
         return new OkResult();
     }
 
@@ -48,7 +48,7 @@ public class ArduinoService : IArduinoService
             return;
         }
 
-        gpsRepository.Add(new GPS
+        await gpsRepository.Add(new GPS
         {
             Latitude = data.Latitude,
             Longitude = data.Longitude,
@@ -56,7 +56,7 @@ public class ArduinoService : IArduinoService
             MacAddress = data.MacAddress
         });
         
-        stepsRepository.Add(new Steps
+        await stepsRepository.Add(new Steps
         {
             StepsCount = data.steps,
             Timestamp = receivedAt,
@@ -75,7 +75,7 @@ public class ArduinoService : IArduinoService
             _logger.LogWarning("{Timestamp}: No Max30102 data found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             return;
         }
-        max30102Repository.Add(new Max30102
+        await max30102Repository.Add(new Max30102
         {
             Heartrate = totalHr / data.Max30102.Count,
             SpO2 = totalSpO2 / data.Max30102.Count,

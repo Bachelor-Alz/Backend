@@ -1,5 +1,6 @@
 ﻿using HealthDevice.DTO;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
 
@@ -7,11 +8,11 @@ public class AiService : IAIService
 {
     
     private readonly ILogger<AiService> _logger;
-    private readonly EmailService _emailService;
-    private readonly GeoService _geoService;
+    private readonly IEmailService _emailService;
+    private readonly IGeoService _geoService;
     private readonly IRepositoryFactory _repositoryFactory;
     
-    public AiService(ILogger<AiService> logger, EmailService emailService, GeoService geoService, IRepositoryFactory repositoryFactory)
+    public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
         _emailService = emailService;
@@ -39,16 +40,16 @@ public class AiService : IAIService
             Location = new Location(),
             MacAddress = addrees
         };
-        fallInfoRepository.Add(fallInfo);
+        await fallInfoRepository.Add(fallInfo);
         try
         {
-            Elder? elder = elderRepository.Query().FirstOrDefault(m => m.MacAddress == addrees);
+            Elder? elder =  await elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == addrees);
             if (elder == null)
             {
                 _logger.LogWarning("Elder {address} does not exist", addrees);
                 return;
             }
-            List<Caregiver> caregivers = caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToList();
+            List<Caregiver> caregivers = await caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
             if(caregivers.Count == 0)
             {
                 _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
@@ -66,7 +67,7 @@ public class AiService : IAIService
                     _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
-                Location? location = locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefault();
+                Location? location = await locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
                 if (location == null) continue;
                 string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
 

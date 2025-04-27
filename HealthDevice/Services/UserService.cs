@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 namespace HealthDevice.Services;
 
@@ -29,7 +30,7 @@ public class UserService : IUserService
         
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
-        Elder? elder = elderRepository.Query().FirstOrDefault(m => m.Email == userLoginDto.Email);
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (elder != null)
         {
             if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
@@ -46,7 +47,7 @@ public class UserService : IUserService
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
         }
 
-        Caregiver? caregiver = caregiverRepository.Query().FirstOrDefault(m => m.Email == userLoginDto.Email);
+        Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (caregiver == null)
         {
             _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
