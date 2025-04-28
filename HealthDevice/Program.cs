@@ -49,6 +49,19 @@ builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
 
+// Register generic repository and factory
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<ApplicationDbContext>();
+builder.Services.AddSingleton<IRepositoryFactory, RepositoryFactory>();
+
+// Register HealthService with its interface
+builder.Services.AddScoped<IHealthService, HealthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGeoService, GeoService>();
+builder.Services.AddScoped<IArduinoService, ArduinoService>();
+builder.Services.AddScoped<IAIService, AiService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 builder.Services.ConfigureApplicationCookie();
 
 builder.Services.AddOpenApi();
@@ -91,6 +104,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+
 
 using (var scope = app.Services.CreateScope())
 {

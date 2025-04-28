@@ -9,7 +9,7 @@ namespace HealthDevice.Data
             : base(options)
         {
         }
-        
+
         public DbSet<Heartrate> Heartrate { get; set; }
         public DbSet<Location> Location { get; set; }
         public DbSet<FallInfo> FallInfo { get; set; }
@@ -21,5 +21,6 @@ namespace HealthDevice.Data
         public DbSet<Steps> Steps { get; set; }
         public DbSet<Kilometer> Distance { get; set; }
         public DbSet<Perimeter> Perimeter { get; set; }
+        
     }
 }
