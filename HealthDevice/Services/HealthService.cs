@@ -421,7 +421,7 @@ public class HealthService : IHealthService
                 }
             }
 
-            return result.OrderBy(r => r.Timestamp.Hour).ToList();
+            return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Date).ToList() : [];
         }
         else
         {
@@ -452,7 +452,7 @@ public class HealthService : IHealthService
                 }
             }
 
-            return result.OrderBy(r => r.Timestamp.Date).ToList();
+            return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Date).ToList() : [];
         }
     }
 
@@ -601,7 +601,7 @@ public class HealthService : IHealthService
                         Minrate = currentHeartRateData.Min(h => h.Heartrate),
                         Timestamp = currentHeartRateData.First().Timestamp
                     };
-                    return currentHeartRateData.Select(hr => new PostHeartRate
+                    return currentHeartRateData.Count != 0 ? currentHeartRateData.Select(hr => new PostHeartRate
                     {
                         CurrentHeartRate = new currentHeartRate
                         {
@@ -615,7 +615,7 @@ public class HealthService : IHealthService
                             Minrate = heartrate.Minrate,
                             Timestamp = hr.Timestamp
                         }
-                    }).ToList();
+                    }).ToList() : [];
                 }
                 case Period.Day:
                 {

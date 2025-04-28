@@ -86,6 +86,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             IRepository<Kilometer> kilometerRepository = _repositoryFactory.GetRepository<Kilometer>();
             IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
             IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
+            DateTime currentDate = DateTime.UtcNow;
             Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
@@ -110,8 +111,8 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 .FirstOrDefaultAsync();
 
             //Get the total amounts of steps on the newest date using kilometer
-            Kilometer? kilometer = await kilometerRepository.Query().Where(s => s.MacAddress == macAddress)
-                .GroupBy(s => s.Timestamp)
+            Kilometer? kilometer = await kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+                .GroupBy(s => s.Timestamp.Date)
                 .Select(g => new Kilometer
                 {
                     Distance = g.Sum(s => s.Distance),
@@ -119,8 +120,8 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 }).FirstOrDefaultAsync();
 
             Steps? steps = await stepsRepository.Query()
-                .Where(s => s.MacAddress == macAddress)
-                .GroupBy(s => s.Timestamp)
+                .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+                .GroupBy(s => s.Timestamp.Date)
                 .Select(g => new Steps
                 {
                     StepsCount = g.Sum(s => s.StepsCount),
