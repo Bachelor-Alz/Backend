@@ -21,6 +21,6 @@ public class ArduinoInfo
     public int Id { get; set; }
     public string MacAddress { get; set; }
     public string Address { get; set; }
-    public double Distance { get; set; }
+    public float Distance { get; set; }
     public int lastActivity { get; set; }
 }

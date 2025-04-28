@@ -12,7 +12,15 @@ public class Elder : IdentityUser
     public double longitude { get; set; }
     public bool outOfPerimeter { get; set; }
     
-    
+    // Foreign key for the assigned caregiver
+    public string? CaregiverId { get; set; }
+    [ForeignKey("CaregiverId")]
+    public Caregiver? Caregiver { get; set; }
+
+    // Foreign key for the invited caregiver
+    public string? InvitedCaregiverId { get; set; }
+    [ForeignKey("InvitedCaregiverId")]
+    public Caregiver? InvitedCaregiver { get; set; }
 }
 
 public class ElderLocation

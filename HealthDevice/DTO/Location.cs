@@ -22,7 +22,7 @@ public class Perimeter
 public class Kilometer
 {
     public int Id { get; set; }
-    public double Distance { get; set; }
+    public float Distance { get; set; }
     public DateTime Timestamp { get; set; }
     public string? MacAddress { get; set; }
 }

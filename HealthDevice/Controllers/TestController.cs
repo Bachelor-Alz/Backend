@@ -62,8 +62,8 @@ public class TestController : ControllerBase
         const double spo2Max = 1.0;
         const int stepsMin = 0;
         const int stepsMax = 100;
-        const double distanceMin = 0.0;
-        const double distanceMax = 10.0;
+        const float distanceMin = 0;
+        const float distanceMax = 10;
         const int fallMin = 0;
         const int fallMax = 10;
 
@@ -94,7 +94,7 @@ public class TestController : ControllerBase
         {
             int steps = Random.Shared.Next(stepsMin, stepsMax);
             DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j*5);
-            double distance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
+            float distance = (float)(Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin);
             
             await stepsRepository.Add(new Steps
             {
