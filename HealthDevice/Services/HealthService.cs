@@ -101,14 +101,14 @@ public class HealthService : IHealthService
             return new Kilometer();
         }
 
-        double distance = 0;
+        float distance = 0;
         for (int i = 0; i < gpsData.Count - 1; i++)
         {
             double a = Math.Pow(Math.Sin((gpsData[i + 1].Latitude - gpsData[i].Latitude) / 2), 2) +
                        Math.Cos(gpsData[i].Latitude) * Math.Cos(gpsData[i + 1].Latitude) *
                        Math.Pow(Math.Sin((gpsData[i + 1].Longitude - gpsData[i].Longitude) / 2), 2);
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            distance += 6371 * c; // Earth's radius in kilometers
+            distance += (float)(6371 * c); // Earth's radius in kilometers
         }
 
         if (distance == 0)

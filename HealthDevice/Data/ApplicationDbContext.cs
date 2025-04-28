@@ -22,5 +22,24 @@ namespace HealthDevice.Data
         public DbSet<Kilometer> Distance { get; set; }
         public DbSet<Perimeter> Perimeter { get; set; }
         
+        
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Configure one-to-many relationship for assigned elders
+            modelBuilder.Entity<Elder>()
+                .HasOne(e => e.Caregiver)
+                .WithMany(c => c.Elders)
+                .HasForeignKey(e => e.CaregiverId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure one-to-many relationship for invited elders
+            modelBuilder.Entity<Elder>()
+                .HasOne(e => e.InvitedCaregiver)
+                .WithMany(c => c.Invites)
+                .HasForeignKey(e => e.InvitedCaregiverId)
+                .OnDelete(DeleteBehavior.SetNull);
+        }
     }
 }

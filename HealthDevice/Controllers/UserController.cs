@@ -191,7 +191,7 @@ public async Task<ActionResult> PutCaregiver(string caregiverEmail)
     }
 }
 
-    [HttpDelete("users/elder")]
+    [HttpDelete("users/elder/removeCaregiver")]
 [Authorize(Roles = "Elder")]
 public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
 {
@@ -224,15 +224,21 @@ public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
         return NotFound("Elder not found.");
     }
 
-    // Remove the relationship
-    if (caregiver.Elders != null && caregiver.Elders.Contains(elder))
+// Remove the relationship explicitly
+    if (elder.CaregiverId != null)
     {
-        caregiver.Elders.Remove(elder);
+        elder.CaregiverId = null;
+        _dbContext.Entry(elder).State = EntityState.Modified;
+        _dbContext.Update(elder);
+    }
+    else
+    {
+        _logger.LogError("Elder {ElderEmail} not assigned to Caregiver {CaregiverEmail}.", elder.Email, caregiver.Email);
+        return BadRequest("Elder not assigned to this caregiver.");
     }
 
     try
     {
-        _dbContext.Caregiver.Update(caregiver); // Update the Caregiver entity
         await _dbContext.SaveChangesAsync();   // Persist changes to the database
         _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
         return Ok("Caregiver removed successfully.");
@@ -241,6 +247,65 @@ public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
     {
         _logger.LogError(ex, "Failed to remove caregiver.");
         return BadRequest("Failed to remove caregiver.");
+    }
+}
+
+    [HttpDelete("users/caregiver/removeFromElder")]
+[Authorize(Roles = "Caregiver")]
+public async Task<ActionResult> RemoveFromElder(string elderEmail)
+{
+    IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+    IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+
+    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+    {
+        _logger.LogError("User claim is null or empty.");
+        return BadRequest("User claim is not available.");
+    }
+
+    Caregiver? caregiver = await caregiverRepository.Query()
+        .Include(c => c.Elders) // Ensure Elders collection is included
+        .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+
+    if (caregiver == null)
+    {
+        _logger.LogError("Caregiver not found.");
+        return BadRequest("Caregiver not found.");
+    }
+
+    Elder? elder = await elderRepository.Query()
+        .FirstOrDefaultAsync(e => e.Email == elderEmail);
+
+    if (elder == null)
+    {
+        _logger.LogError("Elder not found.");
+        return NotFound("Elder not found.");
+    }
+
+    // Remove the relationship explicitly
+    if (elder.CaregiverId != null)
+    {
+        elder.CaregiverId = null;
+        _dbContext.Entry(elder).State = EntityState.Modified;
+        _dbContext.Update(elder);
+    }
+    else
+    {
+        _logger.LogError("Elder {ElderEmail} not assigned to Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
+        return BadRequest("Elder not assigned to this caregiver.");
+    }
+
+    try
+    {
+        await _dbContext.SaveChangesAsync();   // Persist changes to the database
+        _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
+        return Ok("Elder removed successfully.");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to remove elder from caregiver.");
+        return BadRequest("Failed to remove elder from caregiver.");
     }
 }
 
@@ -318,7 +383,7 @@ public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
         foreach (GPS gps in filteredGpsData)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
-            double distance = GeoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
+            float distance = GeoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
             int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes)*-1;
             if (!(distance < 0.5)) continue;
             _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
@@ -372,6 +437,45 @@ public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
         {
             _logger.LogError(e, "Failed to set Arduino address for elder {elder.Email}.", elder.Email);
             return BadRequest("Failed to set Arduino address.");
+        }
+    }
+
+    [HttpDelete("users/arduino")]
+    public async Task<ActionResult> RemoveArduino()
+    {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+        
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+
+        if (elder.MacAddress == null)
+        {
+            _logger.LogError("Arduino address is null.");
+            return BadRequest("Arduino address is already null.");
+        }
+        _logger.LogInformation("Removing Arduino address for elder {elder.Email}.", elder.Email);
+        elder.MacAddress = null;
+        try
+        {
+            await elderRepository.Update(elder);
+            _logger.LogInformation("Arduino address removed for {elder.Email}.", elder.Email);
+            return Ok("Arduino address removed successfully.");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to remove Arduino address for elder {elder.Email}.", elder.Email);
+            return BadRequest("Failed to remove Arduino address.");
         }
     }
 
@@ -519,18 +623,14 @@ public async Task<ActionResult> AcceptInvite(string elderEmail)
     _logger.LogInformation("Invites found. {invites}", caregiver.Invites.Select(i => i.Email));
     _logger.LogInformation("Elders found. {elders}", caregiver.Elders?.Select(e => e.Email));
     _logger.LogInformation("Elder found. {elder}", elder.Email);
-
-    caregiver.Elders ??= new List<Elder>();
-    caregiver.Elders.Add(elder);
-    caregiver.Invites?.Remove(elder);
     
-    _logger.LogInformation("Invites found. {invites}", caregiver.Invites?.Select(i => i.Email));
-    _logger.LogInformation("Elders found. {elders}", caregiver.Elders?.Select(e => e.Email));
-    _logger.LogInformation("Elder found. {elder}", elder.Email);
-
+    elder.CaregiverId = caregiver.Id;
+    elder.InvitedCaregiverId = null;
+    _dbContext.Entry(elder).State = EntityState.Modified;
+    _dbContext.Update(elder);
+    
     try
     {
-        _dbContext.Update(caregiver);
         await _dbContext.SaveChangesAsync();
         _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
         return Ok("Invite accepted successfully.");
