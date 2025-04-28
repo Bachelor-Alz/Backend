@@ -10,3 +10,9 @@ public class Caregiver : IdentityUser
     
     public List<Elder>? Invites { get; set; }
 }
+
+public class CaregiverDTO
+{
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+}

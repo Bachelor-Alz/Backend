@@ -21,11 +21,22 @@ public class AiService : IAIService
     }
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
-       if (request.Contains(1))
-       {
-              _logger.LogInformation("Fall detected for elder {address}", address);
-           await HandleFall(address);
-       }
+        string count = "";
+        foreach (int t in request)
+        {
+            count += t.ToString();
+            if (count.Contains("0"))
+            {
+                count = "";
+            }
+            if(count.Length >= 4)
+            {
+                _logger.LogInformation("Fall detected for elder {address}", address);
+                await HandleFall(address);
+                return;
+            }
+        }
+        _logger.LogInformation("No fall detected for elder {address}", address);
     }
 
     private async Task HandleFall(string addrees)

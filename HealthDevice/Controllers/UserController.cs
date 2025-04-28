@@ -641,4 +641,74 @@ public async Task<ActionResult> AcceptInvite(string elderEmail)
         return BadRequest("Failed to update caregiver.");
     }
 }
+
+[HttpGet("users/elder/Arduino")]
+[Authorize(Roles = "Elder")]
+public async Task<ActionResult<string>> GetElderArduino()
+{
+    IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
+    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+    {
+        _logger.LogError("User claim is null or empty.");
+        return BadRequest("User claim is not available.");
+    }
+        
+    Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+    if (elder == null)
+    {
+        _logger.LogError("Elder not found.");
+        return NotFound();
+    }
+
+    if (elder.MacAddress != null) return elder.MacAddress;
+    _logger.LogError("No mac address found.");
+    return NotFound("No mac address found.");
+}
+
+    [HttpGet("users/elder/caregiver")]
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult<List<CaregiverDTO>>> GetElderCaregiver()
+    {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+        
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+        if (elder.CaregiverId == null)
+        {
+            _logger.LogError("No caregiver found.");
+            return NotFound("No caregiver found.");
+        }
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        
+        Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Id == elder.CaregiverId);
+        if (caregiver == null)
+        {
+            _logger.LogError("No caregiver found.");
+            return NotFound("No caregiver found.");
+        }
+        
+        List<CaregiverDTO> caregivers = new List<CaregiverDTO>
+        {
+            new CaregiverDTO
+            {
+                Name = caregiver.Name,
+                Email = caregiver.Email
+            }
+        };
+        
+        return caregivers;
+    }
 }
