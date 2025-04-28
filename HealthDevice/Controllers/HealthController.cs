@@ -90,7 +90,14 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
-                return BadRequest("Elder not found or Arduino not set.");
+                return new DashBoard
+                {
+                    allFall = 0,
+                    distance = 0,
+                    HeartRate = 0,
+                    SpO2 = 0,
+                    steps = 0
+                };
             }
             _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderEmail);
 
