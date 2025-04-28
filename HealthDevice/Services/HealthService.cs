@@ -9,14 +9,16 @@ public class HealthService : IHealthService
     private readonly ILogger<HealthService> _logger;
     private readonly IEmailService _emailService;
     private readonly IRepositoryFactory _repositoryFactory;
-    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService)
+    private readonly IGetHealthData _getHealthDataService;
+    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService, IGetHealthData getHealthDataService)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
         _emailService = emailService;
+        _getHealthDataService = getHealthDataService;
     }
 
-    private DateTime GetEarlierDate(DateTime date, Period period) => period switch
+    public DateTime GetEarlierDate(DateTime date, Period period) => period switch
     {
         Period.Hour => date - TimeSpan.FromHours(1),
         Period.Day => date.AddDays(-1),
@@ -129,31 +131,6 @@ public class HealthService : IHealthService
             Distance = distance,
             Timestamp = currentDate
         };
-    }
-    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date) where T : class
-    {
-        DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-
-        Elder? elder = await elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Email == elderEmail);
-        if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
-        {
-            _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
-            return new List<T>();
-        }
-
-        string arduino = elder.MacAddress;
-        IRepository<T> repository = _repositoryFactory.GetRepository<T>();
-
-        List<T> data = await repository.Query()
-            .Where(d => EF.Property<string>(d, "MacAddress") == arduino &&
-                        EF.Property<DateTime>(d, "Timestamp") >= earlierDate &&
-                        EF.Property<DateTime>(d, "Timestamp") <= date)
-            .ToListAsync();
-
-        _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
-        return data;
     }
 
    public async Task DeleteMax30102Data(DateTime currentDate, string arduino)
@@ -413,7 +390,7 @@ public class HealthService : IHealthService
         {
             _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
             DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
-            List<FallInfo> data = await GetHealthData<FallInfo>(
+            List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
             _logger.LogInformation("Fetched fall data: {Count}", data.Count);
             List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = fall.Timestamp, fallCount = 1 })
@@ -426,7 +403,7 @@ public class HealthService : IHealthService
         {
             _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
             DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
-            List<FallInfo> data = await GetHealthData<FallInfo>(
+            List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
             // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
             List<FallDTO> result = data
@@ -458,7 +435,7 @@ public class HealthService : IHealthService
         {
             _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
             DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
-            List<FallInfo> data = await GetHealthData<FallInfo>(
+            List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
             List<FallDTO> result = data
                 .GroupBy(f => f.Timestamp.Date)
@@ -495,7 +472,7 @@ public class HealthService : IHealthService
             {
                 _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
-                List<Steps> data = await GetHealthData<Steps>(
+                List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, newTime);
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
@@ -505,7 +482,7 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing daily steps data for elder: {ElderEmail}", elderEmail);
                 DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
-                List<Steps> data = await GetHealthData<Steps>(
+                List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, endTime);
                 List<Steps> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
                     .Select(hour => new Steps
@@ -521,7 +498,7 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
                 DateTime startTime = date.Date.ToUniversalTime();
                 DateTime endTime = startTime.AddDays(7).AddSeconds(-1); // End of the week
-                List<Steps> data = await GetHealthData<Steps>(
+                List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, endTime);
                 List<Steps> result = data.Where(t => t.Timestamp.Date >= startTime && t.Timestamp.Date <= endTime)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
@@ -544,7 +521,7 @@ public class HealthService : IHealthService
             {
                 _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
-                List<Kilometer> data = await GetHealthData<Kilometer>(
+                List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
                     elderEmail, period, newTime);
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);
                 return data.Count != 0 ? data : [];
@@ -554,7 +531,7 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
                 DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
-                List<Kilometer> data = await GetHealthData<Kilometer>(
+                List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
                     elderEmail, period, endTime);
                 List<Kilometer> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
                     .Select(hour => new Kilometer
@@ -570,7 +547,7 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
                 DateTime startTime = date.Date.ToUniversalTime();
                 DateTime endTime = startTime.AddDays(7).AddSeconds(-1); // End of the week
-                List<Kilometer> data = await GetHealthData<Kilometer>(
+                List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
                     elderEmail, period, endTime);
                 List<Kilometer> result = data.Where(t => t.Timestamp.Date >= startTime && t.Timestamp.Date <= endTime)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
@@ -588,12 +565,12 @@ public class HealthService : IHealthService
     public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period)
     {
         // Fetch historical heart rate data
-            List<Heartrate> data = await GetHealthData<Heartrate>(
+            List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
                 elderEmail, period, date.ToUniversalTime());
             _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
             // Fetch current heart rate data if historical data is unavailable
             List<Max30102> currentHeartRateData =
-                await GetHealthData<Max30102>(elderEmail, period, date.ToUniversalTime());
+                await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, date.ToUniversalTime());
             _logger.LogInformation("Fetched current heart rate data: {Count}", currentHeartRateData.Count);
 
             var newestHr = currentHeartRateData.OrderByDescending(h => h.Timestamp).First();
@@ -709,12 +686,12 @@ public class HealthService : IHealthService
     public async Task<ActionResult<List<PostSpo2>>> GetSpO2(string elderEmail, DateTime date, Period period)
     {
          // Fetch historical SpO2 data
-            List<Spo2> data = await GetHealthData<Spo2>(
+            List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
                 elderEmail, period, date.ToUniversalTime());
             _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
             // Fetch current SpO2 data if historical data is unavailable
             List<Max30102> currentSpo2Data =
-                await GetHealthData<Max30102>(elderEmail, period, date.ToUniversalTime());
+                await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, date.ToUniversalTime());
             _logger.LogInformation("Fetched current SpO2 data: {Count}", currentSpo2Data.Count);
             if (data.Count != 0)
             {

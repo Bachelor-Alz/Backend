@@ -9,14 +9,10 @@ namespace HealthDevice.Services;
 public class Repository<T> : IRepository<T> where T : class
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly UserManager<Elder> _elderManager;
-    private readonly UserManager<Caregiver> _caregiverManager;
 
-    public Repository(ApplicationDbContext dbContext, UserManager<Elder> userManager, UserManager<Caregiver> caregiverManager)
+    public Repository(ApplicationDbContext dbContext)
     {
         _dbContext = dbContext;
-        _elderManager = userManager;
-        _caregiverManager = caregiverManager;
     }
 
     public IQueryable<T> Query()
@@ -47,19 +43,5 @@ public class Repository<T> : IRepository<T> where T : class
     {
         _dbContext.Set<T>().Add(entity);
         await _dbContext.SaveChangesAsync();
-    }
-    
-    public void Attach(T entity)
-    {
-        EntityEntry<T> entry = _dbContext.Entry(entity);
-
-        // Check if the entity is already tracked
-        if (entry.State == EntityState.Detached)
-        {
-            _dbContext.Set<T>().Attach(entity);
-        }
-
-        // Set the entity state to Unchanged for existing entities
-        entry.State = EntityState.Unchanged;
     }
 }

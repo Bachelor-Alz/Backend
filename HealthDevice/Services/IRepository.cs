@@ -7,5 +7,4 @@ public interface IRepository<T> where T : class
     Task Update(T entity);
     Task AddRange(IEnumerable<T> entities);
     Task Add(T entity);
-    void Attach(T entity);
 }
