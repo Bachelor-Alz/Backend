@@ -711,4 +711,48 @@ public async Task<ActionResult<string>> GetElderArduino()
         
         return caregivers;
     }
+
+    [AllowAnonymous]
+    [HttpGet("users/token")]
+    public async Task<ActionResult<string>> RenewToken()
+    {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+        
+        //Check if the user is an elder or a caregiver
+        var elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        var caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        
+        //Get time to expire from the token that the request maker has
+        var expiredClaim = User.Claims.FirstOrDefault(c => c.Type == "exp");
+        
+        if (expiredClaim == null)
+        {
+            _logger.LogError("Expiration claim not found.");
+            return BadRequest("Expiration claim not found.");
+        }
+        
+        DateTime expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiredClaim.Value)).DateTime;
+        if (expTime > DateTime.UtcNow)
+        {
+            _logger.LogError("Token is not expired yet.");
+            return BadRequest("Token is not expired yet.");
+        }
+
+        if (DateTime.UtcNow <= expTime || expTime <= DateTime.UtcNow + TimeSpan.FromMinutes(5))
+        {
+            if (caregiver != null)
+                return _userService.GenerateJwt(caregiver, "Caregiver");
+            if (elder != null)
+                return _userService.GenerateJwt(elder, "Elder");
+        }
+        return BadRequest("Token is not expired yet.");
+    }
 }

@@ -69,7 +69,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddJwtAuthentication(
     "api.healthdevice.com",
     "user.healthdevice.com",
-    "Your_32_Character_Long_Secret_Key_Here"
+    "UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"
 );
 
 builder.Services.AddAuthorization(options =>
