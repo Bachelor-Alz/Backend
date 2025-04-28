@@ -133,6 +133,7 @@ public class UserController : ControllerBase
         {
             Email = e.Email,
             Name = e.Name,
+            role = Roles.Elder
         }).ToList();
     }
 
@@ -341,6 +342,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
             {
                 Name = e.Name,
                 Email = e.Email,
+                role = Roles.Elder
             }).ToList();
             return elderDTOs;
         }
@@ -574,7 +576,8 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
                 invites.Add(new GetElderDTO
                 {
                     Name = elder.Name,
-                    Email = elder.Email
+                    Email = elder.Email,
+                    role = Roles.Elder
                 });
             }
             return invites;
