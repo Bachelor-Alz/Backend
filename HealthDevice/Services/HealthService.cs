@@ -17,15 +17,7 @@ public class HealthService : IHealthService
         _emailService = emailService;
         _getHealthDataService = getHealthDataService;
     }
-
-    public DateTime GetEarlierDate(DateTime date, Period period) => period switch
-    {
-        Period.Hour => date - TimeSpan.FromHours(1),
-        Period.Day => date.AddDays(-1),
-        Period.Week => date - TimeSpan.FromDays(7),
-        _ => throw new ArgumentException("Invalid period specified")
-    };
-
+    
     public async Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address)
     {
         IRepository<Max30102> repository = _repositoryFactory.GetRepository<Max30102>();
