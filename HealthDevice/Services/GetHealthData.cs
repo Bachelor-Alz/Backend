@@ -7,18 +7,24 @@ public class GetHealthDataService : IGetHealthData
 {
     private readonly IRepositoryFactory _repositoryFactory;
     private readonly ILogger<GetHealthDataService> _logger;
-    private readonly IHealthService _healthService;
     
-    public GetHealthDataService(IRepositoryFactory repositoryFactory, ILogger<GetHealthDataService> logger, IHealthService healthService)
+    public GetHealthDataService(IRepositoryFactory repositoryFactory, ILogger<GetHealthDataService> logger)
     {
         _repositoryFactory = repositoryFactory;
         _logger = logger;
-        _healthService = healthService;
     }
+    
+    private DateTime GetEarlierDate(DateTime date, Period period) => period switch
+    {
+        Period.Hour => date - TimeSpan.FromHours(1),
+        Period.Day => date.AddDays(-1),
+        Period.Week => date - TimeSpan.FromDays(7),
+        _ => throw new ArgumentException("Invalid period specified")
+    };
     
     public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date) where T : class
     {
-        DateTime earlierDate = _healthService.GetEarlierDate(date, period).ToUniversalTime();
+        DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
 
         Elder? elder = await elderRepository.Query()
