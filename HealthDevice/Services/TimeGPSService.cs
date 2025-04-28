@@ -29,7 +29,10 @@ namespace HealthDevice.Services
                     foreach (string arduino in elders.Select(elder => elder.MacAddress).OfType<string>())
                     {
                         Location location = await healthService.GetLocation(DateTime.UtcNow, arduino);
-                        await healthService.ComputeOutOfPerimeter(arduino, location);
+                        if (location.Latitude != 0 && location.Longitude != 0)
+                        {
+                            await healthService.ComputeOutOfPerimeter(arduino, location);
+                        }
                     }
                 }
 
