@@ -87,9 +87,9 @@ public class UserService : IUserService
 
     }
 
-    private static string GenerateJwt<T>(T user, string role) where T : IdentityUser
+    public string GenerateJwt<T>(T user, string role) where T : IdentityUser
     {
-        SymmetricSecurityKey securityKey = new SymmetricSecurityKey("Your_32_Character_Long_Secret_Key_Here"u8.ToArray());
+        SymmetricSecurityKey securityKey = new SymmetricSecurityKey("UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"u8.ToArray());
         SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         if (user.Email == null) return string.Empty;
@@ -104,7 +104,7 @@ public class UserService : IUserService
             issuer: "api.healthdevice.com",
             audience: "user.healthdevice.com",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(300),
+            expires: DateTime.Now.AddMinutes(10),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

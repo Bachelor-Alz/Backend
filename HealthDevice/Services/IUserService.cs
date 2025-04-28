@@ -8,4 +8,5 @@ public interface IUserService
 {
     Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, HttpContext httpContext);
     Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, HttpContext httpContext) where T : IdentityUser;
+    string GenerateJwt<T>(T user, string role) where T : IdentityUser;
 }
