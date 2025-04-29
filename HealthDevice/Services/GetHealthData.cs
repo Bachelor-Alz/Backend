@@ -26,10 +26,11 @@ public class GetHealthDataService : IGetHealthData
     {
         DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
+    
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-
         Elder? elder = await elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
+
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
             _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
@@ -44,8 +45,22 @@ public class GetHealthDataService : IGetHealthData
                         EF.Property<DateTime>(d, "Timestamp") >= earlierDate &&
                         EF.Property<DateTime>(d, "Timestamp") <= date)
             .ToListAsync();
-
+        
+        
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
+
+        foreach (var item in data)
+        {
+            var timestampProperty = typeof(T).GetProperty("Timestamp");
+            if (timestampProperty != null)
+            {
+                DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
+                DateTime localDateTime = utcDateTime.AddHours(2);
+                timestampProperty.SetValue(item, localDateTime);
+            }
+        }
+        
         return data;
     }
+
 }
