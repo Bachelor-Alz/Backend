@@ -714,9 +714,9 @@ public async Task<ActionResult<string>> GetElderArduino()
         
         return caregivers;
     }
-
-    [AllowAnonymous]
-    [HttpGet("users/token")]
+    
+    [HttpGet("renew/token")]
+    [Authorize(AuthenticationSchemes = "ExpiredTokenScheme")]
     public async Task<ActionResult<string>> RenewToken()
     {
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
