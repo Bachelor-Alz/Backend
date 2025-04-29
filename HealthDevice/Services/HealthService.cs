@@ -46,7 +46,7 @@ public class HealthService : IHealthService
             {
                 Avgrate = (int)rateInHour.Average(hr => hr.AvgHeartrate),
                 Maxrate = rateInHour.Max(hr => hr.MaxHeartrate),
-                Minrate = rateInHour.Max(hr => hr.MinHeartrate),
+                Minrate = rateInHour.Min(hr => hr.MinHeartrate),
                 Timestamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0 ,0 ).ToUniversalTime(),
                 MacAddress = address
             });
