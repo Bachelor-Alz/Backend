@@ -46,21 +46,20 @@ public class GetHealthDataService : IGetHealthData
                         EF.Property<DateTime>(d, "Timestamp") <= date)
             .ToListAsync();
         
+        
+        _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
+
         foreach (var item in data)
         {
             var timestampProperty = typeof(T).GetProperty("Timestamp");
             if (timestampProperty != null)
             {
                 DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
-                _logger.LogInformation("Converting UTC time {UtcDateTime} to local time", utcDateTime);
-                DateTime localDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, TimeZoneInfo.Local);
-                _logger.LogInformation("Converted to local time {LocalDateTime}", localDateTime);
+                DateTime localDateTime = utcDateTime.AddHours(2);
                 timestampProperty.SetValue(item, localDateTime);
             }
         }
         
-        _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
-
         return data;
     }
 
