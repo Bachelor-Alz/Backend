@@ -587,6 +587,11 @@ public class HealthService : IHealthService
                         }
                     }).ToList();
             }
+
+            if (currentHeartRateData.Count == 0)
+            {
+                return new List<PostHeartRate>();
+            }
             
             List<Heartrate> proccessHeartrates = [];
             switch (period)
@@ -706,6 +711,11 @@ public class HealthService : IHealthService
                     }).ToList();
             }
 
+            if (currentSpo2Data.Count == 0)
+            {
+                return new List<PostSpo2>();
+            }
+
             List<Spo2> processedSpo2 = [];
             switch (period)
             {
@@ -719,7 +729,7 @@ public class HealthService : IHealthService
                         MinSpO2 = currentSpo2Data.Min(s => s.SpO2),
                         Timestamp = currentSpo2Data.First().Timestamp
                     };
-                    return currentSpo2Data.Select(s => new PostSpo2
+                    return  currentSpo2Data.Count != 0 ? currentSpo2Data.Select(s => new PostSpo2
                     {
                         CurrentSpo2= new currentSpo2
                         {
@@ -733,7 +743,7 @@ public class HealthService : IHealthService
                             MinSpO2 = spo2.MinSpO2,
                             Timestamp = s.Timestamp
                         }
-                    }).ToList();
+                    }).ToList() : [];
                 }
                 case Period.Day:
                 {
