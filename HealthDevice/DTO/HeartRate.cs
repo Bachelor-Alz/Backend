@@ -13,13 +13,11 @@ public class Heartrate
 public class PostHeartRate
 {
    public Heartrate? Heartrate { get; set; }
-   public currentHeartRate? CurrentHeartRate { get; set; }
 }
 
 public class PostSpo2
 {
    public Spo2? Spo2 { get; set; }
-   public currentSpo2? CurrentSpo2 { get; set; }
 }
 
 public class currentData

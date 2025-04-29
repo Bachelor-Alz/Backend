@@ -27,7 +27,7 @@ namespace HealthDevice.Controllers
             _healthService = healthService;
         }
         [HttpGet("Heartrate")]
-        public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date,
+        public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date,
             string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
@@ -40,7 +40,7 @@ namespace HealthDevice.Controllers
         }
 
         [HttpGet("Spo2")]
-        public async Task<ActionResult<List<PostSpo2>>> GetSpo2(string elderEmail, DateTime date, string period = "Hour")
+        public async Task<ActionResult<List<Spo2>>> GetSpo2(string elderEmail, DateTime date, string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
@@ -134,8 +134,8 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             {
                 allFall = fallInfoRepository.Query().Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
-                HeartRate = max30102?.Heartrate ?? 0,
-                SpO2 = max30102?.SpO2 ?? 0,
+                HeartRate = max30102?.AvgHeartrate ?? 0,
+                SpO2 = max30102?.AvgSpO2 ?? 0,
                 steps = steps?.StepsCount ?? 0
             };
         }

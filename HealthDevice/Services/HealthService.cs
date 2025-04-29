@@ -44,10 +44,11 @@ public class HealthService : IHealthService
             _logger.LogInformation("Heart rate data found for mac-address {Address} in hour {Hour}", address, date);
             heartRateList.Add(new Heartrate
             {
-                Avgrate = (int)rateInHour.Average(h => h.Heartrate),
-                Maxrate = rateInHour.Max(h => h.Heartrate),
-                Minrate = rateInHour.Min(h => h.Heartrate),
-                Timestamp = date
+                Avgrate = (int)rateInHour.Average(hr => hr.AvgHeartrate),
+                Maxrate = rateInHour.Max(hr => hr.MaxHeartrate),
+                Minrate = rateInHour.Min(hr => hr.MinHeartrate),
+                Timestamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0 ,0 ).ToUniversalTime(),
+                MacAddress = address
             });
         }
 
@@ -78,10 +79,11 @@ public class HealthService : IHealthService
             _logger.LogInformation("SpO2 data found for mac-address {Address} in hour {Hour}", address, date);
             spo2List.Add(new Spo2
             {
-                AvgSpO2 = hourlyData.Average(s => s.SpO2),
-                MaxSpO2 = hourlyData.Max(s => s.SpO2),
-                MinSpO2 = hourlyData.Min(s => s.SpO2),
-                Timestamp = date
+                AvgSpO2 = hourlyData.Average(sp => sp.AvgSpO2),
+                MaxSpO2 = hourlyData.Max(sp => sp.MaxSpO2),
+                MinSpO2 = hourlyData.Min(sp => sp.MinSpO2),
+                Timestamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0 ,0 ).ToUniversalTime(),
+                MacAddress = address
             });
         }
 
@@ -394,11 +396,11 @@ public class HealthService : IHealthService
         if (Period.Day == period)
         {
             _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
-            DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+            DateTime newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
             // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
-            List<FallDTO> result = data
+            List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
                 .GroupBy(f => f.Timestamp.Hour)
                 .Select(g => new FallDTO
                 {
@@ -407,29 +409,31 @@ public class HealthService : IHealthService
                 }).ToList();
 
 // Add missing days with no falls
-            DateTime startDate = date.Date - TimeSpan.FromDays(1); // Adjust based on the period
-            DateTime endDate = date.Date; // Adjust based on the period
+            DateTime startDate = new DateTime(newTime.Year, date.Month, date.Day, 0, 0 , 0); // Adjust based on the period
+            DateTime endDate = date.Date.AddHours(23).AddMinutes(59).AddSeconds(59); // Adjust based on the period
             for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
             {
                 if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
                 {
                     result.Add(new FallDTO
                     {
-                        Timestamp = currentDate,
+                        Timestamp = currentDate.AddHours(-2),
                         fallCount = 0
                     });
                 }
             }
 
-            return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Date).ToList() : [];
+            return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Hour).ToList() : [];
         }
         else
         {
             _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
-            DateTime newTime = new DateTime(date.Year, date.Month, date.Day + 1, 0, 0, 0).ToUniversalTime();
+            //Find the end of the week the date is in 
+            DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+            DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
-            List<FallDTO> result = data
+            List<FallDTO> result = data.Where(t => t.Timestamp.Date <= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
                 .GroupBy(f => f.Timestamp.Date)
                 .Select(g => new FallDTO
                 {
@@ -438,9 +442,8 @@ public class HealthService : IHealthService
                 }).ToList();
 
 // Add missing days with no falls
-            DateTime startDate = date.Date - TimeSpan.FromDays(7); // Adjust based on the period
-            DateTime endDate = date.Date; // Adjust based on the period
-            for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddDays(1))
+            DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6); // Adjust based on the period
+            for (DateTime currentDate = startDate; currentDate < endOfWeek.Date; currentDate = currentDate.AddDays(1))
             {
                 if (result.All(r => r.Timestamp.Date != currentDate.Date))
                 {
@@ -463,11 +466,11 @@ public class HealthService : IHealthService
             case Period.Hour:
             {
                 _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, newTime);
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
-                return data.Count != 0 ? data : [];
+                return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
             }
             case Period.Day:
             {
@@ -488,11 +491,11 @@ public class HealthService : IHealthService
             default:
             {
                 _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
-                DateTime startTime = date.Date.ToUniversalTime();
-                DateTime endTime = startTime.AddDays(7).AddSeconds(-1); // End of the week
+                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+                DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                    elderEmail, period, endTime);
-                List<Steps> result = data.Where(t => t.Timestamp.Date >= startTime && t.Timestamp.Date <= endTime)
+                    elderEmail, period, newTime);
+                List<Steps> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
                     .Select(g => new Steps
                     {
@@ -512,11 +515,11 @@ public class HealthService : IHealthService
             case Period.Hour:
             {
                 _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
-                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
                 List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
                     elderEmail, period, newTime);
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                return data.Count != 0 ? data : [];
+                return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
             }
             case Period.Day:
             {
@@ -537,11 +540,11 @@ public class HealthService : IHealthService
             default:
             {
                 _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
-                DateTime startTime = date.Date.ToUniversalTime();
-                DateTime endTime = startTime.AddDays(7).AddSeconds(-1); // End of the week
+                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+                DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                 List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
-                    elderEmail, period, endTime);
-                List<Kilometer> result = data.Where(t => t.Timestamp.Date >= startTime && t.Timestamp.Date <= endTime)
+                    elderEmail, period, newTime);
+                List<Kilometer> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
                     .Select(g => new Kilometer
                     {
@@ -554,249 +557,209 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period)
+    public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period)
+{
+    DateTime newTime;
+    switch (period)
     {
-        // Fetch historical heart rate data
-            List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
-                elderEmail, period, date.ToUniversalTime());
-            _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
-            // Fetch current heart rate data if historical data is unavailable
-            List<Max30102> currentHeartRateData =
-                await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, date.ToUniversalTime());
-            _logger.LogInformation("Fetched current heart rate data: {Count}", currentHeartRateData.Count);
+        case Period.Hour:
+            newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
+            break;
+        case Period.Day:
+            newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
+            break;
+        case Period.Week:
+            DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+            newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
+            _logger.LogInformation("Time, {Time}", newTime);
+            break;
+        default:
+            _logger.LogError("Invalid period specified: {Period}", period);
+            return new BadRequestObjectResult("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+    }
+    _logger.LogInformation("Time {Time}", newTime);
 
-            var newestHr = currentHeartRateData.OrderByDescending(h => h.Timestamp).First();
+    // Fetch historical heart rate data
+    List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
+        elderEmail, period, newTime);
+    _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
 
-            if (data.Count != 0)
-            {
-                _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
-                return data.Select(hr =>
-                    new PostHeartRate
-                    {
-                        CurrentHeartRate = new currentHeartRate
-                        {
-                            Heartrate = newestHr.Heartrate,
-                            Timestamp = hr.Timestamp
-                        },
-                        Heartrate = new Heartrate
-                        {
-                            Avgrate = hr.Avgrate,
-                            Maxrate = hr.Maxrate,
-                            Minrate = hr.Minrate,
-                            Timestamp = hr.Timestamp
-                        }
-                    }).ToList();
-            }
+    // Fetch current heart rate data if historical data is unavailable
+    List<Max30102> currentHeartRateData =
+        await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime);
+    _logger.LogInformation("Fetched current heart rate data: {Count}", currentHeartRateData.Count);
 
-            if (currentHeartRateData.Count == 0)
-            {
-                return new List<PostHeartRate>();
-            }
-            
-            List<Heartrate> proccessHeartrates = [];
-            switch (period)
-            {
-                case Period.Hour:
-                {
-                    _logger.LogInformation("Processing current heart rate data for elder: {ElderEmail}", elderEmail);
-                    Heartrate heartrate = new Heartrate
-                    {
-                        Avgrate = (int)currentHeartRateData.Average(h => h.Heartrate),
-                        Maxrate = currentHeartRateData.Max(h => h.Heartrate),
-                        Minrate = currentHeartRateData.Min(h => h.Heartrate),
-                        Timestamp = currentHeartRateData.First().Timestamp
-                    };
-                    return currentHeartRateData.Count != 0 ? currentHeartRateData.Select(hr => new PostHeartRate
-                    {
-                        CurrentHeartRate = new currentHeartRate
+    if (data.Count != 0)
+    {
+        _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
+        switch (period)
+        {
+            case Period.Hour:
+                return data.OrderBy(t => t.Timestamp.Minute).ToList();
+            case Period.Day:
+                return data.OrderBy(t => t.Timestamp.Hour).ToList();
+            default:
+                return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(h => h.Timestamp.Date).Select(hr =>
+                        new Heartrate
                         {
-                            Heartrate = hr.Heartrate,
-                            Timestamp = hr.Timestamp
-                        },
-                        Heartrate = new Heartrate
-                        {
-                            Avgrate = heartrate.Avgrate,
-                            Maxrate = heartrate.Maxrate,
-                            Minrate = heartrate.Minrate,
-                            Timestamp = hr.Timestamp
-                        }
-                    }).ToList() : [];
-                }
-                case Period.Day:
-                {
-                    _logger.LogInformation("Processing daily heart rate data for elder: {ElderEmail}", elderEmail);
-                    List<Heartrate> hourlyData = currentHeartRateData
-                        .GroupBy(h => h.Timestamp.Hour)
-                        .Select(g => new Heartrate
-                        {
-                            Avgrate = (int)g.Average(h => h.Heartrate),
-                            Maxrate = g.Max(h => h.Heartrate),
-                            Minrate = g.Min(h => h.Heartrate),
-                            Timestamp = g.First().Timestamp.Date.AddHours(g.Key)
-                        }).ToList();
-
-                    proccessHeartrates.AddRange(hourlyData);
-                    break;
-                }
-                case Period.Week:
-                {
-                    _logger.LogInformation("Processing weekly heart rate data for elder: {ElderEmail}", elderEmail);
-                    List<Heartrate> dailyData = currentHeartRateData
-                        .GroupBy(h => h.Timestamp.Date)
-                        .Select(g => new Heartrate
-                        {
-                            Avgrate = (int)g.Average(h => h.Heartrate),
-                            Maxrate = g.Max(h => h.Heartrate),
-                            Minrate = g.Min(h => h.Heartrate),
-                            Timestamp = g.Key
-                        }).ToList();
-
-                    proccessHeartrates.AddRange(dailyData);
-                    break;
-                }
-            }
-
-            _logger.LogInformation("ProcessedData {Count}", proccessHeartrates.Count);
-            if (proccessHeartrates.Count != 0)
-                return proccessHeartrates.Count != 0
-                    ? proccessHeartrates.Select(hr =>
-                        new PostHeartRate
-                        {
-                            CurrentHeartRate = new currentHeartRate
-                            {
-                                Heartrate = newestHr.Heartrate,
-                                Timestamp = hr.Timestamp
-                            },
-                            Heartrate = new Heartrate
-                            {
-                                Avgrate = hr.Avgrate,
-                                Maxrate = hr.Maxrate,
-                                Minrate = hr.Minrate,
-                                Timestamp = hr.Timestamp
-                            }
-                        }).ToList()
-                    : [];
-            _logger.LogError("No processed heart rate data available for elder: {ElderEmail}", elderEmail);
-            return new BadRequestObjectResult("No data available for the specified parameters.");
+                            Avgrate = (int)hr.Average(h => h.Avgrate),
+                            Maxrate = hr.Max(h => h.Maxrate),
+                            Minrate = hr.Min(h => h.Minrate),
+                            Timestamp = hr.Key,
+                            MacAddress = hr.First().MacAddress
+                    }).OrderBy(t => t.Timestamp.Date).ToList();
+        }
     }
 
-    public async Task<ActionResult<List<PostSpo2>>> GetSpO2(string elderEmail, DateTime date, Period period)
+    if (currentHeartRateData.Count == 0)
     {
-         // Fetch historical SpO2 data
-            List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
-                elderEmail, period, date.ToUniversalTime());
-            _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
-            // Fetch current SpO2 data if historical data is unavailable
-            List<Max30102> currentSpo2Data =
-                await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, date.ToUniversalTime());
-            _logger.LogInformation("Fetched current SpO2 data: {Count}", currentSpo2Data.Count);
-            if (data.Count != 0)
-            {
-                _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
-                return data.Select(spo2 =>
-                    new PostSpo2
-                    {
-                        CurrentSpo2 = new currentSpo2
-                        {
-                            SpO2 = currentSpo2Data.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.SpO2 ?? 0,
-                            Timestamp = spo2.Timestamp
-                        },
-                        Spo2 = new Spo2
-                        {
-                            AvgSpO2 = spo2.AvgSpO2,
-                            MaxSpO2 = spo2.MaxSpO2,
-                            MinSpO2 = spo2.MinSpO2,
-                            Timestamp = spo2.Timestamp
-                        }
-                    }).ToList();
-            }
-
-            if (currentSpo2Data.Count == 0)
-            {
-                return new List<PostSpo2>();
-            }
-
-            List<Spo2> processedSpo2 = [];
-            switch (period)
-            {
-                case Period.Hour:
-                {
-                    _logger.LogInformation("Processing current SpO2 data for elder: {ElderEmail}", elderEmail);
-                    Spo2 spo2 = new Spo2
-                    {
-                        AvgSpO2 = currentSpo2Data.Average(s => s.SpO2),
-                        MaxSpO2 = currentSpo2Data.Max(s => s.SpO2),
-                        MinSpO2 = currentSpo2Data.Min(s => s.SpO2),
-                        Timestamp = currentSpo2Data.First().Timestamp
-                    };
-                    return  currentSpo2Data.Count != 0 ? currentSpo2Data.Select(s => new PostSpo2
-                    {
-                        CurrentSpo2= new currentSpo2
-                        {
-                            SpO2 = s.SpO2,
-                            Timestamp = s.Timestamp
-                        },
-                        Spo2 = new Spo2
-                        {
-                            AvgSpO2 = spo2.AvgSpO2,
-                            MaxSpO2 = spo2.MaxSpO2,
-                            MinSpO2 = spo2.MinSpO2,
-                            Timestamp = s.Timestamp
-                        }
-                    }).ToList() : [];
-                }
-                case Period.Day:
-                {
-                    _logger.LogInformation("Processing daily SpO2 data for elder: {ElderEmail}", elderEmail);
-                    List<Spo2> hourlyData = currentSpo2Data
-                        .GroupBy(s => s.Timestamp.Hour)
-                        .Select(g => new Spo2
-                        {
-                            AvgSpO2 = g.Average(s => s.SpO2),
-                            MaxSpO2 = g.Max(s => s.SpO2),
-                            MinSpO2 = g.Min(s => s.SpO2),
-                            Timestamp = g.First().Timestamp.Date.AddHours(g.Key)
-                        }).ToList();
-
-                    processedSpo2.AddRange(hourlyData);
-                    break;
-                }
-                case Period.Week:
-                {
-                    _logger.LogInformation("Processing weekly SpO2 data for elder: {ElderEmail}", elderEmail);
-                    List<Spo2> dailyData = currentSpo2Data
-                        .GroupBy(s => s.Timestamp.Date)
-                        .Select(g => new Spo2
-                        {
-                            AvgSpO2 = g.Average(s => s.SpO2),
-                            MaxSpO2 = g.Max(s => s.SpO2),
-                            MinSpO2 = g.Min(s => s.SpO2),
-                            Timestamp = g.Key
-                        }).ToList();
-
-                    processedSpo2.AddRange(dailyData);
-                    break;
-                }
-            }
-
-            _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
-            return processedSpo2.Count != 0
-                ? processedSpo2.Select(spo2 =>
-                    new PostSpo2
-                    {
-                        CurrentSpo2 = new currentSpo2
-                        {
-                            SpO2 = currentSpo2Data.OrderByDescending(s => s.Timestamp).FirstOrDefault()?.SpO2 ?? 0,
-                            Timestamp = spo2.Timestamp
-                        },
-                        Spo2 = new Spo2
-                        {
-                            AvgSpO2 = spo2.AvgSpO2,
-                            MaxSpO2 = spo2.MaxSpO2,
-                            MinSpO2 = spo2.MinSpO2,
-                            Timestamp = spo2.Timestamp
-                        }
-                    }).ToList()
-                : [];
+        return new List<Heartrate>();
     }
+
+    // Process current heart rate data based on the period
+    List<Heartrate> processedHeartrates = new();
+    switch (period)
+    {
+        case Period.Hour:
+            processedHeartrates.AddRange(currentHeartRateData.Select(g => new Heartrate
+            {
+                Avgrate = g.AvgHeartrate,
+                Maxrate = g.MaxHeartrate,
+                Minrate = g.MinHeartrate,
+                Timestamp = g.Timestamp,
+                MacAddress = g.MacAddress
+            }));
+            break;
+        case Period.Day:
+            processedHeartrates.AddRange(currentHeartRateData
+                .GroupBy(h => h.Timestamp.Hour)
+                .Select(g => new Heartrate
+                {
+                    Avgrate = (int)g.Average(h => h.AvgHeartrate),
+                    Maxrate = g.Max(h => h.MaxHeartrate),
+                    Minrate = g.Min(h => h.MinHeartrate),
+                    Timestamp = newTime.Date.AddHours(g.Key),
+                    MacAddress = g.First().MacAddress
+                }));
+            break;
+        case Period.Week:
+            processedHeartrates.AddRange(currentHeartRateData
+                .GroupBy(h => h.Timestamp.Date)
+                .Select(g => new Heartrate
+                {
+                    Avgrate = (int)g.Average(h => h.AvgHeartrate),
+                    Maxrate = g.Max(h => h.MaxHeartrate),
+                    Minrate = g.Min(h => h.MinHeartrate),
+                    Timestamp = g.Key,
+                    MacAddress = g.First().MacAddress
+                }));
+            break;
+    }
+
+    _logger.LogInformation("ProcessedData {Count}", processedHeartrates.Count);
+    return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
+}
+
+    public async Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period)
+{
+    DateTime newTime;
+    switch (period)
+    {
+        case Period.Hour:
+            newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
+            break;
+        case Period.Day:
+            newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
+            break;
+        case Period.Week:
+            DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+            newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
+            break;
+        default:
+            _logger.LogError("Invalid period specified: {Period}", period);
+            return new BadRequestObjectResult("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
+    }
+
+    _logger.LogInformation("Time {Time}", newTime);
+
+    // Fetch historical SpO2 data
+    List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
+        elderEmail, period, newTime);
+    _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
+
+    // Fetch current SpO2 data if historical data is unavailable
+    List<Max30102> currentSpo2Data =
+        await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime);
+    _logger.LogInformation("Fetched current SpO2 data: {Count}", currentSpo2Data.Count);
+
+    if (data.Count != 0)
+    {
+        _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
+        switch (period)
+        {
+            case Period.Hour:
+                return data.OrderBy(t => t.Timestamp.Minute).ToList();
+            case Period.Day:
+                return data.OrderBy(t => t.Timestamp.Hour).ToList();
+            default:
+                return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(s => s.Timestamp.Date).Select(spo2 =>
+                        new Spo2
+                        {
+                            AvgSpO2 = spo2.Average(s => s.AvgSpO2),
+                            MaxSpO2 = spo2.Max(s => s.MaxSpO2),
+                            MinSpO2 = spo2.Min(s => s.MinSpO2),
+                            Timestamp = spo2.Key,
+                            MacAddress = spo2.First().MacAddress
+                        }).OrderBy(t => t.Timestamp.Date).ToList();
+        }
+    }
+
+    if (currentSpo2Data.Count == 0)
+    {
+        return new List<Spo2>();
+    }
+
+    // Process current SpO2 data based on the period
+    List<Spo2> processedSpo2 = new();
+    switch (period)
+    {
+        case Period.Hour:
+            processedSpo2.AddRange(currentSpo2Data.Select(g => new Spo2
+            {
+                AvgSpO2 = g.AvgSpO2,
+                MaxSpO2 = g.MaxSpO2,
+                MinSpO2 = g.MinSpO2,
+                Timestamp = g.Timestamp,
+                MacAddress = g.MacAddress
+            }));
+            break;
+        case Period.Day:
+            processedSpo2.AddRange(currentSpo2Data
+                .GroupBy(s => s.Timestamp.Hour)
+                .Select(g => new Spo2
+                {
+                    AvgSpO2 = g.Average(s => s.AvgSpO2),
+                    MaxSpO2 = g.Max(s => s.MaxSpO2),
+                    MinSpO2 = g.Min(s => s.MinSpO2),
+                    Timestamp = newTime.Date.AddHours(g.Key),
+                    MacAddress = g.First().MacAddress
+                }));
+            break;
+        case Period.Week:
+            processedSpo2.AddRange(currentSpo2Data
+                .GroupBy(s => s.Timestamp.Date)
+                .Select(g => new Spo2
+                {
+                    AvgSpO2 = g.Average(s => s.AvgSpO2),
+                    MaxSpO2 = g.Max(s => s.MaxSpO2),
+                    MinSpO2 = g.Min(s => s.MinSpO2),
+                    Timestamp = g.Key,
+                    MacAddress = g.First().MacAddress
+                }));
+            break;
+    }
+
+    _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
+    return processedSpo2.OrderBy(t => t.Timestamp).ToList();
+}
 }

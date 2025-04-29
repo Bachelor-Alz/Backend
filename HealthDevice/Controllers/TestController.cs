@@ -71,12 +71,20 @@ public class TestController : ControllerBase
         {
             DateTime timestamp = currentDate + TimeSpan.FromMinutes(i*5);
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
+            int minheartrate = Random.Shared.Next(heartrateMin, heartrate);
+            int maxheartrate = Random.Shared.Next(heartrate, heartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
+            float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
+            float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);
 
             await max30102Repository.Add(new Max30102
             {
-                Heartrate = heartrate,
-                SpO2 = spo2,
+                AvgHeartrate = heartrate,
+                MaxHeartrate = maxheartrate,
+                MinHeartrate = minheartrate,
+                AvgSpO2 = spo2,
+                MaxSpO2 = maxSpo2,
+                MinSpO2 = minSpo2,
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
