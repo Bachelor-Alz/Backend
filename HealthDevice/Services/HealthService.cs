@@ -44,9 +44,9 @@ public class HealthService : IHealthService
             _logger.LogInformation("Heart rate data found for mac-address {Address} in hour {Hour}", address, date);
             heartRateList.Add(new Heartrate
             {
-                Avgrate = (int)rateInHour.Average(h => h.Heartrate.Avgrate),
-                Maxrate = rateInHour.Max(h => h.Heartrate.Maxrate),
-                Minrate = rateInHour.Min(h => h.Heartrate.Minrate),
+                Avgrate = (int)rateInHour.Average(hr => hr.AvgHeartrate),
+                Maxrate = rateInHour.Max(hr => hr.MaxHeartrate),
+                Minrate = rateInHour.Max(hr => hr.MinHeartrate),
                 Timestamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0 ,0 ).ToUniversalTime(),
                 MacAddress = address
             });
@@ -79,9 +79,9 @@ public class HealthService : IHealthService
             _logger.LogInformation("SpO2 data found for mac-address {Address} in hour {Hour}", address, date);
             spo2List.Add(new Spo2
             {
-                AvgSpO2 = hourlyData.Average(s => s.SpO2.AvgSpO2),
-                MaxSpO2 = hourlyData.Max(s => s.SpO2.MaxSpO2),
-                MinSpO2 = hourlyData.Min(s => s.SpO2.MinSpO2),
+                AvgSpO2 = hourlyData.Average(sp => sp.AvgSpO2),
+                MaxSpO2 = hourlyData.Max(sp => sp.MaxSpO2),
+                MinSpO2 = hourlyData.Min(sp => sp.MinSpO2),
                 Timestamp = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0 ,0 ).ToUniversalTime(),
                 MacAddress = address
             });
@@ -400,7 +400,7 @@ public class HealthService : IHealthService
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
             // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
-            List<FallDTO> result = data.Where(t => t.Timestamp.Date >= newTime.Date)
+            List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
                 .GroupBy(f => f.Timestamp.Hour)
                 .Select(g => new FallDTO
                 {
@@ -409,8 +409,8 @@ public class HealthService : IHealthService
                 }).ToList();
 
 // Add missing days with no falls
-            DateTime startDate = new DateTime(newTime.Year, date.Month, date.Day, 0, 0 , 0).ToUniversalTime(); // Adjust based on the period
-            DateTime endDate = newTime; // Adjust based on the period
+            DateTime startDate = new DateTime(newTime.Year, date.Month, date.Day, 0, 0 , 0); // Adjust based on the period
+            DateTime endDate = date.Date.AddHours(23).AddMinutes(59).AddSeconds(59); // Adjust based on the period
             for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
             {
                 if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
@@ -433,7 +433,7 @@ public class HealthService : IHealthService
             DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
-            List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+            List<FallDTO> result = data.Where(t => t.Timestamp.Date <= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
                 .GroupBy(f => f.Timestamp.Date)
                 .Select(g => new FallDTO
                 {
@@ -621,16 +621,23 @@ public class HealthService : IHealthService
     switch (period)
     {
         case Period.Hour:
-            processedHeartrates.AddRange(currentHeartRateData.Select(s => s.Heartrate));
+            processedHeartrates.AddRange(currentHeartRateData.Select(g => new Heartrate
+            {
+                Avgrate = g.AvgHeartrate,
+                Maxrate = g.MaxHeartrate,
+                Minrate = g.MinHeartrate,
+                Timestamp = g.Timestamp,
+                MacAddress = g.MacAddress
+            }));
             break;
         case Period.Day:
             processedHeartrates.AddRange(currentHeartRateData
                 .GroupBy(h => h.Timestamp.Hour)
                 .Select(g => new Heartrate
                 {
-                    Avgrate = (int)g.Average(h => h.Heartrate.Avgrate),
-                    Maxrate = g.Max(h => h.Heartrate.Maxrate),
-                    Minrate = g.Min(h => h.Heartrate.Minrate),
+                    Avgrate = (int)g.Average(h => h.AvgHeartrate),
+                    Maxrate = g.Max(h => h.MaxHeartrate),
+                    Minrate = g.Min(h => h.MinHeartrate),
                     Timestamp = newTime.Date.AddHours(g.Key),
                     MacAddress = g.First().MacAddress
                 }));
@@ -640,9 +647,9 @@ public class HealthService : IHealthService
                 .GroupBy(h => h.Timestamp.Date)
                 .Select(g => new Heartrate
                 {
-                    Avgrate = (int)g.Average(h => h.Heartrate.Avgrate),
-                    Maxrate = g.Max(h => h.Heartrate.Maxrate),
-                    Minrate = g.Min(h => h.Heartrate.Minrate),
+                    Avgrate = (int)g.Average(h => h.AvgHeartrate),
+                    Maxrate = g.Max(h => h.MaxHeartrate),
+                    Minrate = g.Min(h => h.MinHeartrate),
                     Timestamp = g.Key,
                     MacAddress = g.First().MacAddress
                 }));
@@ -717,16 +724,23 @@ public class HealthService : IHealthService
     switch (period)
     {
         case Period.Hour:
-            processedSpo2.AddRange(currentSpo2Data.Select(t => t.SpO2));
+            processedSpo2.AddRange(currentSpo2Data.Select(g => new Spo2
+            {
+                AvgSpO2 = g.AvgSpO2,
+                MaxSpO2 = g.MaxSpO2,
+                MinSpO2 = g.MinSpO2,
+                Timestamp = g.Timestamp,
+                MacAddress = g.MacAddress
+            }));
             break;
         case Period.Day:
             processedSpo2.AddRange(currentSpo2Data
                 .GroupBy(s => s.Timestamp.Hour)
                 .Select(g => new Spo2
                 {
-                    AvgSpO2 = g.Average(s => s.SpO2.AvgSpO2),
-                    MaxSpO2 = g.Max(s => s.SpO2.MaxSpO2),
-                    MinSpO2 = g.Min(s => s.SpO2.MinSpO2),
+                    AvgSpO2 = g.Average(s => s.AvgSpO2),
+                    MaxSpO2 = g.Max(s => s.MaxSpO2),
+                    MinSpO2 = g.Min(s => s.MinSpO2),
                     Timestamp = newTime.Date.AddHours(g.Key),
                     MacAddress = g.First().MacAddress
                 }));
@@ -736,9 +750,9 @@ public class HealthService : IHealthService
                 .GroupBy(s => s.Timestamp.Date)
                 .Select(g => new Spo2
                 {
-                    AvgSpO2 = g.Average(s => s.SpO2.AvgSpO2),
-                    MaxSpO2 = g.Max(s => s.SpO2.MaxSpO2),
-                    MinSpO2 = g.Min(s => s.SpO2.MinSpO2),
+                    AvgSpO2 = g.Average(s => s.AvgSpO2),
+                    MaxSpO2 = g.Max(s => s.MaxSpO2),
+                    MinSpO2 = g.Min(s => s.MinSpO2),
                     Timestamp = g.Key,
                     MacAddress = g.First().MacAddress
                 }));
