@@ -134,8 +134,8 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             {
                 allFall = fallInfoRepository.Query().Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
-                HeartRate = max30102?.Heartrate ?? 0,
-                SpO2 = max30102?.SpO2 ?? 0,
+                HeartRate = max30102?.Heartrate.Avgrate ?? 0,
+                SpO2 = max30102?.SpO2.AvgSpO2 ?? 0,
                 steps = steps?.StepsCount ?? 0
             };
         }

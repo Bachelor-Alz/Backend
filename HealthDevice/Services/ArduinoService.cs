@@ -77,8 +77,22 @@ public class ArduinoService : IArduinoService
         }
         await max30102Repository.Add(new Max30102
         {
-            Heartrate = totalHr / data.Max30102.Count,
-            SpO2 = totalSpO2 / data.Max30102.Count,
+            Heartrate = new Heartrate
+            {
+                Avgrate = (int)totalHr/data.Max30102.Count,
+                Maxrate = data.Max30102.Max(x => x.heartRate),
+                Minrate = data.Max30102.Min(x => x.heartRate),
+                Timestamp = receivedAt,
+                MacAddress = data.MacAddress
+            },
+            SpO2 = new Spo2()
+            {
+                AvgSpO2 = totalSpO2/data.Max30102.Count,
+                MaxSpO2 = data.Max30102.Max(x => x.SpO2),
+                MinSpO2 = data.Max30102.Min(x => x.SpO2),
+                Timestamp = receivedAt,
+                MacAddress = data.MacAddress
+            },
             Timestamp = receivedAt,
             MacAddress = data.MacAddress
         });
