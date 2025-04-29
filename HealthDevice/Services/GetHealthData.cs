@@ -17,14 +17,15 @@ public class GetHealthDataService : IGetHealthData
     private DateTime GetEarlierDate(DateTime date, Period period) => period switch
     {
         Period.Hour => date - TimeSpan.FromHours(1),
-        Period.Day => date.AddDays(-1),
-        Period.Week => date - TimeSpan.FromDays(7),
+        Period.Day => date.Date,
+        Period.Week => date.AddDays(-6).Date,
         _ => throw new ArgumentException("Invalid period specified")
     };
     
     public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date) where T : class
     {
         DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
+        _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
 
         Elder? elder = await elderRepository.Query()

@@ -52,7 +52,7 @@ namespace HealthDevice.Services
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromDays(7), stoppingToken);
             }
         }
     }
