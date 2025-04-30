@@ -433,17 +433,17 @@ public class HealthService : IHealthService
             DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
-            List<FallDTO> result = data.Where(t => t.Timestamp.Date <= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
+            List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                 .GroupBy(f => f.Timestamp.Date)
                 .Select(g => new FallDTO
                 {
-                    Timestamp = g.OrderByDescending(f => f.Timestamp).First().Timestamp.Date,
+                    Timestamp = g.Key,
                     fallCount = g.Count()
                 }).ToList();
 
 // Add missing days with no falls
             DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6); // Adjust based on the period
-            for (DateTime currentDate = startDate; currentDate < endOfWeek.Date; currentDate = currentDate.AddDays(1))
+            for (DateTime currentDate = startDate; currentDate < date.Date; currentDate = currentDate.AddDays(1))
             {
                 if (result.All(r => r.Timestamp.Date != currentDate.Date))
                 {
@@ -589,7 +589,7 @@ public class HealthService : IHealthService
         await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime);
     _logger.LogInformation("Fetched current heart rate data: {Count}", currentHeartRateData.Count);
 
-    if (data.Count != 0)
+    if (data.Count != 0 && currentHeartRateData.Count < 7)
     {
         _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
         switch (period)
@@ -653,6 +653,29 @@ public class HealthService : IHealthService
                     Timestamp = g.Key,
                     MacAddress = g.First().MacAddress
                 }));
+            // Add missing days with heart rates from `data` for the missing days' timestamp
+            DateTime startDate = newTime.Date.AddDays(-6); // Assuming the week starts 6 days before the given date
+            DateTime endDate = newTime.Date;
+
+            for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
+            {
+                if (processedHeartrates.All(hr => hr.Timestamp.Date != currentDate.Date))
+                {
+                    var fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
+                    if (fallbackData.Count != 0)
+                    {
+                        processedHeartrates.Add(new Heartrate
+                        {
+                            Avgrate = (int)fallbackData.Average(h => h.Avgrate),
+                            Maxrate = fallbackData.Max(h => h.Maxrate),
+                            Minrate = fallbackData.Min(h => h.Minrate),
+                            Timestamp = currentDate,
+                            MacAddress = fallbackData.First().MacAddress
+                        });
+                    }
+                }
+            }
+            processedHeartrates = processedHeartrates.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
             break;
     }
 
@@ -692,7 +715,7 @@ public class HealthService : IHealthService
         await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime);
     _logger.LogInformation("Fetched current SpO2 data: {Count}", currentSpo2Data.Count);
 
-    if (data.Count != 0)
+    if (data.Count != 0 && currentSpo2Data.Count < 7)
     {
         _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
         switch (period)
@@ -756,6 +779,30 @@ public class HealthService : IHealthService
                     Timestamp = g.Key,
                     MacAddress = g.First().MacAddress
                 }));
+            
+            // Add missing days with heart rates from `data` for the missing days' timestamp
+            DateTime startDate = newTime.Date.AddDays(-6); // Assuming the week starts 6 days before the given date
+            DateTime endDate = newTime.Date;
+
+            for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
+            {
+                if (processedSpo2.All(hr => hr.Timestamp.Date != currentDate.Date))
+                {
+                    var fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
+                    if (fallbackData.Count != 0)
+                    {
+                        processedSpo2.Add(new Spo2
+                        {
+                            AvgSpO2 = fallbackData.Average(h => h.AvgSpO2),
+                            MaxSpO2 = fallbackData.Max(h => h.MaxSpO2),
+                            MinSpO2 = fallbackData.Min(h => h.MinSpO2),
+                            Timestamp = currentDate,
+                            MacAddress = fallbackData.First().MacAddress
+                        });
+                    }
+                }
+            }
+            processedSpo2 = processedSpo2.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
             break;
     }
 
