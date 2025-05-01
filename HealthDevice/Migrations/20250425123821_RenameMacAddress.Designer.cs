@@ -3,6 +3,7 @@ using System;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250425123821_RenameMacAddress")]
+    partial class RenameMacAddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,8 +98,8 @@ namespace HealthDevice.Migrations
                     b.Property<int>("allFall")
                         .HasColumnType("integer");
 
-                    b.Property<float>("distance")
-                        .HasColumnType("real");
+                    b.Property<double>("distance")
+                        .HasColumnType("double precision");
 
                     b.Property<int>("steps")
                         .HasColumnType("integer");
@@ -117,6 +120,9 @@ namespace HealthDevice.Migrations
                     b.Property<string>("CaregiverId")
                         .HasColumnType("text");
 
+                    b.Property<string>("CaregiverId1")
+                        .HasColumnType("text");
+
                     b.Property<string>("ConcurrencyStamp")
                         .HasColumnType("text");
 
@@ -125,9 +131,6 @@ namespace HealthDevice.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("InvitedCaregiverId")
-                        .HasColumnType("text");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -182,7 +185,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("CaregiverId");
 
-                    b.HasIndex("InvitedCaregiverId");
+                    b.HasIndex("CaregiverId1");
 
                     b.HasIndex("dashBoardId");
 
@@ -274,8 +277,8 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<float>("Distance")
-                        .HasColumnType("real");
+                    b.Property<double>("Distance")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("MacAddress")
                         .HasColumnType("text");
@@ -321,26 +324,11 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AvgHeartrate")
+                    b.Property<int>("Heartrate")
                         .HasColumnType("integer");
-
-                    b.Property<float>("AvgSpO2")
-                        .HasColumnType("real");
 
                     b.Property<string>("MacAddress")
                         .HasColumnType("text");
-
-                    b.Property<int>("MaxHeartrate")
-                        .HasColumnType("integer");
-
-                    b.Property<float>("MaxSpO2")
-                        .HasColumnType("real");
-
-                    b.Property<int>("MinHeartrate")
-                        .HasColumnType("integer");
-
-                    b.Property<float>("MinSpO2")
-                        .HasColumnType("real");
 
                     b.Property<float>("SpO2")
                         .HasColumnType("real");
@@ -350,7 +338,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MAX30102");
+                    b.ToTable("MAX30102Data");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
@@ -430,23 +418,17 @@ namespace HealthDevice.Migrations
 
             modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
                 {
-                    b.HasOne("HealthDevice.DTO.Caregiver", "Caregiver")
+                    b.HasOne("HealthDevice.DTO.Caregiver", null)
                         .WithMany("Elders")
-                        .HasForeignKey("CaregiverId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("CaregiverId");
 
-                    b.HasOne("HealthDevice.DTO.Caregiver", "InvitedCaregiver")
+                    b.HasOne("HealthDevice.DTO.Caregiver", null)
                         .WithMany("Invites")
-                        .HasForeignKey("InvitedCaregiverId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("CaregiverId1");
 
                     b.HasOne("HealthDevice.DTO.DashBoard", "dashBoard")
                         .WithMany()
                         .HasForeignKey("dashBoardId");
-
-                    b.Navigation("Caregiver");
-
-                    b.Navigation("InvitedCaregiver");
 
                     b.Navigation("dashBoard");
                 });

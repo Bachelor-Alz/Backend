@@ -3,6 +3,7 @@ using System;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250428095047_ElderCaregiverRelation")]
+    partial class ElderCaregiverRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -321,26 +324,11 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AvgHeartrate")
+                    b.Property<int>("Heartrate")
                         .HasColumnType("integer");
-
-                    b.Property<float>("AvgSpO2")
-                        .HasColumnType("real");
 
                     b.Property<string>("MacAddress")
                         .HasColumnType("text");
-
-                    b.Property<int>("MaxHeartrate")
-                        .HasColumnType("integer");
-
-                    b.Property<float>("MaxSpO2")
-                        .HasColumnType("real");
-
-                    b.Property<int>("MinHeartrate")
-                        .HasColumnType("integer");
-
-                    b.Property<float>("MinSpO2")
-                        .HasColumnType("real");
 
                     b.Property<float>("SpO2")
                         .HasColumnType("real");
@@ -350,7 +338,7 @@ namespace HealthDevice.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MAX30102");
+                    b.ToTable("MAX30102Data");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>

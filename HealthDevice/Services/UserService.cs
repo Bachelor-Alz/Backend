@@ -3,28 +3,34 @@ using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 namespace HealthDevice.Services;
 
 
-public class UserService
+public class UserService : IUserService
 {
     private readonly ILogger<UserService> _logger;
     private readonly UserManager<Elder> _elderManager;
     private readonly UserManager<Caregiver> _caregiverManager;
+    private readonly IRepositoryFactory _repositoryFactory;
     
-    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager)
+    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, IRepositoryFactory repositoryFactory)
     {
         _logger = logger;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
+        _repositoryFactory = repositoryFactory;
     }
     
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, HttpContext httpContext)
     {
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
+        
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
-        Elder? elder = await _elderManager.FindByEmailAsync(userLoginDto.Email);
+        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (elder != null)
         {
             if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
@@ -41,7 +47,7 @@ public class UserService
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
         }
 
-        Caregiver? caregiver = await _caregiverManager.FindByEmailAsync(userLoginDto.Email);
+        Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (caregiver == null)
         {
             _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
@@ -63,15 +69,15 @@ public class UserService
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, HttpContext httpContext) where T : IdentityUser
     {
+        IRepository<T> userRepository = _repositoryFactory.GetRepository<T>();
         string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
 
-        if (await userManager.FindByEmailAsync(userRegisterDto.Email) != null)
+        if (userRepository.Query().FirstOrDefault(m => m.Email == userRegisterDto.Email) != null)
         {
             _logger.LogWarning("{timestamp}: Registration failed for email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
             return new BadRequestObjectResult("Email already exists.");
         }
-
         IdentityResult result = await userManager.CreateAsync(user, userRegisterDto.Password);
 
         if (!result.Succeeded)
@@ -81,9 +87,9 @@ public class UserService
 
     }
 
-    private static string GenerateJwt<T>(T user, string role) where T : IdentityUser
+    public string GenerateJwt<T>(T user, string role) where T : IdentityUser
     {
-        SymmetricSecurityKey securityKey = new SymmetricSecurityKey("Your_32_Character_Long_Secret_Key_Here"u8.ToArray());
+        SymmetricSecurityKey securityKey = new SymmetricSecurityKey("UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"u8.ToArray());
         SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         if (user.Email == null) return string.Empty;
@@ -98,7 +104,7 @@ public class UserService
             issuer: "api.healthdevice.com",
             audience: "user.healthdevice.com",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.Now.AddMinutes(10),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

@@ -6,7 +6,6 @@ public class DashBoard
     public int HeartRate { get; set; }
     public float SpO2 { get; set; }
     public int steps { get; set; }
-    public double distance { get; set; }
+    public float distance { get; set; }
     public int allFall { get; set; }
-    public string locationAdress { get; set; } = string.Empty;
 }

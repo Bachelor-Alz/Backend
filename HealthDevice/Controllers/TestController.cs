@@ -1,7 +1,5 @@
-using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,15 +10,13 @@ namespace HealthDevice.Controllers;
 //This controller is used to test what ever endpoint we what to test if it works without implementing it in a main controller
 public class TestController : ControllerBase
 {
-    private readonly GeoService _geoService;
-    private readonly UserManager<Elder> _elderManager;
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IGeoService _geoService;
+    private readonly IRepositoryFactory _repositoryFactory;
     
-    public TestController(GeoService geoService, UserManager<Elder> elderManager, ApplicationDbContext dbContext)
+    public TestController(IGeoService geoService, IRepositoryFactory repositoryFactory)
     {
         _geoService = geoService;
-        _elderManager = elderManager;
-        _dbContext = dbContext;
+        _repositoryFactory = repositoryFactory;
     }
     
     [HttpPost("Address")]
@@ -39,14 +35,21 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        Elder? elder = await _elderManager.Users
+        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
+        IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
+        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
+        IRepository<Kilometer> kilometerRepository = _repositoryFactory.GetRepository<Kilometer>();
+        IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
+        IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
+        Elder? elder = await elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
             return NotFound("Elder not found");
         }
 
-        string? macAddress = elder.Arduino;
+        string? macAddress = elder.MacAddress;
         
         if (string.IsNullOrEmpty(macAddress))
         {
@@ -58,77 +61,65 @@ public class TestController : ControllerBase
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
         const int stepsMin = 0;
-        const int stepsMax = 1000;
-        const double distanceMin = 0.0;
-        const double distanceMax = 10.0;
+        const int stepsMax = 100;
+        const float distanceMin = 0;
+        const float distanceMax = 10;
         const int fallMin = 0;
         const int fallMax = 10;
 
-        for (int i = -15000; i < 15000; i++)
+        for (int i = -1500; i < 1500; i++)
         {
             DateTime timestamp = currentDate + TimeSpan.FromMinutes(i*5);
             int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
+            int minheartrate = Random.Shared.Next(heartrateMin, heartrate);
+            int maxheartrate = Random.Shared.Next(heartrate, heartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
+            float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
+            float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);
 
-            _dbContext.MAX30102Data.Add(new Max30102
+            await max30102Repository.Add(new Max30102
             {
-                Heartrate = heartrate,
-                SpO2 = spo2,
+                AvgHeartrate = heartrate,
+                MaxHeartrate = maxheartrate,
+                MinHeartrate = minheartrate,
+                AvgSpO2 = spo2,
+                MaxSpO2 = maxSpo2,
+                MinSpO2 = minSpo2,
                 Timestamp = timestamp,
-                Address = macAddress
+                MacAddress = macAddress
             });
         }
 
-        _dbContext.GPSData.Add(new GPS
+        await gpsRepository.Add(new GPS
         {
             Latitude = 57.012153,
             Longitude = 9.991292,
             Timestamp = currentDate,
-            Address = macAddress
+            MacAddress = macAddress
         });
                        
-        for (int j = 0; j < 100; j++)
+        for (int j = -1500; j < 1500; j++)
         {
             int steps = Random.Shared.Next(stepsMin, stepsMax);
-            DateTime timestamp = currentDate.Date + TimeSpan.FromDays(j);
-            double distance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
+            DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j*5);
+            float distance = (float)(Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin);
             
-            _dbContext.Steps.Add(new Steps
+            await stepsRepository.Add(new Steps
             {
                 StepsCount = steps,
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
-            _dbContext.Distance.Add(new Kilometer
+            await kilometerRepository.Add(new Kilometer
             {
                 Distance = distance,
-                Timestamp = currentDate,
+                Timestamp = timestamp,
                 MacAddress = macAddress
             });
-            for (int i = 1; i <= 23; i++)
-            {
-                int newsteps = Random.Shared.Next(stepsMin, stepsMax);
-                steps += newsteps;
-                double newDistance = Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin;
-                distance += newDistance;
-                DateTime timestamp2 = timestamp + TimeSpan.FromHours(i);
-                _dbContext.Steps.Add(new Steps
-                {
-                    StepsCount = steps,
-                    Timestamp = timestamp2,
-                    MacAddress = macAddress
-                });
-                _dbContext.Distance.Add(new Kilometer
-                {
-                    Distance = distance,
-                    Timestamp = timestamp2,
-                    MacAddress = macAddress
-                });
-            }
         }
 
 
-        _dbContext.Location.Add(new Location
+        await locationRepository.Add(new Location
         {
             Latitude = 57.012153,
             Longitude = 9.991292,
@@ -145,7 +136,7 @@ public class TestController : ControllerBase
                 DateTime timestamp2 = timestamp + TimeSpan.FromHours(j);
                 if (fall == 7)
                 {
-                    _dbContext.FallInfo.Add(new FallInfo
+                    await fallInfoRepository.Add(new FallInfo
                     {
                         Location = new Location
                         {
@@ -160,16 +151,7 @@ public class TestController : ControllerBase
                 }
             }
         }
-        
-        try
-        {
-            await _dbContext.SaveChangesAsync();
-            await _elderManager.UpdateAsync(elder);
-            return Ok("Fake data generated successfully");
-        }
-        catch (Exception ex)
-        {
-            return BadRequest($"Failed to generate fake data: {ex.Message}");
-        }
+
+        return Ok("Fake data generated successfully");
     }
 }

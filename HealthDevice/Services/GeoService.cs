@@ -5,7 +5,7 @@ using HealthDevice.DTO;
 
 namespace HealthDevice.Services;
 
-public class GeoService
+public class GeoService : IGeoService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<GeoService> _logger;
@@ -60,20 +60,34 @@ public class GeoService
     }
 
 
-    private static string FormatAddress(NominatimResponse response)
+    private string FormatAddress(NominatimResponse response)
     {
-        if (response.DisplayName == null) return "Unknown location";
+        _logger.LogInformation("Processing DisplayName: {DisplayName}", response.DisplayName);
+        if (string.IsNullOrWhiteSpace(response.DisplayName))
+        {
+            return "Unknown location";
+        }
+
         string[] addressParts = response.DisplayName.Split(", ");
-        string houseNumber = addressParts[0];
-        string street = addressParts[1];
-        string city = addressParts[3];
-        string postalCode = addressParts[6];
-        string country = addressParts[7];
+    
+        // Ensure the array has enough parts to avoid IndexOutOfRangeException
+        if (addressParts.Length < 5)
+        {
+            _logger.LogWarning("Unexpected address format: {DisplayName}", response.DisplayName);
+            return "Unknown location";
+        }
+
+        string houseNumber = addressParts.Length > 0 ? addressParts[0] : "Unknown";
+        string street = addressParts.Length > 1 ? addressParts[1] : "Unknown";
+        string city = addressParts.Length > 3 ? addressParts[3] : "Unknown";
+        string postalCode = addressParts.Length > 6 ? addressParts[6] : "Unknown";
+        string country = addressParts.Length > 7 ? addressParts[7] : "Unknown";
+
         string formattedAddress = $"{street} {houseNumber}, {city}, {postalCode}, {country}";
         return formattedAddress;
     }
 
-    public static double CalculateDistance(Location locationA, Location locationB)
+    public static float CalculateDistance(Location locationA, Location locationB)
     {
         double dLat = (locationA.Latitude - locationB.Latitude) * Math.PI / 180;
         double dLon = (locationA.Longitude - locationB.Longitude) * Math.PI / 180;
@@ -84,7 +98,7 @@ public class GeoService
                    Math.Cos(lat1) * Math.Cos(lat2) *
                    Math.Pow(Math.Sin(dLon / 2), 2);
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        double d = 6371 * c;
+        float d = (float)(6371 * c);
         
         return d; // Distance in kilometers
     }
