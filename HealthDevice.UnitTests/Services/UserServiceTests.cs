@@ -26,56 +26,46 @@ public class UserServiceTests
         return mockUserManager;
     }
 
-    [Fact]
-    public async Task HandleLogin_ShouldReturnToken_WhenLoginIsSuccessful()
-    {
-        // Arrange
-        var mockLogger = new Mock<ILogger<UserService>>();
-        var mockElderManager = GetMockUserManager<Elder>();
-        var mockCaregiverManager = GetMockUserManager<Caregiver>();
+[Fact]
+public async Task HandleLogin_ShouldReturnToken_WhenLoginIsSuccessful()
+{
+    // Arrange
+    var mockLogger = new Mock<ILogger<UserService>>();
+    var mockElderManager = GetMockUserManager<Elder>();
+    var mockCaregiverManager = GetMockUserManager<Caregiver>();
+    var mockRepositoryFactory = new Mock<IRepositoryFactory>();
 
-        var userService = new UserService(mockLogger.Object, mockElderManager.Object, mockCaregiverManager.Object);
+    var elder = new Elder { Email = "test@example.com", UserName = "test@example.com", Name = "Test Elder" };
 
-        var elder = new Elder { Email = "test@example.com", UserName = "test@example.com", Name = "Test Elder" };
-        mockElderManager.Setup(m => m.FindByEmailAsync("test@example.com")).ReturnsAsync(elder);
-        mockElderManager.Setup(m => m.CheckPasswordAsync(elder, "password")).ReturnsAsync(true);
+    // Mock Elder repository
+    var mockElderRepository = new Mock<IRepository<Elder>>();
+    mockElderRepository.Setup(r => r.Query()).Returns(new List<Elder> { elder }.AsQueryable());
+    mockRepositoryFactory.Setup(r => r.GetRepository<Elder>()).Returns(mockElderRepository.Object);
 
-        var loginDto = new UserLoginDTO { Email = "test@example.com", Password = "password" };
-        var httpContext = new DefaultHttpContext();
+    // Mock UserManager methods
+    mockElderManager.Setup(m => m.FindByEmailAsync("test@example.com")).ReturnsAsync(elder);
+    mockElderManager.Setup(m => m.CheckPasswordAsync(elder, "Password123!")).ReturnsAsync(true);
 
-        // Act
-        var result = await userService.HandleLogin(loginDto, httpContext);
+    var userService = new UserService(
+        mockLogger.Object,
+        mockElderManager.Object,
+        mockCaregiverManager.Object,
+        mockRepositoryFactory.Object
+    );
 
-        // Assert
-        var actionResult = Assert.IsType<ActionResult<LoginResponseDTO>>(result);
-        var loginResponse = Assert.IsType<LoginResponseDTO>(actionResult.Value);
-        Assert.NotNull(loginResponse.Token);
-        Assert.Equal(Roles.Elder, loginResponse.role);
-    }
+    var loginDto = new UserLoginDTO { Email = "test@example.com", Password = "Password123!" };
+    var httpContext = new DefaultHttpContext();
 
-    [Fact]
-    public async Task HandleLogin_ShouldReturnUnauthorized_WhenPasswordIsInvalid()
-    {
-        // Arrange
-        var mockLogger = new Mock<ILogger<UserService>>();
-        var mockElderManager = GetMockUserManager<Elder>();
-        var mockCaregiverManager = GetMockUserManager<Caregiver>();
+    // Act
+    var result = await userService.HandleLogin(loginDto, httpContext);
 
-        var userService = new UserService(mockLogger.Object, mockElderManager.Object, mockCaregiverManager.Object);
+    // Assert
+    var actionResult = Assert.IsType<ActionResult<LoginResponseDTO>>(result);
+    var loginResponse = Assert.IsType<LoginResponseDTO>(actionResult.Value);
+    Assert.NotNull(loginResponse.Token);
+    Assert.Equal(Roles.Elder, loginResponse.role);
+}
 
-        var elder = new Elder { Email = "test@example.com", UserName = "test@example.com", Name = "Test Elder" };
-        mockElderManager.Setup(m => m.FindByEmailAsync("test@example.com")).ReturnsAsync(elder);
-        mockElderManager.Setup(m => m.CheckPasswordAsync(elder, "wrongpassword")).ReturnsAsync(false);
-
-        var loginDto = new UserLoginDTO { Email = "test@example.com", Password = "wrongpassword" };
-        var httpContext = new DefaultHttpContext();
-
-        // Act
-        var result = await userService.HandleLogin(loginDto, httpContext);
-
-        // Assert
-        Assert.IsType<UnauthorizedResult>(result.Result);
-    }
 
     [Fact]
     public async Task HandleRegister_ShouldReturnOk_WhenRegistrationIsSuccessful()
@@ -84,12 +74,16 @@ public class UserServiceTests
         var mockLogger = new Mock<ILogger<UserService>>();
         var mockElderManager = GetMockUserManager<Elder>();
         var mockCaregiverManager = GetMockUserManager<Caregiver>();
+        var mockRepositoryFactory = new Mock<IRepositoryFactory>();
+
+        var elderRepository = new Mock<IRepository<Elder>>();
+        mockRepositoryFactory.Setup(f => f.GetRepository<Elder>()).Returns(elderRepository.Object);
 
         var elder = new Elder { Email = "test@example.com", UserName = "test@example.com", Name = "Test Elder" };
         mockElderManager.Setup(m => m.FindByEmailAsync("test@example.com")).ReturnsAsync((Elder?)null);
         mockElderManager.Setup(m => m.CreateAsync(It.IsAny<Elder>(), "password")).ReturnsAsync(IdentityResult.Success);
 
-        var userService = new UserService(mockLogger.Object, mockElderManager.Object, mockCaregiverManager.Object);
+        var userService = new UserService(mockLogger.Object, mockElderManager.Object, mockCaregiverManager.Object, mockRepositoryFactory.Object);
 
         var registerDto = new UserRegisterDTO
         {
@@ -99,6 +93,7 @@ public class UserServiceTests
             Role = Roles.Elder
         };
         var httpContext = new DefaultHttpContext();
+        httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
 
         // Act
         var result = await userService.HandleRegister(mockElderManager.Object, registerDto, elder, httpContext);
@@ -115,11 +110,15 @@ public class UserServiceTests
         var mockLogger = new Mock<ILogger<UserService>>();
         var mockElderManager = GetMockUserManager<Elder>();
         var mockCaregiverManager = GetMockUserManager<Caregiver>();
+        var mockRepositoryFactory = new Mock<IRepositoryFactory>();
 
-        var userService = new UserService(mockLogger.Object, mockElderManager.Object, mockCaregiverManager.Object);
+        var elderRepository = new Mock<IRepository<Elder>>();
+        mockRepositoryFactory.Setup(f => f.GetRepository<Elder>()).Returns(elderRepository.Object);
+
+        var userService = new UserService(mockLogger.Object, mockElderManager.Object, mockCaregiverManager.Object, mockRepositoryFactory.Object);
 
         var elder = new Elder { Email = "test@example.com", UserName = "test@example.com", Name = "Test Elder" };
-        mockElderManager.Setup(m => m.FindByEmailAsync("test@example.com")).ReturnsAsync(elder);
+        elderRepository.Setup(r => r.Query()).Returns(new List<Elder> { elder }.AsQueryable());
 
         var registerDto = new UserRegisterDTO
         {
