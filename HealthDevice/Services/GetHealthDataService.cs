@@ -3,12 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
 
-public class GetHealthDataService : IGetHealthData
+public class GetHealthDataServiceService : IGetHealthDataService
 {
     private readonly IRepositoryFactory _repositoryFactory;
-    private readonly ILogger<GetHealthDataService> _logger;
+    private readonly ILogger<GetHealthDataServiceService> _logger;
     
-    public GetHealthDataService(IRepositoryFactory repositoryFactory, ILogger<GetHealthDataService> logger)
+    public GetHealthDataServiceService(IRepositoryFactory repositoryFactory, ILogger<GetHealthDataServiceService> logger)
     {
         _repositoryFactory = repositoryFactory;
         _logger = logger;

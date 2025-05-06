@@ -61,7 +61,7 @@ builder.Services.AddScoped<IGeoService, GeoService>();
 builder.Services.AddScoped<IArduinoService, ArduinoService>();
 builder.Services.AddScoped<IAIService, AiService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IGetHealthData, GetHealthDataService>();
+builder.Services.AddScoped<IGetHealthDataService, GetHealthDataServiceService>();
 
 builder.Services.ConfigureApplicationCookie();
 
