@@ -103,9 +103,13 @@ builder.Host.UseSerilog();
 
 builder.Services.AddHostedService<TimedHostedService>();
 builder.Services.AddHostedService<TimedGPSService>();
+builder.Services.AddHealthChecks()
+    .AddCheck<EnvVarHealthCheck>("Environment Variables")
+    .AddCheck<DbHealthCheck>("Database");
 
 
 var app = builder.Build();
+app.UseHealthChecks("/health");
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
