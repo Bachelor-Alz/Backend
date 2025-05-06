@@ -34,7 +34,7 @@ public static class TestUserConfig
         // Register the user
        var result = await userController.Register(elder);
 
-        if (result is not OkObjectResult okResult || okResult.Value is not string token)
+        if (result is not OkObjectResult)
         {
             return;
         }
