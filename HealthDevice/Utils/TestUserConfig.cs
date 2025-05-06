@@ -16,12 +16,7 @@ public static class TestUserConfig
     {
         using var scope = serviceProvider.CreateScope();
         var scopedServices = scope.ServiceProvider;
-
-        // Resolve IHttpContextAccessor and set HttpContext
-        var httpContextAccessor = scopedServices.GetRequiredService<IHttpContextAccessor>();
-        httpContextAccessor.HttpContext = new DefaultHttpContext();
         
-
         // Resolve UserController
         var userController = scopedServices.GetRequiredService<UserController>();
 
@@ -37,11 +32,7 @@ public static class TestUserConfig
         };
 
         // Register the user
-        var registerResult = await userController.Register(elder);
-        if (registerResult is not OkObjectResult okResult || okResult.Value is not string token)
-        {
-            throw new Exception("Failed to register test user.");
-        }
+       await userController.Register(elder);
 
         // Resolve Elder repository and set the MAC address
         var elderRepository = scopedServices.GetRequiredService<IRepository<Elder>>();
