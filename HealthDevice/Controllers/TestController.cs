@@ -90,20 +90,8 @@ public class TestController : ControllerBase
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
-        }
-
-        await gpsRepository.Add(new GPS
-        {
-            Latitude = 57.012153,
-            Longitude = 9.991292,
-            Timestamp = currentDate,
-            MacAddress = macAddress
-        });
-                       
-        for (int j = -1500; j < 1500; j++)
-        {
+            
             int steps = Random.Shared.Next(stepsMin, stepsMax);
-            DateTime timestamp = currentDate.Date + TimeSpan.FromMinutes(j*5);
             float distance = (float)(Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin);
             
             await stepsRepository.Add(new Steps
@@ -120,7 +108,14 @@ public class TestController : ControllerBase
             });
         }
 
-
+        await gpsRepository.Add(new GPS
+        {
+            Latitude = 57.012153,
+            Longitude = 9.991292,
+            Timestamp = currentDate,
+            MacAddress = macAddress
+        });
+        
         await locationRepository.Add(new Location
         {
             Latitude = 57.012153,
