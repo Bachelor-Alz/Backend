@@ -132,7 +132,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             
             return new DashBoard
             {
-                allFall = fallInfoRepository.Query().Count(f => f.MacAddress == macAddress),
+                allFall = fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.AvgHeartrate ?? 0,
                 SpO2 = max30102?.AvgSpO2 ?? 0,
