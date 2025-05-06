@@ -30,10 +30,14 @@ public static class TestUserConfig
             longitude = 12.5683,
             Role = Roles.Elder,
         };
-
+        
         // Register the user
-       await userController.Register(elder);
+       var result = await userController.Register(elder);
 
+        if (result is not OkObjectResult)
+        {
+            return;
+        }
         // Resolve Elder repository and set the MAC address
         var elderRepository = scopedServices.GetRequiredService<IRepository<Elder>>();
         var elderEntity = await elderRepository.Query().FirstOrDefaultAsync(e => e.Email == elder.Email);
