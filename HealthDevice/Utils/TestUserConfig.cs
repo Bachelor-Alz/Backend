@@ -16,7 +16,7 @@ public static class TestUserConfig
     {
         using var scope = serviceProvider.CreateScope();
         var scopedServices = scope.ServiceProvider;
-        
+
         // Resolve UserController
         var userController = scopedServices.GetRequiredService<UserController>();
 
