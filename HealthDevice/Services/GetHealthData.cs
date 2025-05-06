@@ -48,18 +48,6 @@ public class GetHealthDataService : IGetHealthData
         
         
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
-
-        foreach (var item in data)
-        {
-            var timestampProperty = typeof(T).GetProperty("Timestamp");
-            if (timestampProperty != null)
-            {
-                DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
-                DateTime localDateTime = utcDateTime.AddHours(2);
-                timestampProperty.SetValue(item, localDateTime);
-            }
-        }
-        
         return data;
     }
 
