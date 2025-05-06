@@ -7,11 +7,13 @@ public class GetHealthDataService : IGetHealthData
 {
     private readonly IRepositoryFactory _repositoryFactory;
     private readonly ILogger<GetHealthDataService> _logger;
+    private readonly ITimeZoneService _timeZoneService;
     
-    public GetHealthDataService(IRepositoryFactory repositoryFactory, ILogger<GetHealthDataService> logger)
+    public GetHealthDataService(IRepositoryFactory repositoryFactory, ILogger<GetHealthDataService> logger, ITimeZoneService timeZoneService)
     {
         _repositoryFactory = repositoryFactory;
         _logger = logger;
+        _timeZoneService = timeZoneService;
     }
     
     private DateTime GetEarlierDate(DateTime date, Period period) => period switch
@@ -22,7 +24,7 @@ public class GetHealthDataService : IGetHealthData
         _ => throw new ArgumentException("Invalid period specified")
     };
     
-    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date) where T : class
+    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, string timezone) where T : class
     {
         DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
@@ -48,6 +50,20 @@ public class GetHealthDataService : IGetHealthData
         
         
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
+        
+        TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+        
+        foreach (var item in data)
+        {
+            var timestampProperty = typeof(T).GetProperty("Timestamp");
+            if (timestampProperty != null)
+            {
+                DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
+                DateTime localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timeZoneInfo, utcDateTime);
+                timestampProperty.SetValue(item, localDateTime);
+            }
+        }
+        
         return data;
     }
 

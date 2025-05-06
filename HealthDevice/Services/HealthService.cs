@@ -378,14 +378,14 @@ public class HealthService : IHealthService
             return elderLocations;
     }
 
-    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period)
+    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, string timezone)
     {
         if (period == Period.Hour)
         {
             _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
             DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                elderEmail, period, newTime);
+                elderEmail, period, newTime, timezone);
             _logger.LogInformation("Fetched fall data: {Count}", data.Count);
             List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = fall.Timestamp, fallCount = 1 })
                 .ToList();
@@ -398,7 +398,7 @@ public class HealthService : IHealthService
             _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
             DateTime newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                elderEmail, period, newTime);
+                elderEmail, period, newTime, timezone);
             // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
             List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
                 .GroupBy(f => f.Timestamp.Hour)
@@ -432,7 +432,7 @@ public class HealthService : IHealthService
             DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
             DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                elderEmail, period, newTime);
+                elderEmail, period, newTime, timezone);
             List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                 .GroupBy(f => f.Timestamp.Date)
                 .Select(g => new FallDTO
@@ -459,7 +459,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period)
+    public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, string timezone)
     {
         switch (period)
         {
@@ -468,7 +468,7 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                    elderEmail, period, newTime);
+                    elderEmail, period, newTime, timezone);
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
                 return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
             }
@@ -478,7 +478,7 @@ public class HealthService : IHealthService
                 DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                    elderEmail, period, endTime);
+                    elderEmail, period, endTime, timezone);
                 List<Steps> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
                     .Select(hour => new Steps
                     {
@@ -494,7 +494,7 @@ public class HealthService : IHealthService
                 DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
                 DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                    elderEmail, period, newTime);
+                    elderEmail, period, newTime, timezone);
                 List<Steps> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
                     .Select(g => new Steps
@@ -508,7 +508,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period)
+    public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period, string timezone)
     {
         switch (period)
         {
@@ -517,7 +517,7 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
                 List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
-                    elderEmail, period, newTime);
+                    elderEmail, period, newTime, timezone);
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);
                 return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
             }
@@ -527,7 +527,7 @@ public class HealthService : IHealthService
                 DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
                 List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
-                    elderEmail, period, endTime);
+                    elderEmail, period, endTime, timezone);
                 List<Kilometer> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
                     .Select(hour => new Kilometer
                     {
@@ -543,7 +543,7 @@ public class HealthService : IHealthService
                 DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
                 DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                 List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
-                    elderEmail, period, newTime);
+                    elderEmail, period, newTime, timezone);
                 List<Kilometer> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
                     .Select(g => new Kilometer
@@ -557,7 +557,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period)
+    public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period, string timezone)
 {
     DateTime newTime;
     switch (period)
@@ -581,12 +581,12 @@ public class HealthService : IHealthService
 
     // Fetch historical heart rate data
     List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
-        elderEmail, period, newTime);
+        elderEmail, period, newTime, timezone);
     _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
 
     // Fetch current heart rate data if historical data is unavailable
     List<Max30102> currentHeartRateData =
-        await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime);
+        await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime, timezone);
     _logger.LogInformation("Fetched current heart rate data: {Count}", currentHeartRateData.Count);
 
     if (data.Count != 0 && currentHeartRateData.Count < 7)
@@ -683,7 +683,7 @@ public class HealthService : IHealthService
     return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
 }
 
-    public async Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period)
+    public async Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period, string timezone)
 {
     DateTime newTime;
     switch (period)
@@ -707,12 +707,12 @@ public class HealthService : IHealthService
 
     // Fetch historical SpO2 data
     List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
-        elderEmail, period, newTime);
+        elderEmail, period, newTime, timezone);
     _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
 
     // Fetch current SpO2 data if historical data is unavailable
     List<Max30102> currentSpo2Data =
-        await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime);
+        await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, newTime, timezone);
     _logger.LogInformation("Fetched current SpO2 data: {Count}", currentSpo2Data.Count);
 
     if (data.Count != 0 && currentSpo2Data.Count < 7)

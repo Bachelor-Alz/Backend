@@ -27,7 +27,7 @@ namespace HealthDevice.Controllers
             _healthService = healthService;
         }
         [HttpGet("Heartrate")]
-        public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date,
+        public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen",
             string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
@@ -35,12 +35,12 @@ namespace HealthDevice.Controllers
                 _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-
-            return await _healthService.GetHeartrate(elderEmail, date, periodEnum);
+            
+            return await _healthService.GetHeartrate(elderEmail, date,  periodEnum, timezone);
         }
 
         [HttpGet("Spo2")]
-        public async Task<ActionResult<List<Spo2>>> GetSpo2(string elderEmail, DateTime date, string period = "Hour")
+        public async Task<ActionResult<List<Spo2>>> GetSpo2(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
@@ -49,11 +49,11 @@ namespace HealthDevice.Controllers
             }
 
             return await _healthService.GetSpO2(
-                elderEmail, date.ToUniversalTime(), periodEnum);
+                elderEmail, date.ToUniversalTime(), periodEnum, timezone);
         }
 
         [HttpGet("Distance")]
-public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, string period = "Hour")
+public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
 {
     if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
     {
@@ -62,11 +62,11 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
     }
 
     return await _healthService.GetDistance(
-        elderEmail, date.ToUniversalTime(),  periodEnum);
+        elderEmail, date.ToUniversalTime(),  periodEnum, timezone);
 }
         
        [HttpGet("Steps")]
-public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string period = "Hour")
+public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
 {
     if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
     {
@@ -75,7 +75,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
     }
 
     return await _healthService.GetSteps(
-        elderEmail, date.ToUniversalTime(),  periodEnum);
+        elderEmail, date.ToUniversalTime(),  periodEnum, timezone);
 }
 
         [HttpGet("Dashboard")]
@@ -142,14 +142,14 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
 
         [HttpGet("Falls")]
         public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date,
-            string period = "Hour")
+            string timezone = "Europe/Copenhagen", string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
                 _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             } 
-            return await _healthService.GetFalls(elderEmail, date.ToUniversalTime(), periodEnum);
+            return await _healthService.GetFalls(elderEmail, date.ToUniversalTime(), periodEnum, timezone);
         }
         
 
