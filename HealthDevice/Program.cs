@@ -7,11 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using dotenv.net;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
 builder.Services.AddHttpClient<AiController>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -49,6 +47,14 @@ builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
 
+builder.Services.AddControllers();
+builder.Services.AddScoped<UserController>(); 
+builder.Services.AddScoped<ArduinoController>();
+builder.Services.AddScoped<HealthController>();
+builder.Services.AddScoped<AiController>();
+builder.Services.AddScoped<TestController>();
+
+
 // Register generic repository and factory
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<ApplicationDbContext>();
@@ -71,6 +77,7 @@ builder.Services.AddJwtAuthentication(
     "user.healthdevice.com",
     "UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"
 );
+
 
 builder.Services.AddAuthorization(options =>
 {
@@ -97,6 +104,7 @@ builder.Host.UseSerilog();
 builder.Services.AddHostedService<TimedHostedService>();
 builder.Services.AddHostedService<TimedGPSService>();
 
+
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -112,6 +120,11 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync(); // Applies any pending migrations
+    // Call MakeTestUserAsync with the service provider
+    if (Environment.GetEnvironmentVariable("IS_TESTING") == "true")
+    {
+        await TestUserConfig.MakeTestUserAsync(scope.ServiceProvider);
+    }
 }
 
 app.Run();

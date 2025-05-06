@@ -1,0 +1,58 @@
+﻿using HealthDevice.Controllers;
+using HealthDevice.DTO;
+using HealthDevice.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+
+
+namespace HealthDevice.Utils;
+
+public static class TestUserConfig
+{
+    //Want to make an elder user than also gets an macadress and calls FakeData from Testcontroller
+        
+    public static async Task MakeTestUserAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var scopedServices = scope.ServiceProvider;
+
+        // Resolve IHttpContextAccessor and set HttpContext
+        var httpContextAccessor = scopedServices.GetRequiredService<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext = new DefaultHttpContext();
+        
+
+        // Resolve UserController
+        var userController = scopedServices.GetRequiredService<UserController>();
+
+        // Create a new elder user
+        var elder = new UserRegisterDTO
+        {
+            Name = "Test",
+            Email = "Test@Test.dk",
+            Password = "Test1234!",
+            latitude = 55.6761,
+            longitude = 12.5683,
+            Role = Roles.Elder,
+        };
+
+        // Register the user
+        var registerResult = await userController.Register(elder);
+        if (registerResult is not OkObjectResult okResult || okResult.Value is not string token)
+        {
+            throw new Exception("Failed to register test user.");
+        }
+
+        // Resolve Elder repository and set the MAC address
+        var elderRepository = scopedServices.GetRequiredService<IRepository<Elder>>();
+        var elderEntity = await elderRepository.Query().FirstOrDefaultAsync(e => e.Email == elder.Email);
+        if (elderEntity == null) return;
+
+        elderEntity.MacAddress = "00:00:00:00:00:00";
+        await elderRepository.Update(elderEntity);
+
+        // Generate fake data using TestController
+        var testController = scopedServices.GetRequiredService<TestController>();
+        await testController.GenerateFakeData(elder.Email);
+    }
+}
