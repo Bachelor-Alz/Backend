@@ -106,7 +106,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
 
             // Query data objects using the MacAddress
             Max30102? max30102 = await max30102Repository.Query()
-                .Where(m => m.MacAddress == macAddress)
+                .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
                 .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefaultAsync();
 
@@ -134,8 +134,8 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
             {
                 allFall = fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
-                HeartRate = max30102?.AvgHeartrate ?? 0,
-                SpO2 = max30102?.AvgSpO2 ?? 0,
+                HeartRate = max30102?.LastHeartrate ?? 0,
+                SpO2 = max30102?.LastSpO2 ?? 0,
                 steps = steps?.StepsCount ?? 0
             };
         }

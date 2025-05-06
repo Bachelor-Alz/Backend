@@ -77,9 +77,11 @@ public class ArduinoService : IArduinoService
         }
         await max30102Repository.Add(new Max30102
         {
+            LastHeartrate = data.Max30102.Last().heartRate,
             AvgHeartrate = totalHr/data.Max30102.Count,
             MaxHeartrate = data.Max30102.Max(x => x.heartRate),
             MinHeartrate = data.Max30102.Min(x => x.heartRate),
+            LastSpO2 = data.Max30102.Last().SpO2,
             AvgSpO2 = totalSpO2/data.Max30102.Count,
             MaxSpO2 = data.Max30102.Max(x => x.SpO2),
             MinSpO2 = data.Max30102.Min(x => x.SpO2),
