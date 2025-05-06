@@ -1,15 +1,17 @@
 using System.Globalization;
+using System.Net.Http;
+using System.Threading.Tasks;
 using HealthDevice.DTO;
 using HealthDevice.Services;
-using RichardSzalay.MockHttp;
 using Microsoft.Extensions.Logging.Abstractions;
+using RichardSzalay.MockHttp;
+using Xunit;
 
 public class GeoServiceTests
 {
-    // Ensure consistent culture settings for tests
-    // This avoids issues with number formatting (e.g., ',' vs '.') in coordinates across different locales
     public GeoServiceTests()
     {
+        // Ensure consistent culture settings for tests
         Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
         Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
     }
@@ -18,10 +20,8 @@ public class GeoServiceTests
     public void CalculateDistance_ShouldReturnCorrectDistance()
     {
         // Arrange
-        var location1 = new Location
-            { Latitude = 57.0124, Longitude = 9.9915 }; // Selma Lagerløfs Vej 300, 9220 Aalborg
-        var location2 = new Location 
-            { Latitude = 57.0235, Longitude = 9.9771 }; // Ribevej 3, 9220 Aalborg
+        var location1 = new Location { Latitude = 57.0124, Longitude = 9.9915 }; // Selma Lagerløfs Vej 300, 9220 Aalborg
+        var location2 = new Location { Latitude = 57.0235, Longitude = 9.9771 }; // Ribevej 3, 9220 Aalborg
         var expectedDistance = 1.5; // Approximate distance in kilometers
 
         // Act
@@ -49,10 +49,9 @@ public class GeoServiceTests
     {
         // Arrange
         var mockHttp = new MockHttpMessageHandler();
-        mockHttp.When(
-                "https://nominatim.openstreetmap.org/reverse?format=json&lat=57.0488&lon=9.9217&zoom=18&addressdetails=1")
-            .Respond("application/json",
-                "{\"display_name\":\"300, Selma Lagerløfs Vej, x, Aalborg, x, x, 9220, Denmark\"}");
+        mockHttp.When("https://nominatim.openstreetmap.org/reverse")
+            .WithQueryString("format=json&lat=57.0488&lon=9.9217&zoom=18&addressdetails=1")
+            .Respond("application/json", "{\"display_name\":\"300, Selma Lagerløfs Vej, x, Aalborg, x, x, 9220, Denmark\"}");
 
         var httpClient = mockHttp.ToHttpClient();
         var logger = NullLogger<GeoService>.Instance;
@@ -76,8 +75,8 @@ public class GeoServiceTests
     {
         // Arrange
         var mockHttp = new MockHttpMessageHandler();
-        mockHttp.When(
-                "https://nominatim.openstreetmap.org/search?format=json&street=Selma%20Lagerl%C3%B8fs%20Vej%20300&city=Aalborg")
+        mockHttp.When("https://nominatim.openstreetmap.org/search")
+            .WithQueryString("format=json&street=Selma%20Lagerløfs%20Vej%20300&city=Aalborg")
             .Respond("application/json", "[{\"boundingbox\":[\"57.0488\",\"57.0489\",\"9.9216\",\"9.9217\"]}]");
 
         var httpClient = mockHttp.ToHttpClient();
@@ -101,8 +100,9 @@ public class GeoServiceTests
     {
         // Arrange
         var mockHttp = new MockHttpMessageHandler();
-        mockHttp.When("https://nominatim.openstreetmap.org/*")
-                .Respond("application/json", "[]");
+        mockHttp.When("https://nominatim.openstreetmap.org/search")
+            .WithQueryString("format=json&street=Nonexistent%20Street&city=Nowhere")
+            .Respond("application/json", "[]");
 
         var httpClient = mockHttp.ToHttpClient();
         var logger = NullLogger<GeoService>.Instance;
