@@ -33,26 +33,26 @@ namespace HealthDevice.Services
                     {
                         string? arduino = elder.MacAddress;
                         if (arduino == null) continue;
-                        DateTime currentTime = DateTime.UtcNow;
+                        DateTime lastMonth = DateTime.UtcNow.AddDays(-30);
                         
-                        List<Heartrate> heartRate = await healthService.CalculateHeartRate(currentTime, arduino);
+                        List<Heartrate> heartRate = await healthService.CalculateHeartRate(lastMonth, arduino);
                         await hrRepository.AddRange(heartRate);
 
-                        List<Spo2> spo2 = await healthService.CalculateSpo2(currentTime, arduino);
+                        List<Spo2> spo2 = await healthService.CalculateSpo2(lastMonth, arduino);
                         await spo2Repository.AddRange(spo2);
 
-                        Kilometer distance = await healthService.CalculateDistanceWalked(currentTime, arduino);
+                        Kilometer distance = await healthService.CalculateDistanceWalked(lastMonth, arduino);
                         await distanceRepository.Add(distance);
 
-                        await healthService.DeleteMax30102Data(currentTime, arduino);
-                        await healthService.DeleteGpsData(currentTime, arduino);
+                        await healthService.DeleteMax30102Data(lastMonth, arduino);
+                        await healthService.DeleteGpsData(lastMonth, arduino);
 
                         await elderRepository.Update(elder);
 
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromDays(7), stoppingToken);
+                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
             }
         }
     }
