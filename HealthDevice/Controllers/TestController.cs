@@ -56,23 +56,23 @@ public class TestController : ControllerBase
             return BadRequest("Elder does not have a MAC address");
         }
         DateTime currentDate = DateTime.UtcNow;
-        const int heartrateMin = 40;
-        const int heartrateMax = 200;
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
         const int stepsMin = 0;
-        const int stepsMax = 100;
+        const int stepsMax = 80;
         const float distanceMin = 0;
-        const float distanceMax = 10;
+        const float distanceMax = 1;
         const int fallMin = 0;
-        const int fallMax = 10;
+        const int fallMax = 20;
 
         for (int i = -1500; i < 1500; i++)
         {
             DateTime timestamp = currentDate + TimeSpan.FromMinutes(i*5);
-            int heartrate = Random.Shared.Next(heartrateMin, heartrateMax);
-            int minheartrate = Random.Shared.Next(heartrateMin, heartrate);
-            int maxheartrate = Random.Shared.Next(heartrate, heartrateMax);
+            int PreHeartrateMin = Random.Shared.Next(20, 45);
+            int PreHeartrateMax = Random.Shared.Next(140, 200);
+            int heartrate = Random.Shared.Next(PreHeartrateMin, PreHeartrateMax);
+            int minheartrate = Random.Shared.Next(PreHeartrateMin, heartrate);
+            int maxheartrate = Random.Shared.Next(heartrate, PreHeartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
             float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
             float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);
