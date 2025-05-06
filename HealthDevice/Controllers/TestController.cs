@@ -79,9 +79,11 @@ public class TestController : ControllerBase
 
             await max30102Repository.Add(new Max30102
             {
+                LastHeartrate = heartrate,
                 AvgHeartrate = heartrate,
                 MaxHeartrate = maxheartrate,
                 MinHeartrate = minheartrate,
+                LastSpO2 = spo2,
                 AvgSpO2 = spo2,
                 MaxSpO2 = maxSpo2,
                 MinSpO2 = minSpo2,
