@@ -59,9 +59,9 @@ public class TestController : ControllerBase
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
         const int stepsMin = 0;
-        const int stepsMax = 80;
+        const int stepsMax = 328; //Corresponds to 0.25 km
         const float distanceMin = 0;
-        const float distanceMax = 1;
+        const float distanceMax = 0.25F; //Corresponds to 328 steps
         const int fallMin = 0;
         const int fallMax = 20;
 
