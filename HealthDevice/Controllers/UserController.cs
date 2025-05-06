@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Net;
+using System.Security.Claims;
 using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Services;
@@ -62,7 +63,8 @@ public class UserController : ControllerBase
             return BadRequest("Password must be at least 6 characters long.");
         }
         _logger.LogInformation("Login attempt for email: {Email}", userLoginDto.Email);
-        return await _userService.HandleLogin(userLoginDto, HttpContext);
+        string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+        return await _userService.HandleLogin(userLoginDto, ipAddress);
     }
 
     [AllowAnonymous]
@@ -100,6 +102,7 @@ public class UserController : ControllerBase
             return BadRequest("Caregiver registration should not include latitude and longitude.");
         }
         _logger.LogInformation("Registration attempt for email: {Email} with role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
+        string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
         return userRegisterDto.Role == Roles.Elder 
             ? await _userService.HandleRegister(_elderManager, userRegisterDto, 
                                                 new Elder
@@ -110,7 +113,7 @@ public class UserController : ControllerBase
                                                     latitude = (double)userRegisterDto.latitude,
                                                     longitude = (double)userRegisterDto.longitude,
                                                     outOfPerimeter = false
-                                                }, HttpContext)
+                                                }, ipAddress)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto, 
                                                 new Caregiver
                                                 {
@@ -118,7 +121,7 @@ public class UserController : ControllerBase
                                                     Email = userRegisterDto.Email, 
                                                     UserName = userRegisterDto.Email, 
                                                     Elders = new List<Elder>()
-                                                }, HttpContext);
+                                                }, ipAddress);
     }
 
     [HttpGet("elder")]

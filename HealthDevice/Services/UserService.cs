@@ -23,54 +23,52 @@ public class UserService : IUserService
         _repositoryFactory = repositoryFactory;
     }
     
-    public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, HttpContext httpContext)
+    public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
     {
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
         IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
         
-        string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
         Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (elder != null)
         {
             if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
             {
-                _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+                _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedResult();
             }
             if (await _elderManager.IsLockedOutAsync(elder))
             {
-                _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+                _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedResult();
             }
-            _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
         }
 
         Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (caregiver == null)
         {
-            _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new UnauthorizedResult();
         }
         if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
         {
-            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new UnauthorizedResult();
         }
         if (await _caregiverManager.IsLockedOutAsync(caregiver))
         {
-            _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+            _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new UnauthorizedResult();
         }
-        _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAddress, timestamp);
+        _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
         return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), role = Roles.Caregiver};
     }
 
-    public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, HttpContext httpContext) where T : IdentityUser
+    public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, string ipAddress) where T : IdentityUser
     {
         IRepository<T> userRepository = _repositoryFactory.GetRepository<T>();
-        string ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
         DateTime timestamp = DateTime.UtcNow;
 
         if (userRepository.Query().FirstOrDefault(m => m.Email == userRegisterDto.Email) != null)
