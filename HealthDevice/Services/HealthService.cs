@@ -123,7 +123,7 @@ public class HealthService : IHealthService
         return new Kilometer
         {
             Distance = distance,
-            Timestamp = currentDate
+            Timestamp = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 0)
         };
     }
 

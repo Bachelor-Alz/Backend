@@ -47,7 +47,7 @@ public class AiService : IAIService
         IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
         FallInfo fallInfo = new FallInfo()
         {
-            Timestamp = DateTime.UtcNow,
+            Timestamp = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0),
             Location = new Location(),
             MacAddress = addrees
         };
