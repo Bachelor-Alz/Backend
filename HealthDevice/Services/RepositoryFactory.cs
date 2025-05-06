@@ -1,4 +1,5 @@
-﻿namespace HealthDevice.Services;
+﻿
+namespace HealthDevice.Services;
 
 public interface IRepositoryFactory
 {
@@ -8,10 +9,16 @@ public interface IRepositoryFactory
 public class RepositoryFactory : IRepositoryFactory
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private IServiceProvider @object;
 
     public RepositoryFactory(IServiceScopeFactory scopeFactory)
     {
         _scopeFactory = scopeFactory;
+    }
+
+    public RepositoryFactory(IServiceProvider @object)
+    {
+        this.@object = @object;
     }
 
     public IRepository<T> GetRepository<T>() where T : class
