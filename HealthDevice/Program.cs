@@ -49,11 +49,11 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<UserController>(); // Explicitly register UserController
-builder.Services.AddScoped<ArduinoController>(); // Explicitly register ArduinoController
-builder.Services.AddScoped<HealthController>(); // Explicitly register HealthController
-builder.Services.AddScoped<AiController>(); // Explicitly register AIController
-builder.Services.AddScoped<TestController>(); // Explicitly register EmailController
+builder.Services.AddScoped<UserController>(); 
+builder.Services.AddScoped<ArduinoController>();
+builder.Services.AddScoped<HealthController>();
+builder.Services.AddScoped<AiController>();
+builder.Services.AddScoped<TestController>();
 
 
 // Register generic repository and factory
@@ -122,9 +122,7 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync(); // Applies any pending migrations
     // Call MakeTestUserAsync with the service provider
-    var isTesting = Environment.GetEnvironmentVariable("IS_TESTING");
-    Log.Logger.Information($"Testing is {isTesting}");
-    if (isTesting == "true")
+    if (Environment.GetEnvironmentVariable("IS_TESTING") == "true")
     {
         await TestUserConfig.MakeTestUserAsync(scope.ServiceProvider);
     }
