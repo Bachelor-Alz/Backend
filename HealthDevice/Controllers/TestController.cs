@@ -55,7 +55,7 @@ public class TestController : ControllerBase
         {
             return BadRequest("Elder does not have a MAC address");
         }
-        DateTime currentDate = DateTime.UtcNow;
+        DateTime currentDate = DateTime.UtcNow.Date;
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
         const int stepsMin = 0;
