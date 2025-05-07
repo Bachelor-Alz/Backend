@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Controllers;
 using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

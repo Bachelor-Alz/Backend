@@ -1,4 +1,5 @@
 using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +28,7 @@ public class TestController : ControllerBase
     }
     
     [HttpPost("Coordinates")]
-    public async Task<ActionResult> GetCoordinates(Address address)
+    public async Task<ActionResult> GetCoordinates(AddressDTO address)
     {
         var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City);
         return Ok(result);
@@ -37,9 +38,9 @@ public class TestController : ControllerBase
     {
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
         IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
-        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
         IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
-        IRepository<Kilometer> kilometerRepository = _repositoryFactory.GetRepository<Kilometer>();
+        IRepository<DistanceInfo> kilometerRepository = _repositoryFactory.GetRepository<DistanceInfo>();
         IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
         IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
         Elder? elder = await elderRepository.Query()
@@ -100,7 +101,7 @@ public class TestController : ControllerBase
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
-            await kilometerRepository.Add(new Kilometer
+            await kilometerRepository.Add(new DistanceInfo()
             {
                 Distance = distance,
                 Timestamp = timestamp,
@@ -108,7 +109,7 @@ public class TestController : ControllerBase
             });
         }
 
-        await gpsRepository.Add(new GPS
+        await gpsRepository.Add(new GPSData()
         {
             Latitude = 57.012153,
             Longitude = 9.991292,

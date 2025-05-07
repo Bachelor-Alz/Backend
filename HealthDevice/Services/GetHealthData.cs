@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
@@ -26,7 +27,9 @@ public class GetHealthDataService : IGetHealthData
     
     public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, TimeZoneInfo timezone) where T : class
     {
-        DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
+        DateTime earlierDate = GetEarlierDate(date, period);
+        earlierDate = _timeZoneService.LocalTimeToUTC(timezone, earlierDate);
+        date = _timeZoneService.LocalTimeToUTC(timezone, date);
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
     
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
@@ -44,24 +47,13 @@ public class GetHealthDataService : IGetHealthData
 
         List<T> data = await repository.Query()
             .Where(d => EF.Property<string>(d, "MacAddress") == arduino &&
-                        EF.Property<DateTime>(d, "Timestamp") >= earlierDate &&
+                         EF.Property<DateTime>(d, "Timestamp") >= earlierDate &&
                         EF.Property<DateTime>(d, "Timestamp") <= date)
             .ToListAsync();
         
         
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
         
-        
-        foreach (var item in data)
-        {
-            var timestampProperty = typeof(T).GetProperty("Timestamp");
-            if (timestampProperty != null)
-            {
-                DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
-                DateTime localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, utcDateTime);
-                timestampProperty.SetValue(item, localDateTime);
-            }
-        }
         
         return data;
     }

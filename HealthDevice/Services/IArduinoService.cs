@@ -6,5 +6,5 @@ namespace HealthDevice.Services;
 public interface IArduinoService
 {
     Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor;
-    Task HandleArduinoData(Arduino data, HttpContext httpContext);
+    Task HandleArduinoData(ArduinoDTO data, HttpContext httpContext);
 }

@@ -1,4 +1,6 @@
-﻿namespace HealthDevice.DTO;
+﻿using HealthDevice.DTO;
+
+namespace HealthDevice.Models;
 
 public class Max30102 : Sensor
 {

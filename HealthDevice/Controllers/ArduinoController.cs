@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class ArduinoController : ControllerBase
     }
 
     [HttpPost("gps")]
-    public async Task<ActionResult> PostGps([FromBody] List<GPS> data)
+    public async Task<ActionResult> PostGps([FromBody] List<GPSData> data)
     {
         if (data.Count == 0)
         {
@@ -52,7 +53,7 @@ public class ArduinoController : ControllerBase
     }
 
     [HttpPost("data")]
-    public async Task PostData([FromBody] Arduino data)
+    public async Task PostData([FromBody] ArduinoDTO data)
     {
         if (string.IsNullOrEmpty(data.MacAddress))
         {

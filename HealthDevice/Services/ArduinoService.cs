@@ -1,5 +1,6 @@
 ﻿using HealthDevice.DTO;
 using HealthDevice.Data;
+using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,16 +39,16 @@ public class ArduinoService : IArduinoService
         return new OkResult();
     }
 
-    public async Task HandleArduinoData(Arduino data, HttpContext httpContext)
+    public async Task HandleArduinoData(ArduinoDTO data, HttpContext httpContext)
     {
-        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
         IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
         IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
 
-        await gpsRepository.Add(new GPS
+        await gpsRepository.Add(new GPSData
         {
             Latitude = data.Latitude,
             Longitude = data.Longitude,

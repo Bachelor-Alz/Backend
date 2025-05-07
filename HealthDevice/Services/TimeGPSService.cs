@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services

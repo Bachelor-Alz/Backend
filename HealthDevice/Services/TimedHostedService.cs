@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services
@@ -26,7 +27,7 @@ namespace HealthDevice.Services
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
                     var hrRepository = repositoryFactory.GetRepository<Heartrate>();
                     var spo2Repository = repositoryFactory.GetRepository<Spo2>();
-                    var distanceRepository = repositoryFactory.GetRepository<Kilometer>();
+                    var distanceRepository = repositoryFactory.GetRepository<DistanceInfo>();
                     List<Elder> elders = await elderRepository.Query().ToListAsync(cancellationToken: stoppingToken);
 
                     foreach (Elder elder in elders)
@@ -41,7 +42,7 @@ namespace HealthDevice.Services
                         List<Spo2> spo2 = await healthService.CalculateSpo2(lastMonth, arduino);
                         await spo2Repository.AddRange(spo2);
 
-                        Kilometer distance = await healthService.CalculateDistanceWalked(lastMonth, arduino);
+                        DistanceInfo distance = await healthService.CalculateDistanceWalked(lastMonth, arduino);
                         await distanceRepository.Add(distance);
 
                         await healthService.DeleteMax30102Data(lastMonth, arduino);

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using HealthDevice.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -102,7 +103,7 @@ public class UserService : IUserService
             issuer: "api.healthdevice.com",
             audience: "user.healthdevice.com",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(10),
+            expires: DateTime.Now.AddMinutes(100),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

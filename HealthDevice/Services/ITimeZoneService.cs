@@ -2,5 +2,6 @@
 
 public interface ITimeZoneService
 {
-    DateTime GetCurrentTimeInUserTimeZone(TimeZoneInfo userTimeZone, DateTime utcNow);
+    DateTimeOffset UTCToLocalTime(TimeZoneInfo userTimeZone, DateTime utcNow);
+    DateTime LocalTimeToUTC(TimeZoneInfo userTimeZone, DateTime utcNow);
 }
