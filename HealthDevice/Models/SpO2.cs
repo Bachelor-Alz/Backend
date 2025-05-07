@@ -1,11 +1,11 @@
-﻿namespace HealthDevice.Models;
+﻿using HealthDevice.DTO;
 
-public class Spo2
+namespace HealthDevice.Models;
+
+public class Spo2 : Sensor
 {
     public int Id { get; set; }
     public float AvgSpO2 { get; set; }
     public float MaxSpO2 { get; set; }
     public float MinSpO2 { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string? MacAddress { get; set; }
 }

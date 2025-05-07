@@ -1,6 +1,5 @@
 using HealthDevice.Data;
 using HealthDevice.Controllers;
-using HealthDevice.DTO;
 using HealthDevice.Models;
 using HealthDevice.Services;
 using HealthDevice.Utils;
@@ -32,6 +31,7 @@ builder.Services.AddIdentityCore<Caregiver>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+
 // Register UserManager and RoleManager for Elder
 builder.Services.AddScoped<UserManager<Elder>>();
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
@@ -49,12 +49,6 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<UserController>(); 
-builder.Services.AddScoped<ArduinoController>();
-builder.Services.AddScoped<HealthController>();
-builder.Services.AddScoped<AiController>();
-builder.Services.AddScoped<TestController>();
-
 
 // Register generic repository and factory
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -104,13 +98,15 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddHostedService<TimedHostedService>();
-builder.Services.AddHostedService<TimedGPSService>();
+builder.Services.AddScoped<TimedGPSService>();
+
 builder.Services.AddHealthChecks()
     .AddCheck<EnvVarHealthCheck>("Environment Variables")
     .AddCheck<DbHealthCheck>("Database");
 
 
 var app = builder.Build();
+
 app.UseHealthChecks("/health");
 app.UseSwagger();
 app.UseSwaggerUI();

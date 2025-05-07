@@ -1,5 +1,4 @@
-﻿using HealthDevice.DTO;
-using HealthDevice.Models;
+﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services
@@ -8,12 +7,13 @@ namespace HealthDevice.Services
     {
         private readonly ILogger<TimedHostedService> _logger;
         private readonly IServiceProvider _serviceProvider;
-        
+
         public TimedHostedService(ILogger<TimedHostedService> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
         }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -22,12 +22,14 @@ namespace HealthDevice.Services
 
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
+                    // Resolving scoped services within the scope
+                    var elderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Elder>>();
+                    var hrRepository = scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
+                    var spo2Repository = scope.ServiceProvider.GetRequiredService<IRepository<Spo2>>();
+                    var distanceRepository = scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
                     var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
-                    var elderRepository = repositoryFactory.GetRepository<Elder>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
-                    var hrRepository = repositoryFactory.GetRepository<Heartrate>();
-                    var spo2Repository = repositoryFactory.GetRepository<Spo2>();
-                    var distanceRepository = repositoryFactory.GetRepository<DistanceInfo>();
+
                     List<Elder> elders = await elderRepository.Query().ToListAsync(cancellationToken: stoppingToken);
 
                     foreach (Elder elder in elders)
@@ -49,7 +51,6 @@ namespace HealthDevice.Services
                         await healthService.DeleteGpsData(lastMonth, arduino);
 
                         await elderRepository.Update(elder);
-
                     }
                 }
 

@@ -11,12 +11,26 @@ public class ArduinoService : IArduinoService
     private readonly ILogger<ArduinoService> _logger;
     private readonly IRepositoryFactory _repositoryFactory;
     private readonly ApplicationDbContext _dbContext;
+    private readonly IRepository<GPSData> _gpsRepository;
+    private readonly IRepository<Max30102> _max30102Repository;
+    private readonly IRepository<Steps> _stepsRepository;
 
-    public ArduinoService(ILogger<ArduinoService> logger, IRepositoryFactory repositoryFactory, ApplicationDbContext dbContext)
+    public ArduinoService
+    (
+        ILogger<ArduinoService> logger, 
+        IRepositoryFactory repositoryFactory,
+        ApplicationDbContext dbContext,
+        IRepository<GPSData> gpsRepository,
+        IRepository<Max30102> max30102Repository,
+        IRepository<Steps> stepsRepository
+    )
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
         _dbContext = dbContext;
+        _gpsRepository = gpsRepository;
+        _max30102Repository = max30102Repository;
+        _stepsRepository = stepsRepository;
     }
 
     public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
@@ -41,14 +55,11 @@ public class ArduinoService : IArduinoService
 
     public async Task HandleArduinoData(ArduinoDTO data, HttpContext httpContext)
     {
-        IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
-        IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
-        IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
 
-        await gpsRepository.Add(new GPSData
+        await _gpsRepository.Add(new GPSData
         {
             Latitude = data.Latitude,
             Longitude = data.Longitude,
@@ -56,7 +67,7 @@ public class ArduinoService : IArduinoService
             MacAddress = data.MacAddress
         });
         
-        await stepsRepository.Add(new Steps
+        await _stepsRepository.Add(new Steps
         {
             StepsCount = data.steps,
             Timestamp = receivedAt,
@@ -75,7 +86,7 @@ public class ArduinoService : IArduinoService
             _logger.LogWarning("{Timestamp}: No Max30102 data found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             return;
         }
-        await max30102Repository.Add(new Max30102
+        await _max30102Repository.Add(new Max30102
         {
             LastHeartrate = data.Max30102.Last().heartRate,
             AvgHeartrate = totalHr/data.Max30102.Count,

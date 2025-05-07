@@ -1,9 +1,9 @@
-﻿namespace HealthDevice.Models;
+﻿using HealthDevice.DTO;
 
-public class DistanceInfo
+namespace HealthDevice.Models;
+
+public class DistanceInfo : Sensor
 {
     public int Id { get; set; }
     public float Distance { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string? MacAddress { get; set; }
 }

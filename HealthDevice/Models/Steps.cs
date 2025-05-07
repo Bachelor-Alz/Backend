@@ -1,9 +1,9 @@
-﻿namespace HealthDevice.Models;
+﻿using HealthDevice.DTO;
 
-public class Steps
+namespace HealthDevice.Models;
+
+public class Steps : Sensor
 {
     public int Id { get; set; }
     public int StepsCount { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string? MacAddress { get; set; }
 }

@@ -13,13 +13,21 @@ public class HealthService : IHealthService
     private readonly IRepositoryFactory _repositoryFactory;
     private readonly IGetHealthData _getHealthDataService;
     private readonly ITimeZoneService _timeZoneService;
-    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService)
+    private readonly IRepository<Elder> _elderRepository;
+    private readonly IRepository<Caregiver> _caregiverRepository;
+    private readonly IRepository<Perimeter> _perimeterRepository;
+    private readonly IRepository<Location> _locationRepository;
+    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService, IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository, IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
         _emailService = emailService;
         _getHealthDataService = getHealthDataService;
         _timeZoneService = timeZoneService;
+        _elderRepository = elderRepository;
+        _caregiverRepository = caregiverRepository;
+        _perimeterRepository = perimeterRepository;
+        _locationRepository = locationRepository;
     }
     
     public async Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address)
@@ -166,10 +174,7 @@ public class HealthService : IHealthService
 
     public async Task ComputeOutOfPerimeter(string Arduino, Location location)
     {
-        IRepository<Perimeter> perimeterRepository = _repositoryFactory.GetRepository<Perimeter>();
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-
-        Perimeter? perimeter = await perimeterRepository.Query()
+        Perimeter? perimeter = await _perimeterRepository.Query()
             .FirstOrDefaultAsync(p => p.MacAddress == Arduino);
         if (perimeter == null)
         {
@@ -177,7 +182,7 @@ public class HealthService : IHealthService
             return;
         }
 
-        Elder? elder = await elderRepository.Query()
+        Elder? elder = await _elderRepository.Query()
             .FirstOrDefaultAsync(e => e.MacAddress == Arduino);
         if (elder == null)
         {
@@ -205,7 +210,7 @@ public class HealthService : IHealthService
             if (d < perimeter.Radius)
             {
                 elder.outOfPerimeter = false;
-                await elderRepository.Update(elder);
+                await _elderRepository.Update(elder);
                 _logger.LogInformation("Elder {Email} is back in perimeter", elder.Email);
                 return;
             }
@@ -216,7 +221,7 @@ public class HealthService : IHealthService
         {
             _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
             elder.outOfPerimeter = true;
-            await elderRepository.Update(elder);
+            await _elderRepository.Update(elder);
         }
     }
 
@@ -245,10 +250,7 @@ public class HealthService : IHealthService
 
     public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
     {
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        IRepository<Perimeter> perimeterRepository = _repositoryFactory.GetRepository<Perimeter>();
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
             if (elder is null)
             {
@@ -266,7 +268,7 @@ public class HealthService : IHealthService
                 return new BadRequestObjectResult("Invalid radius value.");
             }
             _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
-            Perimeter? oldPerimeter = await perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+            Perimeter? oldPerimeter = await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (oldPerimeter == null)
             {
                 _logger.LogInformation("Creating new perimeter for elder: {ElderEmail}", elderEmail);
@@ -277,7 +279,7 @@ public class HealthService : IHealthService
                     Radius = radius,
                     MacAddress = elder.MacAddress
                 };
-                await perimeterRepository.Add(perimeter);
+                await _perimeterRepository.Add(perimeter);
             }
             else
             {
@@ -289,10 +291,10 @@ public class HealthService : IHealthService
                     Radius = radius,
                     MacAddress = elder.MacAddress
                 };
-                await perimeterRepository.Update(oldPerimeter);
+                await _perimeterRepository.Update(oldPerimeter);
                 
                 // Send email to caregiver
-                List<Caregiver> caregivers = await caregiverRepository.Query()
+                List<Caregiver> caregivers = await _caregiverRepository.Query()
                     .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
                     .ToListAsync();
                 foreach (Caregiver caregiver in caregivers)
@@ -307,10 +309,7 @@ public class HealthService : IHealthService
 
     public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email)
     {
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
-        IRepository<Perimeter> perimeterRepository = _repositoryFactory.GetRepository<Perimeter>();
-         Caregiver? caregiver = await caregiverRepository.Query()
+         Caregiver? caregiver = await _caregiverRepository.Query()
                 .Include(c => c.Elders)
                 .FirstOrDefaultAsync(c => c.Email == email);
             if (caregiver == null)
@@ -334,13 +333,13 @@ public class HealthService : IHealthService
                     continue;
                 }
                 _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elder.Email);
-                Location? location = await locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+                Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
                 if (location == null) continue;
                 {
                     _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elder.Email);
                     if (elder.Email == null) continue;
                     _logger.LogInformation("Fetching perimeter data for elder: {ElderEmail}", elder.Email);
-                    Perimeter? perimeter = await perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+                    Perimeter? perimeter = await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
                     if (perimeter != null)
                     {
                         _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);

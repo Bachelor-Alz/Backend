@@ -1,24 +1,23 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0
 
-# Set working directory
 WORKDIR /app
 
-# Enable file watcher for development in Docker
 ENV DOTNET_USE_POLLING_FILE_WATCHER=true
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true
 
-# Copy only the .sln and .csproj files first (for Docker cache)
 COPY Backend.sln ./
 COPY HealthDevice/*.csproj ./HealthDevice/
 
-# Restore dependencies
-RUN dotnet restore "HealthDevice/HealthDevice.csproj"
+# Create folder to satisfy the next COPY
+RUN mkdir -p HealthDevice
 
-# Copy the remaining source files
 COPY . .
 
-# Optional build step (helps catch early errors)
-RUN dotnet build "HealthDevice/HealthDevice.csproj" --no-restore
+# Restore dependencies (after full source copied)
+RUN dotnet restore "HealthDevice/HealthDevice.csproj"
 
-# Launch the app with hot reload
+# Build the project to catch early errors
+RUN dotnet build "HealthDevice/HealthDevice.csproj"
+
+# Launch with hot reload
 CMD ["dotnet", "watch", "--project", "HealthDevice/HealthDevice.csproj", "run", "--no-launch-profile"]

@@ -1,8 +1,10 @@
-﻿namespace HealthDevice.Services;
+﻿using HealthDevice.DTO;
+
+namespace HealthDevice.Services;
 
 public interface IRepositoryFactory
 {
-    IRepository<T> GetRepository<T>() where T : class;
+    IRepository<T> GetRepository<T>() where T : Sensor;
 }
 
 public class RepositoryFactory : IRepositoryFactory
@@ -14,7 +16,7 @@ public class RepositoryFactory : IRepositoryFactory
         _scopeFactory = scopeFactory;
     }
 
-    public IRepository<T> GetRepository<T>() where T : class
+    public IRepository<T> GetRepository<T>() where T : Sensor
     {
         var scope = _scopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetService<IRepository<T>>();

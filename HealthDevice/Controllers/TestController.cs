@@ -12,12 +12,34 @@ namespace HealthDevice.Controllers;
 public class TestController : ControllerBase
 {
     private readonly IGeoService _geoService;
-    private readonly IRepositoryFactory _repositoryFactory;
-    
-    public TestController(IGeoService geoService, IRepositoryFactory repositoryFactory)
+    private readonly IRepository<Elder> _elderRepository;
+    private readonly IRepository<Max30102> _max30102Repository;
+    private readonly IRepository<DistanceInfo> _kilometerRepository;
+    private readonly IRepository<Steps> _stepsRepository;
+    private readonly IRepository<FallInfo> _fallInfoRepository;
+    private readonly IRepository<Location> _locationRepository;
+    private readonly IRepository<GPSData> _gpsRepository;
+
+    public TestController
+    (
+        IGeoService geoService, 
+        IRepository<Elder> elderRepository,
+        IRepository<Max30102> max30102Repository,
+        IRepository<DistanceInfo> kilometerRepository,
+        IRepository<Steps> stepsRepository,
+        IRepository<FallInfo> fallInfoRepository,
+        IRepository<Location> locationRepository,
+        IRepository<GPSData> gpsRepository
+    )
     {
         _geoService = geoService;
-        _repositoryFactory = repositoryFactory;
+        _elderRepository = elderRepository;
+        _max30102Repository = max30102Repository;
+        _kilometerRepository = kilometerRepository;
+        _stepsRepository = stepsRepository;
+        _fallInfoRepository = fallInfoRepository;
+        _locationRepository = locationRepository;
+        _gpsRepository = gpsRepository;
     }
     
     [HttpPost("Address")]
@@ -36,14 +58,7 @@ public class TestController : ControllerBase
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
-        IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
-        IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
-        IRepository<DistanceInfo> kilometerRepository = _repositoryFactory.GetRepository<DistanceInfo>();
-        IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
-        IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
-        Elder? elder = await elderRepository.Query()
+        Elder? elder = await _elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
         if (elder == null)
         {
@@ -78,7 +93,7 @@ public class TestController : ControllerBase
             float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
             float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);
 
-            await max30102Repository.Add(new Max30102
+            await _max30102Repository.Add(new Max30102
             {
                 LastHeartrate = heartrate,
                 AvgHeartrate = heartrate,
@@ -95,13 +110,13 @@ public class TestController : ControllerBase
             int steps = Random.Shared.Next(stepsMin, stepsMax);
             float distance = (float)(Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin);
             
-            await stepsRepository.Add(new Steps
+            await _stepsRepository.Add(new Steps
             {
                 StepsCount = steps,
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
-            await kilometerRepository.Add(new DistanceInfo()
+            await _kilometerRepository.Add(new DistanceInfo()
             {
                 Distance = distance,
                 Timestamp = timestamp,
@@ -109,7 +124,7 @@ public class TestController : ControllerBase
             });
         }
 
-        await gpsRepository.Add(new GPSData()
+        await _gpsRepository.Add(new GPSData()
         {
             Latitude = 57.012153,
             Longitude = 9.991292,
@@ -117,7 +132,7 @@ public class TestController : ControllerBase
             MacAddress = macAddress
         });
         
-        await locationRepository.Add(new Location
+        await _locationRepository.Add(new Location
         {
             Latitude = 57.012153,
             Longitude = 9.991292,
@@ -134,7 +149,7 @@ public class TestController : ControllerBase
                 DateTime timestamp2 = timestamp + TimeSpan.FromHours(j);
                 if (fall == 7)
                 {
-                    await fallInfoRepository.Add(new FallInfo
+                    await _fallInfoRepository.Add(new FallInfo
                     {
                         Location = new Location
                         {
