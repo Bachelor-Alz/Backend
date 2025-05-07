@@ -1,0 +1,43 @@
+services:
+  postgres_db:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: DbUser
+      POSTGRES_PASSWORD: 1Strong_Password!
+      POSTGRES_DB: HealthMonitor
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U DbUser -d HealthMonitor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  healthdevice_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev # Build from Dockerfile.dev
+    container_name: healthdevice_app_dev_reload
+    ports:
+      - "5171:5171"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5171
+      ConnectionStrings__DefaultConnection: Host=postgres_db;Database=HealthMonitor;Username=DbUser;Password=1Strong_Password!
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_PORT: ${SMTP_PORT}
+      IS_TESTING: ${IS_TESTING}
+    volumes:
+      - .:/app
+      - /app/HealthDevice/bin
+      - /app/HealthDevice/obj
+    depends_on:
+      - postgres_db
+
+volumes:
+  pgdata:
