@@ -10,16 +10,14 @@ public class TimeZoneService : ITimeZoneService
     {
         _logger = logger;
     }
+
     public DateTime GetCurrentTimeInUserTimeZone(TimeZoneInfo userTimeZone, DateTime utcNow)
     {
-        DateTime userTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, userTimeZone).ToLocalTime();  // Convert to user timezone
-        
-        //Formated date
-        string formattedDate = userTime.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-       // Use the formatted date to make a date with those attributes   
-        DateTime formattedDateTime = DateTime.ParseExact(formattedDate, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-        return formattedDateTime;
+        DateTimeOffset userTime = TimeZoneInfo.ConvertTime(new DateTimeOffset(utcNow, TimeSpan.Zero), userTimeZone);
+        return userTime.DateTime;
     }
+
+
     
     public DateTime GetCurrentTimeIntLocalTime(TimeZoneInfo userTimeZone, DateTime utcNow)
     {

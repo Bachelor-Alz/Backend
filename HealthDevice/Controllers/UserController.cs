@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using HealthDevice.Data;
 using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -357,7 +358,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
     public async Task<ActionResult<List<ArduinoInfo>>> GetUnusedArduino()
     {
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
+        IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
         
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -380,12 +381,12 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
         _logger.LogInformation("Elder location: {elderLocation}", elderLocation);
         List<Elder> elders = await elderRepository.Query().ToListAsync();
         _logger.LogInformation("Elders count: {elders}", elders.Count);
-        List<GPS> gpsData = await gpsRepository.Query().ToListAsync();
+        List<GPSData> gpsData = await gpsRepository.Query().ToListAsync();
         _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
-        List<GPS> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
+        List<GPSData> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
         _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
         List<ArduinoInfo> addressNotAssociated = [];
-        foreach (GPS gps in filteredGpsData)
+        foreach (GPSData gps in filteredGpsData)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
             float distance = GeoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);

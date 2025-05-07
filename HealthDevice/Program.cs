@@ -1,6 +1,7 @@
 using HealthDevice.Data;
 using HealthDevice.Controllers;
 using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using HealthDevice.Utils;
 using Microsoft.AspNetCore.Authorization;

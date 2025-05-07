@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
@@ -61,8 +62,7 @@ public class GetHealthDataService : IGetHealthData
             if (timestampProperty != null)
             {
                 DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
-                DateTime localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, utcDateTime);
-                localDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Local);
+                DateTimeOffset localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, utcDateTime);
                 timestampProperty.SetValue(item, localDateTime);
             }
         }

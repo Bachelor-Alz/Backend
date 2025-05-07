@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -92,17 +93,17 @@ public class HealthService : IHealthService
         return spo2List;
     }
 
-    public async Task<Kilometer> CalculateDistanceWalked(DateTime currentDate, string arduino)
+    public async Task<DistanceInfo> CalculateDistanceWalked(DateTime currentDate, string arduino)
     {
-        IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
-        List<GPS> gpsData = await repository.Query()
+        IRepository<GPSData> repository = _repositoryFactory.GetRepository<GPSData>();
+        List<GPSData> gpsData = await repository.Query()
             .Where(c => c.Timestamp.Date <= currentDate.Date && c.MacAddress == arduino)
             .ToListAsync();
 
         if (gpsData.Count < 2)
         {
             _logger.LogWarning("Not enough GPS data to calculate distance for elder {Arduino}", arduino);
-            return new Kilometer();
+            return new DistanceInfo();
         }
 
         float distance = 0;
@@ -118,11 +119,11 @@ public class HealthService : IHealthService
         if (distance == 0)
         {
             _logger.LogWarning("No distance data found for elder {Arduino}", arduino);
-            return new Kilometer();
+            return new DistanceInfo();
         }
 
         _logger.LogInformation("Distance data found for elder {Arduino}", arduino);
-        return new Kilometer
+        return new DistanceInfo
         {
             Distance = distance,
             Timestamp = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 0)
@@ -147,8 +148,8 @@ public class HealthService : IHealthService
 }
     public async Task DeleteGpsData(DateTime currentDate, string arduino)
     {
-        IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
-        List<GPS> data = await repository.Query()
+        IRepository<GPSData> repository = _repositoryFactory.GetRepository<GPSData>();
+        List<GPSData> data = await repository.Query()
             .Where(c => c.Timestamp <= currentDate && c.MacAddress == arduino)
             .ToListAsync();
 
@@ -220,8 +221,8 @@ public class HealthService : IHealthService
 
     public async Task<Location> GetLocation(DateTime currentTime, string arduino)
     {
-        IRepository<GPS> repository = _repositoryFactory.GetRepository<GPS>();
-        GPS? gpsData = await repository.Query()
+        IRepository<GPSData> repository = _repositoryFactory.GetRepository<GPSData>();
+        GPSData? gpsData = await repository.Query()
             .Where(c => c.Timestamp <= currentTime && c.MacAddress == arduino)
             .OrderByDescending(c => c.Timestamp)
             .FirstOrDefaultAsync();
@@ -510,7 +511,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    public async Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
         switch (period)
         {
@@ -518,7 +519,7 @@ public class HealthService : IHealthService
             {
                 _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
-                List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
+                List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
                     elderEmail, period, newTime, timezone);
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);
                 return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
@@ -528,10 +529,10 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
                 DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
-                List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
+                List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
                     elderEmail, period, endTime, timezone);
-                List<Kilometer> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
-                    .Select(hour => new Kilometer
+                List<DistanceInfo> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
+                    .Select(hour => new DistanceInfo
                     {
                         Timestamp = startTime.AddHours(hour),
                         Distance = data.Where(d => d.Timestamp.Hour == hour).Sum(d => d.Distance)
@@ -544,11 +545,11 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
                 DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
                 DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
-                List<Kilometer> data = await _getHealthDataService.GetHealthData<Kilometer>(
+                List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
                     elderEmail, period, newTime, timezone);
-                List<Kilometer> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                List<DistanceInfo> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
-                    .Select(g => new Kilometer
+                    .Select(g => new DistanceInfo
                     {
                         Timestamp = g.Key, // Use the date as the timestamp
                         Distance = g.Sum(s => s.Distance),
@@ -618,7 +619,8 @@ public class HealthService : IHealthService
     {
         return new List<Heartrate>();
     }
-
+    
+    
     // Process current heart rate data based on the period
     List<Heartrate> processedHeartrates = new();
     switch (period)

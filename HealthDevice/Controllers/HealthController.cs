@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,7 +54,7 @@ namespace HealthDevice.Controllers
         }
 
         [HttpGet("Distance")]
-public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+public async Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
 {
     if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
     {
@@ -83,7 +84,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
         {
             IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
             IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
-            IRepository<Kilometer> kilometerRepository = _repositoryFactory.GetRepository<Kilometer>();
+            IRepository<DistanceInfo> kilometerRepository = _repositoryFactory.GetRepository<DistanceInfo>();
             IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
             IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
             DateTime currentDate = DateTime.UtcNow;
@@ -111,9 +112,9 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 .FirstOrDefaultAsync();
 
             //Get the total amounts of steps on the newest date using kilometer
-            Kilometer? kilometer = await kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+            DistanceInfo? kilometer = await kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
                 .GroupBy(s => s.Timestamp.Date)
-                .Select(g => new Kilometer
+                .Select(g => new DistanceInfo
                 {
                     Distance = g.Sum(s => s.Distance),
                     Timestamp = g.Key
