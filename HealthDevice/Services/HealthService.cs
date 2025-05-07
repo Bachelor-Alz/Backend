@@ -304,7 +304,7 @@ public class HealthService : IHealthService
             return new OkObjectResult("Perimeter set successfully");
     }
 
-    public async Task<ActionResult<List<ElderLocation>>> GetEldersLocation(string email)
+    public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email)
     {
         IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
         IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
@@ -324,7 +324,7 @@ public class HealthService : IHealthService
                 return new BadRequestObjectResult("No elders found for the caregiver.");
             }
             _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count, email);
-            List<ElderLocation> elderLocations = [];
+            List<ElderLocationDTO> elderLocations = [];
             foreach (Elder elder in elders)
             {
                 if (string.IsNullOrEmpty(elder.MacAddress))
@@ -343,7 +343,7 @@ public class HealthService : IHealthService
                     if (perimeter != null)
                     {
                         _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
-                        elderLocations.Add(new ElderLocation
+                        elderLocations.Add(new ElderLocationDTO
                         {
                             email = elder.Email,
                             name = elder.Name,
@@ -361,7 +361,7 @@ public class HealthService : IHealthService
                     else
                     {
                         _logger.LogInformation("No perimeter data found for elder: {ElderEmail}", elder.Email);
-                        elderLocations.Add(new ElderLocation
+                        elderLocations.Add(new ElderLocationDTO
                         {
                             email = elder.Email,
                             name = elder.Name,

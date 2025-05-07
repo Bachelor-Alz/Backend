@@ -1,6 +1,6 @@
 ﻿namespace HealthDevice.DTO;
 
-public class Address
+public class AddressDTO
 {
     public int Id { get; set; }
     public string Street { get; set; }

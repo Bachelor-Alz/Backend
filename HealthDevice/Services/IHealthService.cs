@@ -14,7 +14,7 @@ public interface IHealthService
     Task ComputeOutOfPerimeter(string arduino, Location location);
     Task<Location> GetLocation(DateTime currentTime, string arduino);
     Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<ElderLocation>>> GetEldersLocation(string email);
+    Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email);
     Task<ActionResult> SetPerimeter(int radius, string elderEmail);
     Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);

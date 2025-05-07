@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using HealthDevice.Models;
-using Microsoft.AspNetCore.Identity;
-
+﻿using HealthDevice.Models;
 namespace HealthDevice.DTO;
 
-public class ElderLocation
+public class ElderLocationDTO
 {
     public string name { get; set; }
     public string email { get; set; }

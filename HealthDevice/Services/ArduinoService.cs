@@ -39,7 +39,7 @@ public class ArduinoService : IArduinoService
         return new OkResult();
     }
 
-    public async Task HandleArduinoData(Arduino data, HttpContext httpContext)
+    public async Task HandleArduinoData(ArduinoDTO data, HttpContext httpContext)
     {
         IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
         IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();

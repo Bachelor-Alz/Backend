@@ -53,7 +53,7 @@ public class ArduinoController : ControllerBase
     }
 
     [HttpPost("data")]
-    public async Task PostData([FromBody] Arduino data)
+    public async Task PostData([FromBody] ArduinoDTO data)
     {
         if (string.IsNullOrEmpty(data.MacAddress))
         {

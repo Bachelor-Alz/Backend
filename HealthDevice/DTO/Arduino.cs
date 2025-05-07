@@ -1,22 +1,22 @@
 ﻿namespace HealthDevice.DTO;
 
-public class Arduino
+public class ArduinoDTO
 {
     public int Id { get; set; }
     public double Latitude { get; set; }         // Decimal degrees (positive = N, negative = S)
     public double Longitude { get; set; }        // Decimal degrees (positive = E, negative = W)
-    public List<ArduinoMax> Max30102 { get; set; }
+    public List<ArduinoMaxDTO> Max30102 { get; set; }
     public int steps { get; set; }
     public string MacAddress { get; set; } = string.Empty;
 }
 
-public class ArduinoMax
+public class ArduinoMaxDTO
 {
     public int heartRate { get; set; }
     public float SpO2 { get; set; }
 }
 
-public class ArduinoInfo
+public class ArduinoInfoDTO
 {
     public int Id { get; set; }
     public string MacAddress { get; set; }

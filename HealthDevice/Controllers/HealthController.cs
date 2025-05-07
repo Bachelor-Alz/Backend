@@ -184,7 +184,7 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
 
         [HttpGet("Coordinates/Elders")]
         [Authorize(Roles = "Caregiver")]
-        public async Task<ActionResult<List<ElderLocation>>> GetEldersLocation()
+        public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation()
         {
             Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))

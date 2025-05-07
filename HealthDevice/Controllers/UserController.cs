@@ -355,7 +355,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
     }
     
     [HttpGet("users/arduino")]
-    public async Task<ActionResult<List<ArduinoInfo>>> GetUnusedArduino()
+    public async Task<ActionResult<List<ArduinoInfoDTO>>> GetUnusedArduino()
     {
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
         IRepository<GPSData> gpsRepository = _repositoryFactory.GetRepository<GPSData>();
@@ -385,7 +385,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
         _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
         List<GPSData> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
         _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
-        List<ArduinoInfo> addressNotAssociated = [];
+        List<ArduinoInfoDTO> addressNotAssociated = [];
         foreach (GPSData gps in filteredGpsData)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
@@ -394,7 +394,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
             if (!(distance < 0.5)) continue;
             _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
             if (gps.MacAddress == null) continue;
-            ArduinoInfo arduinoInfo = new ArduinoInfo
+            ArduinoInfoDTO arduinoInfo = new ArduinoInfoDTO
             {
                 Id = gps.Id,
                 MacAddress = gps.MacAddress,
@@ -507,7 +507,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
     }
 
     [HttpPost("elder/address")]
-    public async Task<ActionResult> AddAddress(Address address, string elderEmail)
+    public async Task<ActionResult> AddAddress(AddressDTO address, string elderEmail)
     {
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
         

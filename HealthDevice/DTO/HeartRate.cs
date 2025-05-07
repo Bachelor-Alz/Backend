@@ -2,29 +2,22 @@
 
 namespace HealthDevice.DTO;
 
-
-
 public class PostHeartRate
 {
-   public Heartrate? Heartrate { get; set; }
+    public int Id { get; set; }
+    public int Maxrate { get; set; }
+    public int Minrate { get; set; }
+    public int Avgrate { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
+    public string? MacAddress { get; set; }
 }
 
-public class PostSpo2
+public class PostSpO2
 {
-   public Spo2? Spo2 { get; set; }
-}
-
-public class currentData
-{
-    public DateTime Timestamp { get; set; }
-}
-
-public class currentHeartRate : currentData
-{
-    public int Heartrate { get; set; }
-}
-
-public class currentSpo2 : currentData
-{
-    public float SpO2 { get; set; }
+    public int Id { get; set; }
+    public float AvgSpO2 { get; set; }
+    public float MaxSpO2 { get; set; }
+    public float MinSpO2 { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
+    public string? MacAddress { get; set; }
 }
