@@ -566,14 +566,14 @@ public class HealthService : IHealthService
     switch (period)
     {
         case Period.Hour:
-            newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
+            newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59);
             break;
         case Period.Day:
-            newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
+            newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59);
             break;
         case Period.Week:
             DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-            newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
+            newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59);// End of the week
             _logger.LogInformation("Time, {Time}", newTime);
             break;
         default:
@@ -603,7 +603,7 @@ public class HealthService : IHealthService
                     Avgrate = (int)hr.Average(h => h.Avgrate),
                     Maxrate = hr.Max(h => h.Maxrate),
                     Minrate = hr.Min(h => h.Minrate),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, hr.Key),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, hr.Key),
                     MacAddress = hr.First().MacAddress
                 }).OrderBy(t => t.Timestamp).ToList();
             case Period.Day:
@@ -612,7 +612,7 @@ public class HealthService : IHealthService
                     Avgrate = (int)hr.Average(h => h.Avgrate),
                     Maxrate = hr.Max(h => h.Maxrate),
                     Minrate = hr.Min(h => h.Minrate),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(hr.Key)),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone,newTime.Date.AddHours(hr.Key)),
                     MacAddress = hr.First().MacAddress
                 }).OrderBy(t => t.Timestamp).ToList();
             default:
@@ -621,7 +621,7 @@ public class HealthService : IHealthService
                     Avgrate = (int)hr.Average(h => h.Avgrate),
                     Maxrate = hr.Max(h => h.Maxrate),
                     Minrate = hr.Min(h => h.Minrate),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, hr.Key),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, hr.Key),
                     MacAddress = hr.First().MacAddress
                 }).OrderBy(t => t.Timestamp).ToList();
         }
@@ -643,7 +643,7 @@ public class HealthService : IHealthService
                 Avgrate = g.AvgHeartrate,
                 Maxrate = g.MaxHeartrate,
                 Minrate = g.MinHeartrate,
-                Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Timestamp),
+                Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
                 MacAddress = g.MacAddress
             }));
             break;
@@ -655,7 +655,7 @@ public class HealthService : IHealthService
                     Avgrate = (int)g.Average(h => h.AvgHeartrate),
                     Maxrate = g.Max(h => h.MaxHeartrate),
                     Minrate = g.Min(h => h.MinHeartrate),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(g.Key)), 
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone,newTime.Date.AddHours(g.Key)), 
                     MacAddress = g.First().MacAddress
                 }));
             break;
@@ -667,7 +667,7 @@ public class HealthService : IHealthService
                     Avgrate = (int)g.Average(h => h.AvgHeartrate),
                     Maxrate = g.Max(h => h.MaxHeartrate),
                     Minrate = g.Min(h => h.MinHeartrate),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Key),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
                     MacAddress = g.First().MacAddress
                 }));
             // Add missing days with heart rates from `data` for the missing days' timestamp
@@ -686,7 +686,7 @@ public class HealthService : IHealthService
                             Avgrate = (int)fallbackData.Average(h => h.Avgrate),
                             Maxrate = fallbackData.Max(h => h.Maxrate),
                             Minrate = fallbackData.Min(h => h.Minrate),
-                            Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, currentDate),
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }
@@ -743,7 +743,7 @@ public class HealthService : IHealthService
                     AvgSpO2 =sp.Average(h => h.AvgSpO2),
                     MaxSpO2 = sp.Max(s => s.MaxSpO2),
                     MinSpO2 = sp.Min(s => s.MinSpO2),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, sp.Key),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, sp.Key),
                     MacAddress = sp.First().MacAddress
                 }).OrderBy(t => t.Timestamp).ToList();
             case Period.Day:
@@ -752,7 +752,7 @@ public class HealthService : IHealthService
                     AvgSpO2 =sp.Average(h => h.AvgSpO2),
                     MaxSpO2 = sp.Max(s => s.MaxSpO2),
                     MinSpO2 = sp.Min(s => s.MinSpO2),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(sp.Key)), 
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone,newTime.Date.AddHours(sp.Key)), 
                     MacAddress = sp.First().MacAddress
                 }).OrderBy(t => t.Timestamp.Hour).ToList();
             default:
@@ -761,7 +761,7 @@ public class HealthService : IHealthService
                     AvgSpO2 =sp.Average(h => h.AvgSpO2),
                     MaxSpO2 = sp.Max(s => s.MaxSpO2),
                     MinSpO2 = sp.Min(s => s.MinSpO2),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, sp.Key),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, sp.Key),
                     MacAddress = sp.First().MacAddress
                 }).OrderBy(t => t.Timestamp.Date).ToList();
         }
@@ -782,7 +782,7 @@ public class HealthService : IHealthService
                 AvgSpO2 = g.AvgSpO2,
                 MaxSpO2 = g.MaxSpO2,
                 MinSpO2 = g.MinSpO2,
-                Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Timestamp),
+                Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
                 MacAddress = g.MacAddress
             }));
             break;
@@ -794,7 +794,7 @@ public class HealthService : IHealthService
                     AvgSpO2 = g.Average(s => s.AvgSpO2),
                     MaxSpO2 = g.Max(s => s.MaxSpO2),
                     MinSpO2 = g.Min(s => s.MinSpO2),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(g.Key)), 
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone,newTime.Date.AddHours(g.Key)), 
                     MacAddress = g.First().MacAddress
                 }));
             break;
@@ -806,7 +806,7 @@ public class HealthService : IHealthService
                     AvgSpO2 = g.Average(s => s.AvgSpO2),
                     MaxSpO2 = g.Max(s => s.MaxSpO2),
                     MinSpO2 = g.Min(s => s.MinSpO2),
-                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Key),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
                     MacAddress = g.First().MacAddress
                 }));
             
@@ -826,14 +826,14 @@ public class HealthService : IHealthService
                             AvgSpO2 = fallbackData.Average(h => h.AvgSpO2),
                             MaxSpO2 = fallbackData.Max(h => h.MaxSpO2),
                             MinSpO2 = fallbackData.Min(h => h.MinSpO2),
-                            Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, currentDate),
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }
                 }
             }
             processedSpo2 = processedSpo2.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
-            break;
+            break; 
     }
 
     _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);

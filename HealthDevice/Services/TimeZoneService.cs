@@ -11,25 +11,22 @@ public class TimeZoneService : ITimeZoneService
         _logger = logger;
     }
 
-    public DateTimeOffset GetCurrentTimeInUserTimeZone(TimeZoneInfo userTimeZone, DateTime utcInput)
+    public DateTimeOffset UTCToLocalTime(TimeZoneInfo userTimeZone, DateTime utcInput)
     {
-        // Ensure the input is in UTC
-        if (utcInput.Kind != DateTimeKind.Utc)
-            utcInput = DateTime.SpecifyKind(utcInput, DateTimeKind.Utc);
+        utcInput = DateTime.SpecifyKind(utcInput, DateTimeKind.Utc);
+        
+        TimeSpan utcOffset = userTimeZone.GetUtcOffset(utcInput);
+        DateTimeOffset localDateTimeOffset = new DateTimeOffset(utcInput, TimeSpan.Zero).ToOffset(utcOffset);
 
-        // Convert to DateTimeOffset with UTC and apply the user time zone offset
-        DateTimeOffset utcDateTimeOffset = new DateTimeOffset(utcInput, TimeSpan.Zero);
-        return TimeZoneInfo.ConvertTime(utcDateTimeOffset, userTimeZone);
+        DateTime LocalTime = utcInput - localDateTimeOffset.Offset;
+        DateTime unspecifiedLocalTime = DateTime.SpecifyKind(LocalTime, DateTimeKind.Unspecified);
+        return new DateTimeOffset(unspecifiedLocalTime, localDateTimeOffset.Offset);
     }
     
-    public DateTime GetCurrentTimeIntLocalTime(TimeZoneInfo userTimeZone, DateTime utcNow)
+    public DateTime LocalTimeToUTC(TimeZoneInfo userTimeZone, DateTime utcNow)
     {
-        var utcTime = DateTime.SpecifyKind(utcNow, DateTimeKind.Utc);
-    
-        // Convert from UTC to local time
-        DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, userTimeZone);
-    
-        // Return local time (no need to convert back to UTC)
-        return localTime;
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc), userTimeZone);
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc); // Ensure the returned DateTime is UTC
     }
+
 }
