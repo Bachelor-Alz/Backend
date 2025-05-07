@@ -10,12 +10,14 @@ public class HealthService : IHealthService
     private readonly IEmailService _emailService;
     private readonly IRepositoryFactory _repositoryFactory;
     private readonly IGetHealthData _getHealthDataService;
-    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService, IGetHealthData getHealthDataService)
+    private readonly ITimeZoneService _timeZoneService;
+    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
         _emailService = emailService;
         _getHealthDataService = getHealthDataService;
+        _timeZoneService = timeZoneService;
     }
     
     public async Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address)
@@ -378,7 +380,7 @@ public class HealthService : IHealthService
             return elderLocations;
     }
 
-    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, string timezone)
+    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
         if (period == Period.Hour)
         {
@@ -459,7 +461,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, string timezone)
+    public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
         switch (period)
         {
@@ -508,7 +510,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period, string timezone)
+    public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
         switch (period)
         {
@@ -557,7 +559,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period, string timezone)
+    public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
 {
     DateTime newTime;
     switch (period)
@@ -597,6 +599,7 @@ public class HealthService : IHealthService
             case Period.Hour:
                 return data.OrderBy(t => t.Timestamp.Minute).ToList();
             case Period.Day:
+                data.ForEach(entry => entry.Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, entry.Timestamp));
                 return data.OrderBy(t => t.Timestamp.Hour).ToList();
             default:
                 return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(h => h.Timestamp.Date).Select(hr =>
@@ -638,7 +641,7 @@ public class HealthService : IHealthService
                     Avgrate = (int)g.Average(h => h.AvgHeartrate),
                     Maxrate = g.Max(h => h.MaxHeartrate),
                     Minrate = g.Min(h => h.MinHeartrate),
-                    Timestamp = newTime.Date.AddHours(g.Key),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(g.Key)), 
                     MacAddress = g.First().MacAddress
                 }));
             break;
@@ -683,7 +686,7 @@ public class HealthService : IHealthService
     return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
 }
 
-    public async Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period, string timezone)
+    public async Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
 {
     DateTime newTime;
     switch (period)
@@ -723,6 +726,7 @@ public class HealthService : IHealthService
             case Period.Hour:
                 return data.OrderBy(t => t.Timestamp.Minute).ToList();
             case Period.Day:
+                data.ForEach(entry => entry.Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, entry.Timestamp));
                 return data.OrderBy(t => t.Timestamp.Hour).ToList();
             default:
                 return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(s => s.Timestamp.Date).Select(spo2 =>
@@ -764,7 +768,7 @@ public class HealthService : IHealthService
                     AvgSpO2 = g.Average(s => s.AvgSpO2),
                     MaxSpO2 = g.Max(s => s.MaxSpO2),
                     MinSpO2 = g.Min(s => s.MinSpO2),
-                    Timestamp = newTime.Date.AddHours(g.Key),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(g.Key)), 
                     MacAddress = g.First().MacAddress
                 }));
             break;

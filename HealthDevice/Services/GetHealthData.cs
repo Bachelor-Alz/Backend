@@ -24,7 +24,7 @@ public class GetHealthDataService : IGetHealthData
         _ => throw new ArgumentException("Invalid period specified")
     };
     
-    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, string timezone) where T : class
+    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, TimeZoneInfo timezone) where T : class
     {
         DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
@@ -51,7 +51,6 @@ public class GetHealthDataService : IGetHealthData
         
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
         
-        TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
         
         foreach (var item in data)
         {
@@ -59,7 +58,7 @@ public class GetHealthDataService : IGetHealthData
             if (timestampProperty != null)
             {
                 DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
-                DateTime localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timeZoneInfo, utcDateTime);
+                DateTime localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, utcDateTime);
                 timestampProperty.SetValue(item, localDateTime);
             }
         }

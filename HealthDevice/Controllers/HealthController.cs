@@ -35,8 +35,8 @@ namespace HealthDevice.Controllers
                 _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-            
-            return await _healthService.GetHeartrate(elderEmail, date,  periodEnum, timezone);
+            TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+            return await _healthService.GetHeartrate(elderEmail, date,  periodEnum, timeZoneInfo);
         }
 
         [HttpGet("Spo2")]
@@ -47,9 +47,9 @@ namespace HealthDevice.Controllers
                 _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
-
+            TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
             return await _healthService.GetSpO2(
-                elderEmail, date.ToUniversalTime(), periodEnum, timezone);
+                elderEmail, date.ToUniversalTime(), periodEnum, timeZoneInfo);
         }
 
         [HttpGet("Distance")]
@@ -60,9 +60,9 @@ public async Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, 
         _logger.LogError("Invalid period specified: {Period}", period);
         return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
     }
-
+    TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
     return await _healthService.GetDistance(
-        elderEmail, date.ToUniversalTime(),  periodEnum, timezone);
+        elderEmail, date.ToUniversalTime(),  periodEnum, timeZoneInfo);
 }
         
        [HttpGet("Steps")]
@@ -73,9 +73,9 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
         _logger.LogError("Invalid period specified: {Period}", period);
         return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
     }
-
+    TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
     return await _healthService.GetSteps(
-        elderEmail, date.ToUniversalTime(),  periodEnum, timezone);
+        elderEmail, date.ToUniversalTime(),  periodEnum, timeZoneInfo);
 }
 
         [HttpGet("Dashboard")]
@@ -149,7 +149,8 @@ public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTim
                 _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             } 
-            return await _healthService.GetFalls(elderEmail, date.ToUniversalTime(), periodEnum, timezone);
+            TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+            return await _healthService.GetFalls(elderEmail, date.ToUniversalTime(), periodEnum, timeZoneInfo);
         }
         
 
