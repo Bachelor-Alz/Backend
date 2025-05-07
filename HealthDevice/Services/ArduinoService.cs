@@ -18,7 +18,7 @@ public class ArduinoService : IArduinoService
     {
         IRepository<T> sensorRepository = _repositoryFactory.GetRepository<T>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        DateTime receivedAt = DateTime.UtcNow;
+        DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0);
         _logger.LogInformation("{Timestamp}: Received {SensorType} data from IP: {IP}.", receivedAt, typeof(T).Name, ip);
         
         if (data.Count == 0)
@@ -39,7 +39,7 @@ public class ArduinoService : IArduinoService
         IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
         IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        DateTime receivedAt = DateTime.UtcNow;
+        DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0);
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
         Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(e => e.MacAddress == data.MacAddress);
         if (elder == null)

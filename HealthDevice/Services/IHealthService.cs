@@ -12,11 +12,11 @@ public interface IHealthService
     Task DeleteGpsData(DateTime currentDate, string arduino);
     Task ComputeOutOfPerimeter(string arduino, Location location);
     Task<Location> GetLocation(DateTime currentTime, string arduino);
-    Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period);
+    Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<ElderLocation>>> GetEldersLocation(string email);
     Task<ActionResult> SetPerimeter(int radius, string elderEmail);
-    Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period);
-    Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period);
-    Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period);
-    Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period);
+    Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<Kilometer>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
 }
