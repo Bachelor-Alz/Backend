@@ -393,13 +393,13 @@ public class HealthService : IHealthService
             return result.Count != 0 ? result : [];
         }
 
-        if (Period.Day == period)
+        if (period == Period.Day)
         {
             _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
             DateTime newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             List<FallInfo> data = await _getHealthDataServiceService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime);
-            // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
+// Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
             List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
                 .GroupBy(f => f.Timestamp.Hour)
                 .Select(g => new FallDTO
@@ -408,7 +408,7 @@ public class HealthService : IHealthService
                     fallCount = g.Count()
                 }).ToList();
 
-// Add missing days with no falls
+            // Add missing days with no falls
             DateTime startDate = new DateTime(newTime.Year, date.Month, date.Day, 0, 0 , 0); // Adjust based on the period
             DateTime endDate = date.Date.AddHours(23).AddMinutes(59).AddSeconds(59); // Adjust based on the period
             for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
@@ -441,7 +441,7 @@ public class HealthService : IHealthService
                     fallCount = g.Count()
                 }).ToList();
 
-// Add missing days with no falls
+            // Add missing days with no falls
             DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6); // Adjust based on the period
             for (DateTime currentDate = startDate; currentDate < date.Date; currentDate = currentDate.AddDays(1))
             {
@@ -491,18 +491,24 @@ public class HealthService : IHealthService
             default:
             {
                 _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
-                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-                DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
+                DateTime endOfRange = date.Date;
+                DateTime startOfRange = endOfRange.AddDays(-6); // Strict 7-day range
+
                 List<Steps> data = await _getHealthDataServiceService.GetHealthData<Steps>(
-                    elderEmail, period, newTime);
-                List<Steps> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                    elderEmail, period, endOfRange);
+
+                List<Steps> result = data
+                    .Where(s => s.Timestamp.Date >= startOfRange && s.Timestamp.Date <= endOfRange)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
                     .Select(g => new Steps
                     {
                         Timestamp = g.Key, // Use the date as the timestamp
                         StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
-                    }).ToList();
-                _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+                    })
+                    .OrderBy(t => t.Timestamp.Date)
+                    .ToList();
+
+                _logger.LogInformation("Fetched steps data: {Count}", result.Count);
                 return result.Count != 0 ? result : [];
             }
         }
@@ -731,15 +737,21 @@ public class HealthService : IHealthService
             case Period.Day:
                 return data.OrderBy(t => t.Timestamp.Hour).ToList();
             default:
-                return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(s => s.Timestamp.Date).Select(spo2 =>
-                        new Spo2
-                        {
-                            AvgSpO2 = spo2.Average(s => s.AvgSpO2),
-                            MaxSpO2 = spo2.Max(s => s.MaxSpO2),
-                            MinSpO2 = spo2.Min(s => s.MinSpO2),
-                            Timestamp = spo2.Key,
-                            MacAddress = spo2.First().MacAddress
-                        }).OrderBy(t => t.Timestamp.Date).ToList();
+            DateTime endOfRange = date.Date;
+            DateTime startOfRange = endOfRange.AddDays(-7);
+            return data
+                .Where(k => k.Timestamp.Date >= startOfRange && k.Timestamp.Date <= endOfRange)
+                .GroupBy(s => s.Timestamp.Date)
+                .Select(spo2 => new Spo2
+                {
+                        AvgSpO2 = spo2.Average(s => s.AvgSpO2),
+                        MaxSpO2 = spo2.Max(s => s.MaxSpO2),
+                        MinSpO2 = spo2.Min(s => s.MinSpO2),
+                        Timestamp = spo2.Key,
+                        MacAddress = spo2.First().MacAddress
+                })
+                .OrderBy(t => t.Timestamp.Date)
+                .ToList();
         }
     }
 
