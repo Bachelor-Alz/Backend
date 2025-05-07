@@ -30,7 +30,6 @@ public class GetHealthDataService : IGetHealthData
         DateTime earlierDate = GetEarlierDate(date, period);
         earlierDate = _timeZoneService.GetCurrentTimeIntLocalTime(timezone, earlierDate);
         date = _timeZoneService.GetCurrentTimeIntLocalTime(timezone, date);
-        
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
     
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
@@ -55,17 +54,6 @@ public class GetHealthDataService : IGetHealthData
         
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
         
-        
-        foreach (var item in data)
-        {
-            var timestampProperty = typeof(T).GetProperty("Timestamp");
-            if (timestampProperty != null)
-            {
-                DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
-                DateTimeOffset localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, utcDateTime);
-                timestampProperty.SetValue(item, localDateTime);
-            }
-        }
         
         return data;
     }

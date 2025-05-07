@@ -18,6 +18,6 @@ public interface IHealthService
     Task<ActionResult> SetPerimeter(int radius, string elderEmail);
     Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
 }

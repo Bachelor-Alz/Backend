@@ -560,7 +560,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
 {
     DateTime newTime;
     switch (period)
@@ -598,47 +598,59 @@ public class HealthService : IHealthService
         switch (period)
         {
             case Period.Hour:
-                return data.OrderBy(t => t.Timestamp.Minute).ToList();
+                return data.GroupBy(t => t.Timestamp).Select(hr => new PostHeartRate
+                {
+                    Avgrate = (int)hr.Average(h => h.Avgrate),
+                    Maxrate = hr.Max(h => h.Maxrate),
+                    Minrate = hr.Min(h => h.Minrate),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, hr.Key),
+                    MacAddress = hr.First().MacAddress
+                }).OrderBy(t => t.Timestamp).ToList();
             case Period.Day:
-                data.ForEach(entry => entry.Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, entry.Timestamp));
-                return data.OrderBy(t => t.Timestamp.Hour).ToList();
+                return data.GroupBy(t => t.Timestamp.Hour).Select(hr => new PostHeartRate
+                {
+                    Avgrate = (int)hr.Average(h => h.Avgrate),
+                    Maxrate = hr.Max(h => h.Maxrate),
+                    Minrate = hr.Min(h => h.Minrate),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(hr.Key)),
+                    MacAddress = hr.First().MacAddress
+                }).OrderBy(t => t.Timestamp).ToList();
             default:
-                return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(h => h.Timestamp.Date).Select(hr =>
-                        new Heartrate
-                        {
-                            Avgrate = (int)hr.Average(h => h.Avgrate),
-                            Maxrate = hr.Max(h => h.Maxrate),
-                            Minrate = hr.Min(h => h.Minrate),
-                            Timestamp = hr.Key,
-                            MacAddress = hr.First().MacAddress
-                    }).OrderBy(t => t.Timestamp.Date).ToList();
+                return data.GroupBy(t => t.Timestamp.Date).Select(hr => new PostHeartRate
+                {
+                    Avgrate = (int)hr.Average(h => h.Avgrate),
+                    Maxrate = hr.Max(h => h.Maxrate),
+                    Minrate = hr.Min(h => h.Minrate),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, hr.Key),
+                    MacAddress = hr.First().MacAddress
+                }).OrderBy(t => t.Timestamp).ToList();
         }
     }
 
     if (currentHeartRateData.Count == 0)
     {
-        return new List<Heartrate>();
+        return new List<PostHeartRate>();
     }
     
     
     // Process current heart rate data based on the period
-    List<Heartrate> processedHeartrates = new();
+    List<PostHeartRate> processedHeartrates = new();
     switch (period)
     {
         case Period.Hour:
-            processedHeartrates.AddRange(currentHeartRateData.Select(g => new Heartrate
+            processedHeartrates.AddRange(currentHeartRateData.Select(g => new PostHeartRate
             {
                 Avgrate = g.AvgHeartrate,
                 Maxrate = g.MaxHeartrate,
                 Minrate = g.MinHeartrate,
-                Timestamp = g.Timestamp,
+                Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Timestamp),
                 MacAddress = g.MacAddress
             }));
             break;
         case Period.Day:
             processedHeartrates.AddRange(currentHeartRateData
                 .GroupBy(h => h.Timestamp.Hour)
-                .Select(g => new Heartrate
+                .Select(g => new PostHeartRate()
                 {
                     Avgrate = (int)g.Average(h => h.AvgHeartrate),
                     Maxrate = g.Max(h => h.MaxHeartrate),
@@ -650,12 +662,12 @@ public class HealthService : IHealthService
         case Period.Week:
             processedHeartrates.AddRange(currentHeartRateData
                 .GroupBy(h => h.Timestamp.Date)
-                .Select(g => new Heartrate
+                .Select(g => new PostHeartRate()
                 {
                     Avgrate = (int)g.Average(h => h.AvgHeartrate),
                     Maxrate = g.Max(h => h.MaxHeartrate),
                     Minrate = g.Min(h => h.MinHeartrate),
-                    Timestamp = g.Key,
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Key),
                     MacAddress = g.First().MacAddress
                 }));
             // Add missing days with heart rates from `data` for the missing days' timestamp
@@ -669,12 +681,12 @@ public class HealthService : IHealthService
                     var fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
                     if (fallbackData.Count != 0)
                     {
-                        processedHeartrates.Add(new Heartrate
+                        processedHeartrates.Add(new PostHeartRate
                         {
                             Avgrate = (int)fallbackData.Average(h => h.Avgrate),
                             Maxrate = fallbackData.Max(h => h.Maxrate),
                             Minrate = fallbackData.Min(h => h.Minrate),
-                            Timestamp = currentDate,
+                            Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, currentDate),
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }
@@ -688,7 +700,7 @@ public class HealthService : IHealthService
     return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
 }
 
-    public async Task<ActionResult<List<Spo2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    public async Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
 {
     DateTime newTime;
     switch (period)
@@ -726,46 +738,58 @@ public class HealthService : IHealthService
         switch (period)
         {
             case Period.Hour:
-                return data.OrderBy(t => t.Timestamp.Minute).ToList();
+                return data.GroupBy(t => t.Timestamp).Select(sp => new PostSpO2
+                {
+                    AvgSpO2 =sp.Average(h => h.AvgSpO2),
+                    MaxSpO2 = sp.Max(s => s.MaxSpO2),
+                    MinSpO2 = sp.Min(s => s.MinSpO2),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, sp.Key),
+                    MacAddress = sp.First().MacAddress
+                }).OrderBy(t => t.Timestamp).ToList();
             case Period.Day:
-                data.ForEach(entry => entry.Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, entry.Timestamp));
-                return data.OrderBy(t => t.Timestamp.Hour).ToList();
+                return data.GroupBy(t => t.Timestamp.Hour).Select(sp => new PostSpO2
+                {
+                    AvgSpO2 =sp.Average(h => h.AvgSpO2),
+                    MaxSpO2 = sp.Max(s => s.MaxSpO2),
+                    MinSpO2 = sp.Min(s => s.MinSpO2),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone,newTime.Date.AddHours(sp.Key)), 
+                    MacAddress = sp.First().MacAddress
+                }).OrderBy(t => t.Timestamp.Hour).ToList();
             default:
-                return data.Where(k => k.Timestamp.Date <= (date.AddDays(7 - (int)date.DayOfWeek).Date)).GroupBy(s => s.Timestamp.Date).Select(spo2 =>
-                        new Spo2
-                        {
-                            AvgSpO2 = spo2.Average(s => s.AvgSpO2),
-                            MaxSpO2 = spo2.Max(s => s.MaxSpO2),
-                            MinSpO2 = spo2.Min(s => s.MinSpO2),
-                            Timestamp = spo2.Key,
-                            MacAddress = spo2.First().MacAddress
-                        }).OrderBy(t => t.Timestamp.Date).ToList();
+                return data.GroupBy(t => t.Timestamp.Date).Select(sp => new PostSpO2
+                {
+                    AvgSpO2 =sp.Average(h => h.AvgSpO2),
+                    MaxSpO2 = sp.Max(s => s.MaxSpO2),
+                    MinSpO2 = sp.Min(s => s.MinSpO2),
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, sp.Key),
+                    MacAddress = sp.First().MacAddress
+                }).OrderBy(t => t.Timestamp.Date).ToList();
         }
     }
 
     if (currentSpo2Data.Count == 0)
     {
-        return new List<Spo2>();
+        return new List<PostSpO2>();
     }
 
     // Process current SpO2 data based on the period
-    List<Spo2> processedSpo2 = new();
+    List<PostSpO2> processedSpo2 = new();
     switch (period)
     {
         case Period.Hour:
-            processedSpo2.AddRange(currentSpo2Data.Select(g => new Spo2
+            processedSpo2.AddRange(currentSpo2Data.Select(g => new PostSpO2
             {
                 AvgSpO2 = g.AvgSpO2,
                 MaxSpO2 = g.MaxSpO2,
                 MinSpO2 = g.MinSpO2,
-                Timestamp = g.Timestamp,
+                Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Timestamp),
                 MacAddress = g.MacAddress
             }));
             break;
         case Period.Day:
             processedSpo2.AddRange(currentSpo2Data
                 .GroupBy(s => s.Timestamp.Hour)
-                .Select(g => new Spo2
+                .Select(g => new PostSpO2
                 {
                     AvgSpO2 = g.Average(s => s.AvgSpO2),
                     MaxSpO2 = g.Max(s => s.MaxSpO2),
@@ -777,12 +801,12 @@ public class HealthService : IHealthService
         case Period.Week:
             processedSpo2.AddRange(currentSpo2Data
                 .GroupBy(s => s.Timestamp.Date)
-                .Select(g => new Spo2
+                .Select(g => new PostSpO2
                 {
                     AvgSpO2 = g.Average(s => s.AvgSpO2),
                     MaxSpO2 = g.Max(s => s.MaxSpO2),
                     MinSpO2 = g.Min(s => s.MinSpO2),
-                    Timestamp = g.Key,
+                    Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, g.Key),
                     MacAddress = g.First().MacAddress
                 }));
             
@@ -797,12 +821,12 @@ public class HealthService : IHealthService
                     var fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
                     if (fallbackData.Count != 0)
                     {
-                        processedSpo2.Add(new Spo2
+                        processedSpo2.Add(new PostSpO2
                         {
                             AvgSpO2 = fallbackData.Average(h => h.AvgSpO2),
                             MaxSpO2 = fallbackData.Max(h => h.MaxSpO2),
                             MinSpO2 = fallbackData.Min(h => h.MinSpO2),
-                            Timestamp = currentDate,
+                            Timestamp = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, currentDate),
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }

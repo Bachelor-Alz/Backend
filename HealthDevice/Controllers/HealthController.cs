@@ -28,7 +28,7 @@ namespace HealthDevice.Controllers
             _healthService = healthService;
         }
         [HttpGet("Heartrate")]
-        public async Task<ActionResult<List<Heartrate>>> GetHeartrate(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen",
+        public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen",
             string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
@@ -41,7 +41,7 @@ namespace HealthDevice.Controllers
         }
 
         [HttpGet("Spo2")]
-        public async Task<ActionResult<List<Spo2>>> GetSpo2(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+        public async Task<ActionResult<List<PostSpO2>>> GetSpo2(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
