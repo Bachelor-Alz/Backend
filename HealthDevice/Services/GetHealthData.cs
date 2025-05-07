@@ -26,7 +26,10 @@ public class GetHealthDataService : IGetHealthData
     
     public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, TimeZoneInfo timezone) where T : class
     {
-        DateTime earlierDate = GetEarlierDate(date, period).ToUniversalTime();
+        DateTime earlierDate = GetEarlierDate(date, period);
+        earlierDate = _timeZoneService.GetCurrentTimeIntLocalTime(timezone, earlierDate);
+        date = _timeZoneService.GetCurrentTimeIntLocalTime(timezone, date);
+        
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
     
         IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
@@ -59,6 +62,7 @@ public class GetHealthDataService : IGetHealthData
             {
                 DateTime utcDateTime = (DateTime)timestampProperty.GetValue(item);
                 DateTime localDateTime = _timeZoneService.GetCurrentTimeInUserTimeZone(timezone, utcDateTime);
+                localDateTime = DateTime.SpecifyKind(localDateTime, DateTimeKind.Local);
                 timestampProperty.SetValue(item, localDateTime);
             }
         }
