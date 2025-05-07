@@ -2,6 +2,7 @@
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using StepsDTO = HealthDevice.DTO.StepsDTO;
 
 namespace HealthDevice.Services;
 
@@ -390,7 +391,7 @@ public class HealthService : IHealthService
             List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                 elderEmail, period, newTime, timezone);
             _logger.LogInformation("Fetched fall data: {Count}", data.Count);
-            List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = fall.Timestamp, fallCount = 1 })
+            List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = _timeZoneService.UTCToLocalTime(timezone,fall.Timestamp), fallCount = 1 })
                 .ToList();
             _logger.LogInformation("Processed fall data: {Count}", result.Count);
             return result.Count != 0 ? result : [];
@@ -407,7 +408,7 @@ public class HealthService : IHealthService
                 .GroupBy(f => f.Timestamp.Hour)
                 .Select(g => new FallDTO
                 {
-                    Timestamp = g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp,
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone,g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp),
                     fallCount = g.Count()
                 }).ToList();
 
@@ -420,7 +421,7 @@ public class HealthService : IHealthService
                 {
                     result.Add(new FallDTO
                     {
-                        Timestamp = currentDate.AddHours(-2),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate.AddHours(-2)),
                         fallCount = 0
                     });
                 }
@@ -440,7 +441,7 @@ public class HealthService : IHealthService
                 .GroupBy(f => f.Timestamp.Date)
                 .Select(g => new FallDTO
                 {
-                    Timestamp = g.Key,
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
                     fallCount = g.Count()
                 }).ToList();
 
@@ -452,7 +453,7 @@ public class HealthService : IHealthService
                 {
                     result.Add(new FallDTO
                     {
-                        Timestamp = currentDate,
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
                         fallCount = 0
                     });
                 }
@@ -462,7 +463,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
         switch (period)
         {
@@ -473,7 +474,12 @@ public class HealthService : IHealthService
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, newTime, timezone);
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
-                return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
+                List<StepsDTO> steps = data.GroupBy(t => t.Timestamp).Select(s => new StepsDTO
+                {
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
+                    StepsCount = s.Sum(c => c.StepsCount)
+                }).OrderBy(t => t.Timestamp).ToList();
+                return steps.Count != 0 ? steps : [];
             }
             case Period.Day:
             {
@@ -482,10 +488,10 @@ public class HealthService : IHealthService
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, endTime, timezone);
-                List<Steps> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
-                    .Select(hour => new Steps
+                List<StepsDTO> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
+                    .Select(hour => new StepsDTO
                     {
-                        Timestamp = startTime.AddHours(hour),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
                         StepsCount = data.Where(s => s.Timestamp.Hour == hour).Sum(s => s.StepsCount)
                     }).ToList();
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
@@ -498,11 +504,11 @@ public class HealthService : IHealthService
                 DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                 List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                     elderEmail, period, newTime, timezone);
-                List<Steps> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                List<StepsDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
-                    .Select(g => new Steps
+                    .Select(g => new StepsDTO
                     {
-                        Timestamp = g.Key, // Use the date as the timestamp
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), // Use the date as the timestamp
                         StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
                     }).ToList();
                 _logger.LogInformation("Fetched steps data: {Count}", data.Count);
@@ -511,7 +517,7 @@ public class HealthService : IHealthService
         }
     }
 
-    public async Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
         switch (period)
         {
@@ -521,8 +527,13 @@ public class HealthService : IHealthService
                 DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
                 List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
                     elderEmail, period, newTime, timezone);
+                List<DistanceInfoDTO> distance = data.GroupBy(t => t.Timestamp).Select(s => new DistanceInfoDTO
+                {
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
+                    Distance = s.Sum(c => c.Distance)
+                }).OrderBy(t => t.Timestamp).ToList();
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                return data.Count != 0 ? data.OrderBy(t => t.Timestamp.Minute).ToList() : [];
+                return distance.Count != 0 ? distance : [];
             }
             case Period.Day:
             {
@@ -531,10 +542,10 @@ public class HealthService : IHealthService
                 DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
                 List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
                     elderEmail, period, endTime, timezone);
-                List<DistanceInfo> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
-                    .Select(hour => new DistanceInfo
+                List<DistanceInfoDTO> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
+                    .Select(hour => new DistanceInfoDTO
                     {
-                        Timestamp = startTime.AddHours(hour),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
                         Distance = data.Where(d => d.Timestamp.Hour == hour).Sum(d => d.Distance)
                     }).ToList();
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);
@@ -547,11 +558,11 @@ public class HealthService : IHealthService
                 DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                 List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
                     elderEmail, period, newTime, timezone);
-                List<DistanceInfo> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                List<DistanceInfoDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
                     .GroupBy(s => s.Timestamp.Date) // Group by the date
-                    .Select(g => new DistanceInfo
+                    .Select(g => new DistanceInfoDTO
                     {
-                        Timestamp = g.Key, // Use the date as the timestamp
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), // Use the date as the timestamp
                         Distance = g.Sum(s => s.Distance),
                     }).ToList();
                 _logger.LogInformation("Fetched distance data: {Count}", data.Count);

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Period = HealthDevice.DTO.Period;
+using StepsDTO = HealthDevice.DTO.StepsDTO;
 
 namespace HealthDevice.Controllers
 {
@@ -54,7 +55,7 @@ namespace HealthDevice.Controllers
         }
 
         [HttpGet("Distance")]
-public async Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
 {
     if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
     {
@@ -67,7 +68,7 @@ public async Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmai
 }
         
        [HttpGet("Steps")]
-public async Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
 {
     if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
     {

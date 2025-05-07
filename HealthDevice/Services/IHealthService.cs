@@ -1,6 +1,7 @@
 ﻿using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
+using StepsDTO = HealthDevice.DTO.StepsDTO;
 
 namespace HealthDevice.Services;
 
@@ -16,8 +17,8 @@ public interface IHealthService
     Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email);
     Task<ActionResult> SetPerimeter(int radius, string elderEmail);
-    Task<ActionResult<List<Steps>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<DistanceInfo>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
 }
