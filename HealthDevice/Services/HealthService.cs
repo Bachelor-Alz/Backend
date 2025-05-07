@@ -384,82 +384,84 @@ public class HealthService : IHealthService
 
     public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
     {
-        if (period == Period.Hour)
+        switch (period)
         {
-            _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
-            DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
-            List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                elderEmail, period, newTime, timezone);
-            _logger.LogInformation("Fetched fall data: {Count}", data.Count);
-            List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = _timeZoneService.UTCToLocalTime(timezone,fall.Timestamp), fallCount = 1 })
-                .ToList();
-            _logger.LogInformation("Processed fall data: {Count}", result.Count);
-            return result.Count != 0 ? result : [];
-        }
-
-        if (Period.Day == period)
-        {
-            _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
-            DateTime newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
-            List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                elderEmail, period, newTime, timezone);
-            // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
-            List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
-                .GroupBy(f => f.Timestamp.Hour)
-                .Select(g => new FallDTO
-                {
-                    Timestamp = _timeZoneService.UTCToLocalTime(timezone,g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp),
-                    fallCount = g.Count()
-                }).ToList();
+            case Period.Hour:
+            {
+                _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour + 1, 0, 0).ToUniversalTime();
+                List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
+                    elderEmail, period, newTime, timezone);
+                _logger.LogInformation("Fetched fall data: {Count}", data.Count);
+                List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = _timeZoneService.UTCToLocalTime(timezone,fall.Timestamp), fallCount = 1 })
+                    .ToList();
+                _logger.LogInformation("Processed fall data: {Count}", result.Count);
+                return result.Count != 0 ? result : [];
+            }
+            case Period.Day:
+            {
+                _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
+                DateTime newTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
+                List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
+                    elderEmail, period, newTime, timezone);
+                // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
+                List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
+                    .GroupBy(f => f.Timestamp.Hour)
+                    .Select(g => new FallDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone,g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp),
+                        fallCount = g.Count()
+                    }).ToList();
 
 // Add missing days with no falls
-            DateTime startDate = new DateTime(newTime.Year, date.Month, date.Day, 0, 0 , 0); // Adjust based on the period
-            DateTime endDate = date.Date.AddHours(23).AddMinutes(59).AddSeconds(59); // Adjust based on the period
-            for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
-            {
-                if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
+                DateTime startDate = new DateTime(newTime.Year, date.Month, date.Day, 0, 0 , 0); // Adjust based on the period
+                DateTime endDate = date.Date.AddHours(23).AddMinutes(59).AddSeconds(59); // Adjust based on the period
+                for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
                 {
-                    result.Add(new FallDTO
+                    if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
                     {
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate.AddHours(-2)),
-                        fallCount = 0
-                    });
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate.AddHours(-2)),
+                            fallCount = 0
+                        });
+                    }
                 }
-            }
 
-            return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Hour).ToList() : [];
-        }
-        else
-        {
-            _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
-            //Find the end of the week the date is in 
-            DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-            DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
-            List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                elderEmail, period, newTime, timezone);
-            List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
-                .GroupBy(f => f.Timestamp.Date)
-                .Select(g => new FallDTO
-                {
-                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                    fallCount = g.Count()
-                }).ToList();
+                return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Hour).ToList() : [];
+            }
+            default:
+            {
+                _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
+                //Find the end of the week the date is in 
+                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+                DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
+                List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
+                    elderEmail, period, newTime, timezone);
+                List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                    .GroupBy(f => f.Timestamp.Date)
+                    .Select(g => new FallDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
+                        fallCount = g.Count()
+                    }).ToList();
 
 // Add missing days with no falls
-            DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6); // Adjust based on the period
-            for (DateTime currentDate = startDate; currentDate < date.Date; currentDate = currentDate.AddDays(1))
-            {
-                if (result.All(r => r.Timestamp.Date != currentDate.Date))
+                DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6); // Adjust based on the period
+                for (DateTime currentDate = startDate; currentDate < date.Date; currentDate = currentDate.AddDays(1))
                 {
-                    result.Add(new FallDTO
+                    if (result.All(r => r.Timestamp.Date != currentDate.Date))
                     {
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                        fallCount = 0
-                    });
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
+                            fallCount = 0
+                        });
+                    }
                 }
-            }
 
-            return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Date).ToList() : [];
+                return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Date).ToList() : [];
+            }
         }
     }
 
