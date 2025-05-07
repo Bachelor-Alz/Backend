@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,17 +9,20 @@ public class ArduinoService : IArduinoService
 {
     private readonly ILogger<ArduinoService> _logger;
     private readonly IRepositoryFactory _repositoryFactory;
-    
-    public ArduinoService(ILogger<ArduinoService> logger, IRepositoryFactory repositoryFactory)
+    private readonly ApplicationDbContext _dbContext;
+
+    public ArduinoService(ILogger<ArduinoService> logger, IRepositoryFactory repositoryFactory, ApplicationDbContext dbContext)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
+        _dbContext = dbContext;
     }
+
     public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
     {
         IRepository<T> sensorRepository = _repositoryFactory.GetRepository<T>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0);
+        DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
         _logger.LogInformation("{Timestamp}: Received {SensorType} data from IP: {IP}.", receivedAt, typeof(T).Name, ip);
         
         if (data.Count == 0)
@@ -29,24 +33,19 @@ public class ArduinoService : IArduinoService
         
         _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
         await sensorRepository.AddRange(data);
+        _logger.LogInformation("Saving changes to the database.");
+        await _dbContext.SaveChangesAsync();
         return new OkResult();
     }
 
     public async Task HandleArduinoData(Arduino data, HttpContext httpContext)
     {
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
         IRepository<GPS> gpsRepository = _repositoryFactory.GetRepository<GPS>();
         IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
         IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-        DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0);
+        DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
-        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(e => e.MacAddress == data.MacAddress);
-        if (elder == null)
-        {
-            _logger.LogWarning("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
-            return;
-        }
 
         await gpsRepository.Add(new GPS
         {
@@ -88,5 +87,6 @@ public class ArduinoService : IArduinoService
             Timestamp = receivedAt,
             MacAddress = data.MacAddress
         });
+        await _dbContext.SaveChangesAsync();
     }
 }
