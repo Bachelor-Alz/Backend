@@ -16,8 +16,8 @@ public class UserService : IUserService
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly IRepository<Elder> _elderRepository;
     private readonly IRepository<Caregiver> _caregiverRepository;
-    
-    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager,  IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository)
+
+    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository)
     {
         _logger = logger;
         _elderManager = elderManager;
@@ -25,14 +25,14 @@ public class UserService : IUserService
         _elderRepository = elderRepository;
         _caregiverRepository = caregiverRepository;
     }
-    
+
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
-    {   
+    {
         DateTime timestamp = DateTime.UtcNow;
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (elder != null)
         {
-            if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
+            if (!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedResult();
@@ -63,7 +63,7 @@ public class UserService : IUserService
             return new UnauthorizedResult();
         }
         _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-        return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), role = Roles.Caregiver};
+        return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), role = Roles.Caregiver };
     }
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, string ipAddress) where T : IdentityUser

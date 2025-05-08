@@ -9,7 +9,7 @@ namespace HealthDevice.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly IRepository<Elder> _elderRepository;
 
-        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider, IRepository<Elder> elderRepository)    
+        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider, IRepository<Elder> elderRepository)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
@@ -26,7 +26,7 @@ namespace HealthDevice.Services
                     var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
                     List<Elder> elders = await _elderRepository.Query().Where(e => e.MacAddress != null).ToListAsync(cancellationToken: stoppingToken);
-                    
+
                     foreach (string arduino in elders.Select(elder => elder.MacAddress).OfType<string>())
                     {
                         Location location = await healthService.GetLocation(DateTime.UtcNow, arduino);

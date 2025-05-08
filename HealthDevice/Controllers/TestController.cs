@@ -22,7 +22,7 @@ public class TestController : ControllerBase
 
     public TestController
     (
-        IGeoService geoService, 
+        IGeoService geoService,
         IRepository<Elder> elderRepository,
         IRepository<Max30102> max30102Repository,
         IRepository<DistanceInfo> kilometerRepository,
@@ -41,14 +41,14 @@ public class TestController : ControllerBase
         _locationRepository = locationRepository;
         _gpsRepository = gpsRepository;
     }
-    
+
     [HttpPost("Address")]
     public async Task<ActionResult> GetAddress(double latitude, double longitude)
     {
         var result = await _geoService.GetAddressFromCoordinates(latitude, longitude);
         return Ok(result);
     }
-    
+
     [HttpPost("Coordinates")]
     public async Task<ActionResult> GetCoordinates(AddressDTO address)
     {
@@ -66,7 +66,7 @@ public class TestController : ControllerBase
         }
 
         string? macAddress = elder.MacAddress;
-        
+
         if (string.IsNullOrEmpty(macAddress))
         {
             return BadRequest("Elder does not have a MAC address");
@@ -83,7 +83,7 @@ public class TestController : ControllerBase
 
         for (int i = -1500; i < 1500; i++)
         {
-            DateTime timestamp = currentDate + TimeSpan.FromMinutes(i*5);
+            DateTime timestamp = currentDate + TimeSpan.FromMinutes(i * 5);
             int PreHeartrateMin = Random.Shared.Next(20, 45);
             int PreHeartrateMax = Random.Shared.Next(140, 200);
             int heartrate = Random.Shared.Next(PreHeartrateMin, PreHeartrateMax);
@@ -106,10 +106,10 @@ public class TestController : ControllerBase
                 Timestamp = timestamp,
                 MacAddress = macAddress
             });
-            
+
             int steps = Random.Shared.Next(stepsMin, stepsMax);
             float distance = (float)(Random.Shared.NextDouble() * (distanceMax - distanceMin) + distanceMin);
-            
+
             await _stepsRepository.Add(new Steps
             {
                 StepsCount = steps,
@@ -131,7 +131,7 @@ public class TestController : ControllerBase
             Timestamp = currentDate,
             MacAddress = macAddress
         });
-        
+
         await _locationRepository.Add(new Location
         {
             Latitude = 57.012153,
@@ -140,7 +140,7 @@ public class TestController : ControllerBase
             MacAddress = macAddress
         });
 
-        for(int k = 0; k < 100; k++)
+        for (int k = 0; k < 100; k++)
         {
             DateTime timestamp = currentDate.Date + TimeSpan.FromDays(k);
             for (int j = 1; j <= 24; j++)

@@ -17,7 +17,7 @@ public class ArduinoService : IArduinoService
 
     public ArduinoService
     (
-        ILogger<ArduinoService> logger, 
+        ILogger<ArduinoService> logger,
         IRepositoryFactory repositoryFactory,
         ApplicationDbContext dbContext,
         IRepository<GPSData> gpsRepository,
@@ -39,13 +39,13 @@ public class ArduinoService : IArduinoService
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
         _logger.LogInformation("{Timestamp}: Received {SensorType} data from IP: {IP}.", receivedAt, typeof(T).Name, ip);
-        
+
         if (data.Count == 0)
         {
             _logger.LogWarning("{Timestamp}: {SensorType} data was empty from IP: {IP}.", receivedAt, typeof(T).Name, ip);
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
-        
+
         _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
         await sensorRepository.AddRange(data);
         _logger.LogInformation("Saving changes to the database.");
@@ -66,7 +66,7 @@ public class ArduinoService : IArduinoService
             Timestamp = receivedAt,
             MacAddress = data.MacAddress
         });
-        
+
         await _stepsRepository.Add(new Steps
         {
             StepsCount = data.steps,
@@ -78,8 +78,8 @@ public class ArduinoService : IArduinoService
         float totalSpO2 = 0;
         foreach (var entry in data.Max30102)
         {
-           totalHr += entry.heartRate;
-           totalSpO2 += entry.SpO2;
+            totalHr += entry.heartRate;
+            totalSpO2 += entry.SpO2;
         }
         if (data.Max30102.Count == 0)
         {
@@ -89,11 +89,11 @@ public class ArduinoService : IArduinoService
         await _max30102Repository.Add(new Max30102
         {
             LastHeartrate = data.Max30102.Last().heartRate,
-            AvgHeartrate = totalHr/data.Max30102.Count,
+            AvgHeartrate = totalHr / data.Max30102.Count,
             MaxHeartrate = data.Max30102.Max(x => x.heartRate),
             MinHeartrate = data.Max30102.Min(x => x.heartRate),
             LastSpO2 = data.Max30102.Last().SpO2,
-            AvgSpO2 = totalSpO2/data.Max30102.Count,
+            AvgSpO2 = totalSpO2 / data.Max30102.Count,
             MaxSpO2 = data.Max30102.Max(x => x.SpO2),
             MinSpO2 = data.Max30102.Min(x => x.SpO2),
             Timestamp = receivedAt,

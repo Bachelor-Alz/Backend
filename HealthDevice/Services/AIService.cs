@@ -7,7 +7,7 @@ namespace HealthDevice.Services;
 
 public class AiService : IAIService
 {
-    
+
     private readonly ILogger<AiService> _logger;
     private readonly IEmailService _emailService;
     private readonly IGeoService _geoService;
@@ -15,7 +15,7 @@ public class AiService : IAIService
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Location> _locationRepository;
-    
+
     public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService, IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository, IRepository<FallInfo> fallInfoRepository, IRepository<Location> locationRepository)
     {
         _logger = logger;
@@ -26,7 +26,7 @@ public class AiService : IAIService
         _fallInfoRepository = fallInfoRepository;
         _locationRepository = locationRepository;
     }
-    
+
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
         string count = "";
@@ -37,7 +37,7 @@ public class AiService : IAIService
             {
                 count = "";
             }
-            if(count.Length >= 4)
+            if (count.Length >= 4)
             {
                 _logger.LogInformation("Fall detected for elder {address}", address);
                 await HandleFall(address);
@@ -58,14 +58,14 @@ public class AiService : IAIService
         await _fallInfoRepository.Add(fallInfo);
         try
         {
-            Elder? elder =  await _elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == addrees);
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == addrees);
             if (elder == null)
             {
                 _logger.LogWarning("Elder {address} does not exist", addrees);
                 return;
             }
             List<Caregiver> caregivers = await _caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
-            if(caregivers.Count == 0)
+            if (caregivers.Count == 0)
             {
                 _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
                 return;
@@ -84,7 +84,7 @@ public class AiService : IAIService
                 }
                 Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
                 if (location == null) continue;
-                string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
+                string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
 
                 _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
                 try
@@ -101,7 +101,7 @@ public class AiService : IAIService
         }
         catch
         {
-           _logger.LogError("Failed to handle fall");
+            _logger.LogError("Failed to handle fall");
         }
     }
-    }
+}

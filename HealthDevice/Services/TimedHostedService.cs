@@ -37,7 +37,7 @@ namespace HealthDevice.Services
                         string? arduino = elder.MacAddress;
                         if (arduino == null) continue;
                         DateTime lastMonth = DateTime.UtcNow.AddDays(-30);
-                        
+
                         List<Heartrate> heartRate = await healthService.CalculateHeartRate(lastMonth, arduino);
                         await hrRepository.AddRange(heartRate);
 

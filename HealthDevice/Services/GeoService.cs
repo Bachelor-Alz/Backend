@@ -70,7 +70,7 @@ public class GeoService : IGeoService
         }
 
         string[] addressParts = response.DisplayName.Split(", ");
-    
+
         // Ensure the array has enough parts to avoid IndexOutOfRangeException
         if (addressParts.Length < 5)
         {
@@ -100,7 +100,7 @@ public class GeoService : IGeoService
                    Math.Pow(Math.Sin(dLon / 2), 2);
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         float d = (float)(6371 * c);
-        
+
         return d; // Distance in kilometers
     }
 }

@@ -28,7 +28,7 @@ public class UserController : ControllerBase
     private readonly ApplicationDbContext _dbContext;
 
 
-    
+
     public UserController
     (
         UserManager<Elder> elderManager,
@@ -52,8 +52,8 @@ public class UserController : ControllerBase
         _gpsRepository = gpsRepository;
         _dbContext = dbContext;
     }
-    
-    
+
+
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponseDTO>> Login(UserLoginDTO userLoginDto)
@@ -114,23 +114,23 @@ public class UserController : ControllerBase
         }
         _logger.LogInformation("Registration attempt for email: {Email} with role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
         string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
-        return userRegisterDto.Role == Roles.Elder 
-            ? await _userService.HandleRegister(_elderManager, userRegisterDto, 
+        return userRegisterDto.Role == Roles.Elder
+            ? await _userService.HandleRegister(_elderManager, userRegisterDto,
                                                 new Elder
                                                 {
                                                     Name = userRegisterDto.Name,
-                                                    Email = userRegisterDto.Email, 
-                                                    UserName = userRegisterDto.Email, 
+                                                    Email = userRegisterDto.Email,
+                                                    UserName = userRegisterDto.Email,
                                                     latitude = (double)userRegisterDto.latitude,
                                                     longitude = (double)userRegisterDto.longitude,
                                                     outOfPerimeter = false
                                                 }, ipAddress)
-            : await _userService.HandleRegister(_caregiverManager, userRegisterDto, 
+            : await _userService.HandleRegister(_caregiverManager, userRegisterDto,
                                                 new Caregiver
                                                 {
-                                                    Name = userRegisterDto.Name, 
-                                                    Email = userRegisterDto.Email, 
-                                                    UserName = userRegisterDto.Email, 
+                                                    Name = userRegisterDto.Name,
+                                                    Email = userRegisterDto.Email,
+                                                    UserName = userRegisterDto.Email,
                                                     Elders = new List<Elder>()
                                                 }, ipAddress);
     }
@@ -150,175 +150,175 @@ public class UserController : ControllerBase
         }).ToList();
     }
 
- [HttpPost("users/elder")]
-[Authorize(Roles = "Elder")]
-public async Task<ActionResult> PutCaregiver(string caregiverEmail)
-{
-    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+    [HttpPost("users/elder")]
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult> PutCaregiver(string caregiverEmail)
     {
-        _logger.LogError("User claim is null or empty.");
-        return BadRequest("User claim is not available.");
-    }
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
 
-    Caregiver? caregiver = await _caregiverRepository.Query()
-        .Include(c => c.Invites)
-        .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+        Caregiver? caregiver = await _caregiverRepository.Query()
+            .Include(c => c.Invites)
+            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
 
-    if (caregiver == null)
-    {
-        _logger.LogError("Caregiver not found.");
-        return BadRequest("Caregiver not found.");
-    }
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
 
-    Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(e => e.Email == userClaim.Value);
-    if (elder == null)
-    {
-        _logger.LogError("Elder not found.");
-        return NotFound("Elder not found.");
-    }
-    
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(e => e.Email == userClaim.Value);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound("Elder not found.");
+        }
 
-    if (caregiver.Invites != null && caregiver.Invites.Any(e => e.Id == elder.Id))
-    {
-        _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
-        return BadRequest("Elder is already invited by this caregiver.");
-    }
 
-    caregiver.Invites ??= new List<Elder>();
-    caregiver.Invites.Add(elder);
+        if (caregiver.Invites != null && caregiver.Invites.Any(e => e.Id == elder.Id))
+        {
+            _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+            return BadRequest("Elder is already invited by this caregiver.");
+        }
 
-    try
-    {
-        _dbContext.Update(caregiver);
-        await _dbContext.SaveChangesAsync();
-        _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
-        return Ok("Caregiver invited successfully.");
+        caregiver.Invites ??= new List<Elder>();
+        caregiver.Invites.Add(elder);
+
+        try
+        {
+            _dbContext.Update(caregiver);
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("Elder {elder.Email} added to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+            return Ok("Caregiver invited successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update caregiver.");
+            return BadRequest("Failed to invite caregiver.");
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Failed to update caregiver.");
-        return BadRequest("Failed to invite caregiver.");
-    }
-}
 
     [HttpDelete("users/elder/removeCaregiver")]
-[Authorize(Roles = "Elder")]
-public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
-{
-    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult> RemoveCaregiver(string caregiverEmail)
     {
-        _logger.LogError("User claim is null or empty.");
-        return BadRequest("User claim is not available.");
-    }
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
 
-    Caregiver? caregiver = await _caregiverRepository.Query()
-        .Include(c => c.Elders) // Ensure Elders collection is included
-        .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+        Caregiver? caregiver = await _caregiverRepository.Query()
+            .Include(c => c.Elders) // Ensure Elders collection is included
+            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
 
-    if (caregiver == null)
-    {
-        _logger.LogError("Caregiver not found.");
-        return BadRequest("Caregiver not found.");
-    }
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
 
-    Elder? elder = await _elderRepository.Query()
-        .FirstOrDefaultAsync(e => e.Email == userClaim.Value);
+        Elder? elder = await _elderRepository.Query()
+            .FirstOrDefaultAsync(e => e.Email == userClaim.Value);
 
-    if (elder == null)
-    {
-        _logger.LogError("Elder not found.");
-        return NotFound("Elder not found.");
-    }
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound("Elder not found.");
+        }
 
-// Remove the relationship explicitly
-    if (elder.CaregiverId != null)
-    {
-        elder.CaregiverId = null;
-        _dbContext.Entry(elder).State = EntityState.Modified;
-        _dbContext.Update(elder);
-    }
-    else
-    {
-        _logger.LogError("Elder {ElderEmail} not assigned to Caregiver {CaregiverEmail}.", elder.Email, caregiver.Email);
-        return BadRequest("Elder not assigned to this caregiver.");
-    }
+        // Remove the relationship explicitly
+        if (elder.CaregiverId != null)
+        {
+            elder.CaregiverId = null;
+            _dbContext.Entry(elder).State = EntityState.Modified;
+            _dbContext.Update(elder);
+        }
+        else
+        {
+            _logger.LogError("Elder {ElderEmail} not assigned to Caregiver {CaregiverEmail}.", elder.Email, caregiver.Email);
+            return BadRequest("Elder not assigned to this caregiver.");
+        }
 
-    try
-    {
-        await _dbContext.SaveChangesAsync();   // Persist changes to the database
-        _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
-        return Ok("Caregiver removed successfully.");
+        try
+        {
+            await _dbContext.SaveChangesAsync();   // Persist changes to the database
+            _logger.LogInformation("{elder.Email} removed from Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+            return Ok("Caregiver removed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove caregiver.");
+            return BadRequest("Failed to remove caregiver.");
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Failed to remove caregiver.");
-        return BadRequest("Failed to remove caregiver.");
-    }
-}
 
     [HttpDelete("users/caregiver/removeFromElder")]
-[Authorize(Roles = "Caregiver")]
-public async Task<ActionResult> RemoveFromElder(string elderEmail)
-{
-    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+    [Authorize(Roles = "Caregiver")]
+    public async Task<ActionResult> RemoveFromElder(string elderEmail)
     {
-        _logger.LogError("User claim is null or empty.");
-        return BadRequest("User claim is not available.");
-    }
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
 
-    Caregiver? caregiver = await _caregiverRepository.Query()
-        .Include(c => c.Elders) // Ensure Elders collection is included
-        .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+        Caregiver? caregiver = await _caregiverRepository.Query()
+            .Include(c => c.Elders) // Ensure Elders collection is included
+            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
 
-    if (caregiver == null)
-    {
-        _logger.LogError("Caregiver not found.");
-        return BadRequest("Caregiver not found.");
-    }
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
 
-    Elder? elder = await _elderRepository.Query()
-        .FirstOrDefaultAsync(e => e.Email == elderEmail);
+        Elder? elder = await _elderRepository.Query()
+            .FirstOrDefaultAsync(e => e.Email == elderEmail);
 
-    if (elder == null)
-    {
-        _logger.LogError("Elder not found.");
-        return NotFound("Elder not found.");
-    }
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound("Elder not found.");
+        }
 
-    // Remove the relationship explicitly
-    if (elder.CaregiverId != null)
-    {
-        elder.CaregiverId = null;
-        _dbContext.Entry(elder).State = EntityState.Modified;
-        _dbContext.Update(elder);
-    }
-    else
-    {
-        _logger.LogError("Elder {ElderEmail} not assigned to Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
-        return BadRequest("Elder not assigned to this caregiver.");
-    }
+        // Remove the relationship explicitly
+        if (elder.CaregiverId != null)
+        {
+            elder.CaregiverId = null;
+            _dbContext.Entry(elder).State = EntityState.Modified;
+            _dbContext.Update(elder);
+        }
+        else
+        {
+            _logger.LogError("Elder {ElderEmail} not assigned to Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
+            return BadRequest("Elder not assigned to this caregiver.");
+        }
 
-    try
-    {
-        await _dbContext.SaveChangesAsync();   // Persist changes to the database
-        _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
-        return Ok("Elder removed successfully.");
+        try
+        {
+            await _dbContext.SaveChangesAsync();   // Persist changes to the database
+            _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
+            return Ok("Elder removed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove elder from caregiver.");
+            return BadRequest("Failed to remove elder from caregiver.");
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Failed to remove elder from caregiver.");
-        return BadRequest("Failed to remove elder from caregiver.");
-    }
-}
 
     [HttpGet("users/getElders")]
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<GetElderDTO>>> GetElders()
     {
-       
+
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -336,7 +336,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
             return BadRequest("Caregiver not found.");
         }
         _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        
+
         if (caregiver.Elders != null)
         {
             List<Elder> elders = caregiver.Elders;
@@ -352,10 +352,10 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
         _logger.LogError("Caregiver has no elders.");
         return BadRequest("Caregiver has no elders.");
     }
-    
+
     [HttpGet("users/arduino")]
     public async Task<ActionResult<List<ArduinoInfoDTO>>> GetUnusedArduino()
-    {        
+    {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -385,8 +385,8 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
         foreach (GPSData gps in filteredGpsData)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
-            float distance = GeoService.CalculateDistance(new Location{Latitude = gps.Latitude, Longitude = gps.Longitude}, elderLocation);
-            int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes)*-1;
+            float distance = GeoService.CalculateDistance(new Location { Latitude = gps.Latitude, Longitude = gps.Longitude }, elderLocation);
+            int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes) * -1;
             if (!(distance < 0.5)) continue;
             _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
             if (gps.MacAddress == null) continue;
@@ -403,17 +403,17 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
         _logger.LogInformation("Address not associated count: {addressNotAssociated}", addressNotAssociated.Count);
         return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
     }
-    
+
     [HttpPost("users/arduino")]
     public async Task<ActionResult> SetArduino(string address)
-    {   
+    {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
-        
+
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if (elder == null)
         {
@@ -442,14 +442,14 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
 
     [HttpDelete("users/arduino")]
     public async Task<ActionResult> RemoveArduino()
-    {   
+    {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
-        
+
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if (elder == null)
         {
@@ -479,7 +479,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
 
     [HttpGet("connected")]
     public async Task<ActionResult<bool>> IsConnected(string elderEmail)
-    {        
+    {
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
         if (elder == null)
         {
@@ -498,7 +498,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
 
     [HttpPost("elder/address")]
     public async Task<ActionResult> AddAddress(AddressDTO address, string elderEmail)
-    {        
+    {
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
         if (elder == null)
         {
@@ -538,7 +538,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
     [HttpGet("caregiver/invites")]
     [Authorize(Roles = "Caregiver")]
     public async Task<ActionResult<List<GetElderDTO>>> GetInvites()
-    {        
+    {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
@@ -556,7 +556,7 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
             return BadRequest("Caregiver not found.");
         }
         _logger.LogInformation("Caregiver found. {caregiver}", caregiver);
-        
+
         if (caregiver.Invites != null)
         {
             _logger.LogInformation("Caregiver has {Count} invites.", caregiver.Invites.Count);
@@ -576,97 +576,97 @@ public async Task<ActionResult> RemoveFromElder(string elderEmail)
         return BadRequest("Caregiver has no invites.");
     }
 
-[HttpPost("caregiver/invites/accept")]
-[Authorize(Roles = "Caregiver")]
-public async Task<ActionResult> AcceptInvite(string elderEmail)
-{
-    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+    [HttpPost("caregiver/invites/accept")]
+    [Authorize(Roles = "Caregiver")]
+    public async Task<ActionResult> AcceptInvite(string elderEmail)
     {
-        _logger.LogError("User claim is null or empty.");
-        return BadRequest("User claim is not available.");
-    }
-
-    // Include Invites and Elders collections
-    Caregiver? caregiver = await _caregiverRepository.Query()
-        .Include(c => c.Invites)
-        .Include(c => c.Elders)
-        .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
-    if (caregiver == null)
-    {
-        _logger.LogError("Caregiver not found.");
-        return BadRequest("Caregiver not found.");
-    }
-
-    if (caregiver.Invites == null || caregiver.Invites.Count == 0)
-    {
-        _logger.LogError("No invites found.");
-        return BadRequest("No invites found.");
-    }
-
-    Elder? elder = caregiver.Invites.FirstOrDefault(m => m.Email == elderEmail);
-    if (elder == null)
-    {
-        _logger.LogError("Elder not found.");
-        return NotFound("Elder not found.");
-    }
-
-    _logger.LogInformation("Invites found. {invites}", caregiver.Invites.Select(i => i.Email));
-    _logger.LogInformation("Elders found. {elders}", caregiver.Elders?.Select(e => e.Email));
-    _logger.LogInformation("Elder found. {elder}", elder.Email);
-    
-    elder.CaregiverId = caregiver.Id;
-    elder.InvitedCaregiverId = null;
-    _dbContext.Entry(elder).State = EntityState.Modified;
-    _dbContext.Update(elder);
-    
-    try
-    {
-        await _dbContext.SaveChangesAsync();
-        _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
-        return Ok("Invite accepted successfully.");
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Failed to update caregiver.");
-        return BadRequest("Failed to update caregiver.");
-    }
-}
-
-[HttpGet("users/elder/Arduino")]
-[Authorize(Roles = "Elder")]
-public async Task<ActionResult<string>> GetElderArduino()
-{        
-    Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-    if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
-    {
-        _logger.LogError("User claim is null or empty.");
-        return BadRequest("User claim is not available.");
-    }
-        
-    Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-    if (elder == null)
-    {
-        _logger.LogError("Elder not found.");
-        return NotFound();
-    }
-
-    if (elder.MacAddress != null) return elder.MacAddress;
-    _logger.LogError("No mac address found.");
-    return NotFound("No mac address found.");
-}
-
-    [HttpGet("users/elder/caregiver")]
-    [Authorize(Roles = "Elder")]
-    public async Task<ActionResult<List<CaregiverDTO>>> GetElderCaregiver()
-    {        
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
-        
+
+        // Include Invites and Elders collections
+        Caregiver? caregiver = await _caregiverRepository.Query()
+            .Include(c => c.Invites)
+            .Include(c => c.Elders)
+            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+        if (caregiver == null)
+        {
+            _logger.LogError("Caregiver not found.");
+            return BadRequest("Caregiver not found.");
+        }
+
+        if (caregiver.Invites == null || caregiver.Invites.Count == 0)
+        {
+            _logger.LogError("No invites found.");
+            return BadRequest("No invites found.");
+        }
+
+        Elder? elder = caregiver.Invites.FirstOrDefault(m => m.Email == elderEmail);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound("Elder not found.");
+        }
+
+        _logger.LogInformation("Invites found. {invites}", caregiver.Invites.Select(i => i.Email));
+        _logger.LogInformation("Elders found. {elders}", caregiver.Elders?.Select(e => e.Email));
+        _logger.LogInformation("Elder found. {elder}", elder.Email);
+
+        elder.CaregiverId = caregiver.Id;
+        elder.InvitedCaregiverId = null;
+        _dbContext.Entry(elder).State = EntityState.Modified;
+        _dbContext.Update(elder);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+            return Ok("Invite accepted successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update caregiver.");
+            return BadRequest("Failed to update caregiver.");
+        }
+    }
+
+    [HttpGet("users/elder/Arduino")]
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult<string>> GetElderArduino()
+    {
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        if (elder == null)
+        {
+            _logger.LogError("Elder not found.");
+            return NotFound();
+        }
+
+        if (elder.MacAddress != null) return elder.MacAddress;
+        _logger.LogError("No mac address found.");
+        return NotFound("No mac address found.");
+    }
+
+    [HttpGet("users/elder/caregiver")]
+    [Authorize(Roles = "Elder")]
+    public async Task<ActionResult<List<CaregiverDTO>>> GetElderCaregiver()
+    {
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+        {
+            _logger.LogError("User claim is null or empty.");
+            return BadRequest("User claim is not available.");
+        }
+
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         if (elder == null)
         {
@@ -678,14 +678,14 @@ public async Task<ActionResult<string>> GetElderArduino()
             _logger.LogError("No caregiver found.");
             return NotFound("No caregiver found.");
         }
-        
+
         Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Id == elder.CaregiverId);
         if (caregiver == null)
         {
             _logger.LogError("No caregiver found.");
             return NotFound("No caregiver found.");
         }
-        
+
         List<CaregiverDTO> caregivers = new List<CaregiverDTO>
         {
             new CaregiverDTO
@@ -694,34 +694,34 @@ public async Task<ActionResult<string>> GetElderArduino()
                 Email = caregiver.Email
             }
         };
-        
+
         return caregivers;
     }
-    
+
     [HttpGet("renew/token")]
     [Authorize(AuthenticationSchemes = "ExpiredTokenScheme")]
     public async Task<ActionResult<string>> RenewToken()
-    {   
+    {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
         {
             _logger.LogError("User claim is null or empty.");
             return BadRequest("User claim is not available.");
         }
-        
+
         //Check if the user is an elder or a caregiver
         var elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
         var caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-        
+
         //Get time to expire from the token that the request maker has
         var expiredClaim = User.Claims.FirstOrDefault(c => c.Type == "exp");
-        
+
         if (expiredClaim == null)
         {
             _logger.LogError("Expiration claim not found.");
             return BadRequest("Expiration claim not found.");
         }
-        
+
         DateTime expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiredClaim.Value)).DateTime;
         if (expTime > DateTime.UtcNow)
         {

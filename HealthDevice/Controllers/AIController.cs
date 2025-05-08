@@ -15,7 +15,7 @@ public class AiController : ControllerBase
         _logger = logger;
         _aiService = aiService;
     }
-    
+
     [HttpPost("compute")]
     public async Task<ActionResult> Compute([FromBody] List<int> predictions, string mac)
     {

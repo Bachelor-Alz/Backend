@@ -19,20 +19,20 @@ public class Repository<T> : IRepository<T> where T : class
     {
         return _dbContext.Set<T>();
     }
-    
+
     public async Task RemoveRange(IEnumerable<T> entities)
     {
         _dbContext.Set<T>().RemoveRange(entities);
         await _dbContext.SaveChangesAsync();
     }
-    
+
     public async Task Update(T entity)
     {
-        
+
         _dbContext.Update(entity);
         await _dbContext.SaveChangesAsync();
     }
-    
+
     public async Task AddRange(IEnumerable<T> entities)
     {
         _dbContext.Set<T>().AddRange(entities);

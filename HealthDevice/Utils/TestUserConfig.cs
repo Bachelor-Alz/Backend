@@ -12,7 +12,7 @@ namespace HealthDevice.Utils;
 public static class TestUserConfig
 {
     //Want to make an elder user than also gets an macadress and calls FakeData from Testcontroller
-        
+
     public static async Task MakeTestUserAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
@@ -31,9 +31,9 @@ public static class TestUserConfig
             longitude = 12.5683,
             Role = Roles.Elder,
         };
-        
+
         // Register the user
-       var result = await userController.Register(elder);
+        var result = await userController.Register(elder);
 
         if (result is not OkObjectResult)
         {
