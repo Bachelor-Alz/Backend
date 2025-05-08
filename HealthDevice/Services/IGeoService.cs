@@ -1,5 +1,4 @@
-﻿using HealthDevice.DTO;
-using HealthDevice.Models;
+﻿using HealthDevice.Models;
 
 namespace HealthDevice.Services;
 

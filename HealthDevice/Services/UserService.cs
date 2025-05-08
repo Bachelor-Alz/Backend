@@ -14,23 +14,22 @@ public class UserService : IUserService
     private readonly ILogger<UserService> _logger;
     private readonly UserManager<Elder> _elderManager;
     private readonly UserManager<Caregiver> _caregiverManager;
-    private readonly IRepositoryFactory _repositoryFactory;
+    private readonly IRepository<Elder> _elderRepository;
+    private readonly IRepository<Caregiver> _caregiverRepository;
     
-    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, IRepositoryFactory repositoryFactory)
+    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager,  IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository)
     {
         _logger = logger;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
-        _repositoryFactory = repositoryFactory;
+        _elderRepository = elderRepository;
+        _caregiverRepository = caregiverRepository;
     }
     
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
-    {
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        
+    {   
         DateTime timestamp = DateTime.UtcNow;
-        Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (elder != null)
         {
             if(!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
@@ -47,7 +46,7 @@ public class UserService : IUserService
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
         }
 
-        Caregiver? caregiver = await caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
+        Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (caregiver == null)
         {
             _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
@@ -69,10 +68,9 @@ public class UserService : IUserService
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, string ipAddress) where T : IdentityUser
     {
-        IRepository<T> userRepository = _repositoryFactory.GetRepository<T>();
         DateTime timestamp = DateTime.UtcNow;
 
-        if (userRepository.Query().FirstOrDefault(m => m.Email == userRegisterDto.Email) != null)
+        if (await userManager.Users.FirstOrDefaultAsync(m => m.Email == userRegisterDto.Email) != null)
         {
             _logger.LogWarning("{timestamp}: Registration failed for email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
             return new BadRequestObjectResult("Email already exists.");

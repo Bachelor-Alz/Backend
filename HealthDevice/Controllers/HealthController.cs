@@ -19,15 +19,37 @@ namespace HealthDevice.Controllers
         private readonly IHealthService _healthService;
         private readonly ILogger<HealthController> _logger;
         private readonly GeoService _geoService;
-        private readonly IRepositoryFactory _repositoryFactory;
+        private readonly IRepository<Elder> _elderRepository;
+        private readonly IRepository<Max30102> _max30102Repository;
+        private readonly IRepository<DistanceInfo> _kilometerRepository;
+        private readonly IRepository<Steps> _stepsRepository;
+        private readonly IRepository<FallInfo> _fallInfoRepository;
+        private readonly IRepository<Location> _locationRepository;
         
-        public HealthController(IHealthService healthService, ILogger<HealthController> logger, GeoService geoService, IRepositoryFactory repositoryFactory)
+        public HealthController
+        (
+            IHealthService healthService, 
+            ILogger<HealthController> logger, 
+            GeoService geoService, 
+            IRepository<Elder> elderRepository, 
+            IRepository<Max30102> max30102Repository, 
+            IRepository<DistanceInfo> kilometerRepository, 
+            IRepository<Steps> stepsRepository, 
+            IRepository<FallInfo> fallInfoRepository,
+            IRepository<Location> locationRepository
+        )
         {
-            _repositoryFactory = repositoryFactory;
-            _geoService = geoService;
-            _logger = logger;
             _healthService = healthService;
+            _logger = logger;
+            _geoService = geoService;
+            _elderRepository = elderRepository;
+            _max30102Repository = max30102Repository;
+            _kilometerRepository = kilometerRepository;
+            _stepsRepository = stepsRepository;
+            _fallInfoRepository = fallInfoRepository;
+            _locationRepository = locationRepository;
         }
+
         [HttpGet("Heartrate")]
         public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, string timezone = "Europe/Copenhagen",
             string period = "Hour")
@@ -83,13 +105,8 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
         [HttpGet("Dashboard")]
         public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderEmail)
         {
-            IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-            IRepository<Max30102> max30102Repository = _repositoryFactory.GetRepository<Max30102>();
-            IRepository<DistanceInfo> kilometerRepository = _repositoryFactory.GetRepository<DistanceInfo>();
-            IRepository<Steps> stepsRepository = _repositoryFactory.GetRepository<Steps>();
-            IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
             DateTime currentDate = DateTime.UtcNow;
-            Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
@@ -107,13 +124,13 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
             string macAddress = elder.MacAddress;
 
             // Query data objects using the MacAddress
-            Max30102? max30102 = await max30102Repository.Query()
+            Max30102? max30102 = await _max30102Repository.Query()
                 .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
                 .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefaultAsync();
 
             //Get the total amounts of steps on the newest date using kilometer
-            DistanceInfo? kilometer = await kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+            DistanceInfo? kilometer = await _kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
                 .GroupBy(s => s.Timestamp.Date)
                 .Select(g => new DistanceInfo
                 {
@@ -121,7 +138,7 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
                     Timestamp = g.Key
                 }).FirstOrDefaultAsync();
 
-            Steps? steps = await stepsRepository.Query()
+            Steps? steps = await _stepsRepository.Query()
                 .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
                 .GroupBy(s => s.Timestamp.Date)
                 .Select(g => new Steps
@@ -134,7 +151,7 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
             
             return new DashBoard
             {
-                allFall = fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
+                allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.LastHeartrate ?? 0,
                 SpO2 = max30102?.LastSpO2 ?? 0,
@@ -159,9 +176,7 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
         [HttpGet("Coordinates")]
         public async Task<ActionResult<Location>> GetLocaiton(string elderEmail)
         {
-            IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-            IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
-            Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null)
             {
                 _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
@@ -173,7 +188,7 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
                 return BadRequest("Elder Arduino not set.");
             }
             _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elderEmail);
-            Location? location = await locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+            Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (location is null)
             {
                 _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
@@ -200,9 +215,9 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
         [HttpGet("Address")]
         public async Task<ActionResult<string>> GetAddress(string elderEmail)
         {
-            IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-            IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
-            Elder? elder = await elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
+
+
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null)
             {
                 _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
@@ -214,7 +229,7 @@ public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, Date
                 return BadRequest("Elder Arduino not set.");
             }
             _logger.LogInformation("Fetching address data for elder: {ElderEmail}", elderEmail);
-            Location? location = await locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+            Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (location is null)
             {
                 _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);

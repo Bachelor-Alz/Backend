@@ -1,5 +1,4 @@
-﻿using HealthDevice.DTO;
-using HealthDevice.Models;
+﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services
@@ -8,11 +7,13 @@ namespace HealthDevice.Services
     {
         private readonly ILogger<TimedGPSService> _logger;
         private readonly IServiceProvider _serviceProvider;
-        
-        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider)
+        private readonly IRepository<Elder> _elderRepository;
+
+        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider, IRepository<Elder> elderRepository)    
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
+            _elderRepository = elderRepository;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -23,9 +24,8 @@ namespace HealthDevice.Services
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
                     var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
-                    var elderRepository = repositoryFactory.GetRepository<Elder>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
-                    List<Elder> elders = await elderRepository.Query().Where(e => e.MacAddress != null).ToListAsync(cancellationToken: stoppingToken);
+                    List<Elder> elders = await _elderRepository.Query().Where(e => e.MacAddress != null).ToListAsync(cancellationToken: stoppingToken);
                     
                     foreach (string arduino in elders.Select(elder => elder.MacAddress).OfType<string>())
                     {

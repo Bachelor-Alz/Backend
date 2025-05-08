@@ -1,9 +1,9 @@
-﻿namespace HealthDevice.Models;
+﻿using HealthDevice.DTO;
 
-public class FallInfo
+namespace HealthDevice.Models;
+
+public class FallInfo : Sensor
 {
     public int Id { get; set; }
-    public DateTime Timestamp { get; set; }
     public Location? Location { get; set; }
-    public string? MacAddress { get; set; }
 }
