@@ -21,4 +21,5 @@ public interface IHealthService
     Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<DashBoard>> GetDashboardData(string macAddress, Elder elder);
 }

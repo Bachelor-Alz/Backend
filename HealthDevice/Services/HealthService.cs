@@ -17,7 +17,19 @@ public class HealthService : IHealthService
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly IRepository<Perimeter> _perimeterRepository;
     private readonly IRepository<Location> _locationRepository;
-    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory, IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService, IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository, IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository)
+    private readonly IRepository<Max30102> _max30102Repository;
+    private readonly IRepository<GPSData> _gpsDataRepository;
+    private readonly IRepository<Steps> _stepsRepository;
+    private readonly IRepository<DistanceInfo> _distanceInfoRepository;
+    private readonly IRepository<FallInfo> _fallInfoRepository;
+    public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory,
+        IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService,
+        IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
+        IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository, 
+        IRepository<Max30102> max30102Repository, IRepository<GPSData> gpsDataRepository,
+        IRepository<Steps> stepsRepository, IRepository<DistanceInfo> distanceInfoRepository,
+        IRepository<FallInfo> fallInfoRepository
+        )
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
@@ -28,6 +40,11 @@ public class HealthService : IHealthService
         _caregiverRepository = caregiverRepository;
         _perimeterRepository = perimeterRepository;
         _locationRepository = locationRepository;
+        _max30102Repository = max30102Repository;
+        _gpsDataRepository = gpsDataRepository;
+        _stepsRepository = stepsRepository;
+        _distanceInfoRepository = distanceInfoRepository;
+        _fallInfoRepository = fallInfoRepository;
     }
 
     public async Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address)
@@ -857,5 +874,46 @@ public class HealthService : IHealthService
 
         _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
         return processedSpo2.OrderBy(t => t.Timestamp).ToList();
+    }
+
+    public async Task<ActionResult<DashBoard>> GetDashboardData(string macAddress, Elder elder)
+    {
+        DateTime currentDate = DateTime.UtcNow;
+        // Query data objects using the MacAddress
+        Max30102? max30102 = await _max30102Repository.Query()
+            .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
+            .OrderByDescending(m => m.Timestamp)
+            .FirstOrDefaultAsync();
+
+        //Get the total amounts of Steps on the newest date using kilometer
+        DistanceInfo? kilometer = await _distanceInfoRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+            .GroupBy(s => s.Timestamp.Date)
+            .Select(g => new DistanceInfo
+            {
+                Distance = g.Sum(s => s.Distance),
+                Timestamp = g.Key,
+                MacAddress = macAddress
+            }).FirstOrDefaultAsync();
+
+        Steps? steps = await _stepsRepository.Query()
+            .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+            .GroupBy(s => s.Timestamp.Date)
+            .Select(g => new Steps
+            {
+                StepsCount = g.Sum(s => s.StepsCount),
+                Timestamp = g.Key,
+                MacAddress = macAddress
+            }).FirstOrDefaultAsync();
+
+        _logger.LogInformation("Fetched data for elder: {ElderEmail}", elder.Email);
+
+        return new DashBoard
+        {
+            allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
+            distance = kilometer?.Distance ?? 0,
+            HeartRate = max30102?.LastHeartrate ?? 0,
+            SpO2 = max30102?.LastSpO2 ?? 0,
+            Steps = steps?.StepsCount ?? 0
+        };
     }
 }

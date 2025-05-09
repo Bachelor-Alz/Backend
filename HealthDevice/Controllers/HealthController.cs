@@ -20,10 +20,6 @@ namespace HealthDevice.Controllers
         private readonly ILogger<HealthController> _logger;
         private readonly GeoService _geoService;
         private readonly IRepository<Elder> _elderRepository;
-        private readonly IRepository<Max30102> _max30102Repository;
-        private readonly IRepository<DistanceInfo> _kilometerRepository;
-        private readonly IRepository<Steps> _stepsRepository;
-        private readonly IRepository<FallInfo> _fallInfoRepository;
         private readonly IRepository<Location> _locationRepository;
 
         public HealthController
@@ -32,10 +28,6 @@ namespace HealthDevice.Controllers
             ILogger<HealthController> logger,
             GeoService geoService,
             IRepository<Elder> elderRepository,
-            IRepository<Max30102> max30102Repository,
-            IRepository<DistanceInfo> kilometerRepository,
-            IRepository<Steps> stepsRepository,
-            IRepository<FallInfo> fallInfoRepository,
             IRepository<Location> locationRepository
         )
         {
@@ -43,10 +35,6 @@ namespace HealthDevice.Controllers
             _logger = logger;
             _geoService = geoService;
             _elderRepository = elderRepository;
-            _max30102Repository = max30102Repository;
-            _kilometerRepository = kilometerRepository;
-            _stepsRepository = stepsRepository;
-            _fallInfoRepository = fallInfoRepository;
             _locationRepository = locationRepository;
         }
 
@@ -105,7 +93,6 @@ namespace HealthDevice.Controllers
         [HttpGet("Dashboard")]
         public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderEmail)
         {
-            DateTime currentDate = DateTime.UtcNow;
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
@@ -122,43 +109,8 @@ namespace HealthDevice.Controllers
             _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderEmail);
 
             string macAddress = elder.MacAddress;
-
-            // Query data objects using the MacAddress
-            Max30102? max30102 = await _max30102Repository.Query()
-                .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
-                .OrderByDescending(m => m.Timestamp)
-                .FirstOrDefaultAsync();
-
-            //Get the total amounts of Steps on the newest date using kilometer
-            DistanceInfo? kilometer = await _kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
-                .GroupBy(s => s.Timestamp.Date)
-                .Select(g => new DistanceInfo
-                {
-                    Distance = g.Sum(s => s.Distance),
-                    Timestamp = g.Key,
-                    MacAddress = macAddress
-                }).FirstOrDefaultAsync();
-
-            Steps? steps = await _stepsRepository.Query()
-                .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
-                .GroupBy(s => s.Timestamp.Date)
-                .Select(g => new Steps
-                {
-                    StepsCount = g.Sum(s => s.StepsCount),
-                    Timestamp = g.Key,
-                    MacAddress = macAddress
-                }).FirstOrDefaultAsync();
-
-            _logger.LogInformation("Fetched data for elder: {ElderEmail}", elderEmail);
-
-            return new DashBoard
-            {
-                allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
-                distance = kilometer?.Distance ?? 0,
-                HeartRate = max30102?.LastHeartrate ?? 0,
-                SpO2 = max30102?.LastSpO2 ?? 0,
-                Steps = steps?.StepsCount ?? 0
-            };
+            
+            return await _healthService.GetDashboardData(macAddress, elder);
         }
 
         [HttpGet("Falls")]
