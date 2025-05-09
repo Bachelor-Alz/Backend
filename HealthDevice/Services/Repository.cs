@@ -40,4 +40,5 @@ public class Repository<T> : IRepository<T> where T : class
         _dbContext.Set<T>().Add(entity);
         await _dbContext.SaveChangesAsync();
     }
+    
 }

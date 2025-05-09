@@ -21,14 +21,15 @@ public class HealthService : IHealthService
     private readonly IRepository<Steps> _stepsRepository;
     private readonly IRepository<DistanceInfo> _distanceInfoRepository;
     private readonly IRepository<FallInfo> _fallInfoRepository;
+
     public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory,
         IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService,
         IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
-        IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository, 
+        IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository,
         IRepository<Max30102> max30102Repository,
         IRepository<Steps> stepsRepository, IRepository<DistanceInfo> distanceInfoRepository,
         IRepository<FallInfo> fallInfoRepository
-        )
+    )
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
@@ -156,7 +157,8 @@ public class HealthService : IHealthService
         return new DistanceInfo
         {
             Distance = distance,
-            Timestamp = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 0),
+            Timestamp = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour,
+                currentDate.Minute, 0),
             MacAddress = arduino
         };
     }
@@ -177,6 +179,7 @@ public class HealthService : IHealthService
         await repository.RemoveRange(data);
         _logger.LogInformation("Deleted {Count} Max30102 records for elder {Arduino}", data.Count, arduino);
     }
+
     public async Task DeleteGpsData(DateTime currentDate, string arduino)
     {
         IRepository<GPSData> repository = _repositoryFactory.GetRepository<GPSData>();
@@ -211,6 +214,7 @@ public class HealthService : IHealthService
             _logger.LogWarning("Elder with arduino {arduino} not found", arduino);
             return;
         }
+
         if (perimeter.Latitude == null || perimeter.Longitude == null) return;
         double dLat = (perimeter.Latitude.Value - location.Latitude) * Math.PI / 180;
         double dLon = (perimeter.Longitude.Value - location.Longitude) * Math.PI / 180;
@@ -236,9 +240,11 @@ public class HealthService : IHealthService
                 _logger.LogInformation("Elder {Email} is back in perimeter", elder.Email);
                 return;
             }
+
             _logger.LogInformation("Elder {Email} is already out of perimeter", elder.Email);
             return;
         }
+
         if (d > perimeter.Radius)
         {
             _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
@@ -279,21 +285,25 @@ public class HealthService : IHealthService
             _logger.LogError("Elder not found for Email: {ElderEmail}", elderEmail);
             return new BadRequestObjectResult("Elder not found.");
         }
+
         if (string.IsNullOrEmpty(elder.MacAddress))
         {
             _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
             return new BadRequestObjectResult("Elder Arduino not set.");
         }
+
         if (radius < 0)
         {
             _logger.LogError("Invalid radius value: {Radius}", radius);
             return new BadRequestObjectResult("Invalid radius value.");
         }
+
         _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
-        Perimeter? oldPerimeter = await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+        Perimeter? oldPerimeter =
+            await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+
         if (oldPerimeter == null)
         {
-            _logger.LogInformation("Creating new perimeter for elder: {ElderEmail}", elderEmail);
             Perimeter perimeter = new Perimeter
             {
                 Latitude = elder.Latitude,
@@ -305,7 +315,6 @@ public class HealthService : IHealthService
         }
         else
         {
-            _logger.LogInformation("Updating existing perimeter for elder: {ElderEmail}", elderEmail);
             oldPerimeter = new Perimeter
             {
                 Latitude = elder.Latitude,
@@ -314,18 +323,12 @@ public class HealthService : IHealthService
                 MacAddress = elder.MacAddress
             };
             await _perimeterRepository.Update(oldPerimeter);
-
-            // Send Email to caregiver
-            List<Caregiver> caregivers = await _caregiverRepository.Query()
-                .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
-                .ToListAsync();
-            foreach (Caregiver caregiver in caregivers)
-            {
-                Email emailInfo = new Email { Name = caregiver.Name, EmailAddress = caregiver.Email };
-                _logger.LogInformation("Sending Email to {CaregiverEmail}", caregiver.Email);
-                await _emailService.SendEmail(emailInfo, "Elder changed their perimeter", $"Elder {elder.Name} changed their perimeter to {radius} kilometers.");
-            }
         }
+        // Send Email to caregiver
+        await _emailService.SendEmail(
+            "Perimeter set",
+            $"Perimeter set for elder {elder.Name} with radius {radius} meters.", elder);
+
         return new OkObjectResult("Perimeter set successfully");
     }
 

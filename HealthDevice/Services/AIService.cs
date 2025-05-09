@@ -72,34 +72,15 @@ public class AiService : IAIService
                 _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
                 return;
             }
-            foreach (var caregiver in caregivers)
+            Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
+            if (location == null)
             {
-                Email emailInfo = new Email
-                {
-                    Name = caregiver.Name,
-                    EmailAddress = caregiver.Email
-                };
-                if (emailInfo.Name == null || emailInfo.EmailAddress == null)
-                {
-                    _logger.LogWarning("No Email found for caregiver {caregiver}", caregiver.Email);
-                    return;
-                }
-                Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
-                if (location == null) continue;
-                string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-
-                _logger.LogInformation("Sending Email to {caregiver}", caregiver.Email);
-                try
-                {
-                    await _emailService.SendEmail(emailInfo, "Fall detected",
-                        $"Fall detected for elder {elder.Name} at location {address}.");
-                }
-                catch
-                {
-                    _logger.LogError("Failed to send Email to {caregiver}", caregiver.Email);
-                    return;
-                }
+                return;
             }
+
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            await _emailService.SendEmail("Fall detected",
+                $"Fall detected for elder {elder.Name} at location {address}.", elder);
         }
         catch
         {
