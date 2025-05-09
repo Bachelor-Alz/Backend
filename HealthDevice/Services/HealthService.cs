@@ -409,7 +409,7 @@ public class HealthService : IHealthService
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
                     MacAddress = g.MacAddress
                 }));
-                break;
+                return processedHeartrates;
             case Period.Day:
                 processedHeartrates.AddRange(Max30102Data
                     .GroupBy(h => h.Timestamp.Hour)
@@ -421,7 +421,7 @@ public class HealthService : IHealthService
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(g.Key)),
                         MacAddress = g.First().MacAddress
                     }));
-                break;
+                return processedHeartrates;
             case Period.Week:
                 processedHeartrates.AddRange(Max30102Data
                     .GroupBy(h => h.Timestamp.Date)
@@ -479,7 +479,7 @@ public class HealthService : IHealthService
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
                     MacAddress = g.MacAddress
                 }));
-                break;
+                return processedSpo2;
             case Period.Day:
                 processedSpo2.AddRange(Max30102Data
                     .GroupBy(s => s.Timestamp.Hour)
@@ -491,7 +491,7 @@ public class HealthService : IHealthService
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(g.Key)),
                         MacAddress = g.First().MacAddress
                     }));
-                break;
+                return processedSpo2;
             case Period.Week:
                 processedSpo2.AddRange(Max30102Data
                     .GroupBy(s => s.Timestamp.Date)
