@@ -172,7 +172,6 @@ namespace HealthDevice.Controllers
         }
 
         [HttpPost("Perimeter")]
-        [Authorize(Roles = "Elder")]
         public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
         {
             return await _healthService.SetPerimeter(radius, elderEmail);

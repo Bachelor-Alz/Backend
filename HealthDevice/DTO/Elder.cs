@@ -7,8 +7,15 @@ public class ElderLocationDTO
     public required string Email { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
-    public Perimeter? Perimeter { get; set; }
+    public PerimeterDTO? Perimeter { get; set; }
     public DateTime LastUpdated { get; set; }
+}
+
+public class PerimeterDTO
+{
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+    public int Radius { get; set; }
 }
 
 public class GetElderDTO

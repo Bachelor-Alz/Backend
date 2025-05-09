@@ -375,11 +375,11 @@ public class HealthService : IHealthService
                 Latitude = location.Latitude,
                 Longitude = location.Longitude,
                 LastUpdated = location.Timestamp,
-                Perimeter = new Perimeter
+                Perimeter = new PerimeterDTO
                 {
-                    Latitude = perimeter?.Latitude,
-                    Longitude = perimeter?.Longitude,
-                    Radius = perimeter?.Radius
+                    Latitude = elder.Latitude,
+                    Longitude = elder.Longitude,
+                    Radius = perimeter?.Radius ?? 10
                 }
             });
         }
