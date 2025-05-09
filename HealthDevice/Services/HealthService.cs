@@ -1,4 +1,5 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Data;
+using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public class HealthService : IHealthService
     private readonly IRepository<Steps> _stepsRepository;
     private readonly IRepository<DistanceInfo> _distanceInfoRepository;
     private readonly IRepository<FallInfo> _fallInfoRepository;
+    private readonly ApplicationDbContext _dbContext;
 
     public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory,
         IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService,
@@ -28,8 +30,7 @@ public class HealthService : IHealthService
         IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository,
         IRepository<Max30102> max30102Repository,
         IRepository<Steps> stepsRepository, IRepository<DistanceInfo> distanceInfoRepository,
-        IRepository<FallInfo> fallInfoRepository
-    )
+        IRepository<FallInfo> fallInfoRepository, ApplicationDbContext dbContext)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
@@ -44,6 +45,7 @@ public class HealthService : IHealthService
         _stepsRepository = stepsRepository;
         _distanceInfoRepository = distanceInfoRepository;
         _fallInfoRepository = fallInfoRepository;
+        _dbContext = dbContext;
     }
 
     public async Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address)
@@ -223,11 +225,7 @@ public class HealthService : IHealthService
                    Math.Pow(Math.Sin(dLon / 2), 2);
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         double d = 6371 * c;
-
-        Console.WriteLine($"Location: ({location.Latitude}, {location.Longitude})");
-        Console.WriteLine($"Perimeter: ({perimeter.Latitude.Value}, {perimeter.Longitude.Value})");
-
-        _logger.LogInformation("Distance from perimeter: {Distance}", d);
+        
         if (elder.OutOfPerimeter)
         {
             if (d < perimeter.Radius)
@@ -276,26 +274,12 @@ public class HealthService : IHealthService
     public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
     {
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
-        _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
-        if (elder is null)
-        {
-            _logger.LogError("Elder not found for Email: {ElderEmail}", elderEmail);
-            return new BadRequestObjectResult("Elder not found.");
-        }
-
-        if (string.IsNullOrEmpty(elder.MacAddress))
-        {
-            _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
+        if (elder is null ||string.IsNullOrEmpty(elder.MacAddress))
             return new BadRequestObjectResult("Elder Arduino not set.");
-        }
 
         if (radius < 0)
-        {
-            _logger.LogError("Invalid radius value: {Radius}", radius);
             return new BadRequestObjectResult("Invalid radius value.");
-        }
-
-        _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
+        
         Perimeter? oldPerimeter =
             await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
 
@@ -320,8 +304,9 @@ public class HealthService : IHealthService
                 MacAddress = elder.MacAddress
             };
             await _perimeterRepository.Update(oldPerimeter);
+            await _dbContext.SaveChangesAsync();
         }
-
+        _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
         // Send Email to caregiver
         await _emailService.SendEmail(
             "Perimeter set",
@@ -336,17 +321,11 @@ public class HealthService : IHealthService
             .Include(c => c.Elders)
             .FirstOrDefaultAsync(c => c.Email == email);
         if (caregiver == null)
-        {
-            _logger.LogError("Caregiver not found.");
             return new BadRequestObjectResult("Caregiver not found.");
-        }
 
         List<Elder>? elders = caregiver.Elders;
         if (elders == null || elders.Count == 0)
-        {
-            _logger.LogError("No elders found for the caregiver.");
             return new BadRequestObjectResult("No elders found for the caregiver.");
-        }
 
         _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count, email);
         List<ElderLocationDTO> elderLocations = [];
@@ -357,14 +336,12 @@ public class HealthService : IHealthService
                 _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elder.Email);
                 continue;
             }
-
-            _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elder.Email);
+            
             Location? location =
                 await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (location == null || elder.Email == null) continue;
             Perimeter? perimeter = await _perimeterRepository.Query()
                 .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
-            _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
             elderLocations.Add(new ElderLocationDTO
             {
                 Email = elder.Email,
@@ -534,10 +511,9 @@ public class HealthService : IHealthService
       TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
-        _logger.LogInformation("Processing fall data for elder: {ElderEmail}", elderEmail);
         List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
             elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched fall data: {Count}", data.Count);
+        
         var result = PeriodUtil.AggregateByPeriod(
             data,
             period,
@@ -554,7 +530,7 @@ public class HealthService : IHealthService
                 FallCount = 0
             }
         );
-
+        _logger.LogInformation("Fetched fall data: {Count}, for Elder {elder}", result.Count, elderEmail);
         return result;
 
     }
@@ -581,7 +557,7 @@ public class HealthService : IHealthService
                 StepsCount = 0
             }
         );
-
+        _logger.LogInformation("Fetched step data: {Count}, for Elder {elder}", result.Count, elderEmail);
         return result;
     }
 
@@ -609,7 +585,7 @@ public class HealthService : IHealthService
                 Distance = 0
             }
         );
-
+        _logger.LogInformation("Fetched distance data: {Count}, for Elder {elder}", result.Count, elderEmail);
         return result;
 
     }
@@ -619,14 +595,10 @@ public class HealthService : IHealthService
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
-        _logger.LogInformation("Time {Time}", endTime);
 
-        // Fetch historical heart rate data
         List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
             elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
-
-        // Fetch current heart rate data if historical data is unavailable
+        
         List<Max30102> Max30102Data =
             await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
         _logger.LogInformation("Fetched current heart rate data: {Count}", Max30102Data.Count);
