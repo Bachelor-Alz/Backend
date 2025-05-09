@@ -85,8 +85,8 @@ public class UserController : ControllerBase
                                                 new Elder
                                                 {
                                                     Name = userRegisterDto.Name,
-                                                    Email = userRegisterDto.Email,
-                                                    UserName = userRegisterDto.Email,
+                                                    Email = userRegisterDto.Email.ToLowerInvariant(),
+                                                    UserName = userRegisterDto.Email.ToLowerInvariant(),
                                                     Latitude = (double)userRegisterDto.Latitude,
                                                     Longitude = (double)userRegisterDto.Longitude,
                                                     OutOfPerimeter = false
@@ -95,8 +95,8 @@ public class UserController : ControllerBase
                                                 new Caregiver
                                                 {
                                                     Name = userRegisterDto.Name,
-                                                    Email = userRegisterDto.Email,
-                                                    UserName = userRegisterDto.Email,
+                                                    Email = userRegisterDto.Email.ToLowerInvariant(),
+                                                    UserName = userRegisterDto.Email.ToLowerInvariant(),
                                                     Elders = new List<Elder>()
                                                 }, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown");
     }

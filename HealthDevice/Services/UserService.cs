@@ -36,7 +36,7 @@ public class UserService : IUserService
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
     {
         DateTime timestamp = DateTime.UtcNow;
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email.ToLowerInvariant());
         if (elder != null)
         {
             if (!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
@@ -53,7 +53,7 @@ public class UserService : IUserService
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), Role = Roles.Elder };
         }
 
-        Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
+        Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email.ToLowerInvariant());
         if (caregiver == null)
         {
             _logger.LogInformation("Couldnt find a user with the Email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
@@ -77,7 +77,7 @@ public class UserService : IUserService
     {
         DateTime timestamp = DateTime.UtcNow;
 
-        if (await userManager.Users.FirstOrDefaultAsync(m => m.Email == userRegisterDto.Email) != null)
+        if (await userManager.Users.FirstOrDefaultAsync(m => m.Email == userRegisterDto.Email.ToLowerInvariant()) != null)
         {
             _logger.LogWarning("{timestamp}: Registration failed for Email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
             return new BadRequestObjectResult("Email already exists.");
