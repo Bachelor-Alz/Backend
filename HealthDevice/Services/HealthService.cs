@@ -281,7 +281,7 @@ public class HealthService : IHealthService
             return new BadRequestObjectResult("Invalid radius value.");
         
         Perimeter? oldPerimeter =
-            await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+            await _perimeterRepository.Query().OrderByDescending(i => i.Id).FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
 
         if (oldPerimeter == null)
         {
@@ -303,9 +303,10 @@ public class HealthService : IHealthService
                 Radius = radius,
                 MacAddress = elder.MacAddress
             };
-            await _perimeterRepository.Update(oldPerimeter);
-            await _dbContext.SaveChangesAsync();
+            _dbContext.Entry(oldPerimeter).State = EntityState.Modified;
+            _dbContext.Update(oldPerimeter);
         }
+        await _dbContext.SaveChangesAsync();
         _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
         // Send Email to caregiver
         await _emailService.SendEmail(
