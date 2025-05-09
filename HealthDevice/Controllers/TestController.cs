@@ -1,4 +1,3 @@
-using HealthDevice.DTO;
 using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,10 +7,8 @@ namespace HealthDevice.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-//This controller is used to test what ever endpoint we what to test if it works without implementing it in a main controller
 public class TestController : ControllerBase
 {
-    private readonly IGeoService _geoService;
     private readonly IRepository<Elder> _elderRepository;
     private readonly IRepository<Max30102> _max30102Repository;
     private readonly IRepository<DistanceInfo> _kilometerRepository;
@@ -22,7 +19,6 @@ public class TestController : ControllerBase
 
     public TestController
     (
-        IGeoService geoService,
         IRepository<Elder> elderRepository,
         IRepository<Max30102> max30102Repository,
         IRepository<DistanceInfo> kilometerRepository,
@@ -32,7 +28,6 @@ public class TestController : ControllerBase
         IRepository<GPSData> gpsRepository
     )
     {
-        _geoService = geoService;
         _elderRepository = elderRepository;
         _max30102Repository = max30102Repository;
         _kilometerRepository = kilometerRepository;
@@ -41,36 +36,17 @@ public class TestController : ControllerBase
         _locationRepository = locationRepository;
         _gpsRepository = gpsRepository;
     }
-
-    [HttpPost("Address")]
-    public async Task<ActionResult> GetAddress(double latitude, double longitude)
-    {
-        var result = await _geoService.GetAddressFromCoordinates(latitude, longitude);
-        return Ok(result);
-    }
-
-    [HttpPost("Coordinates")]
-    public async Task<ActionResult> GetCoordinates(AddressDTO address)
-    {
-        var result = await _geoService.GetCoordinatesFromAddress(address.Street, address.City);
-        return Ok(result);
-    }
+    
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderEmail)
     {
         Elder? elder = await _elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
-        if (elder == null)
+        if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
             return NotFound("Elder not found");
         }
-
-        string? macAddress = elder.MacAddress;
-
-        if (string.IsNullOrEmpty(macAddress))
-        {
-            return BadRequest("Elder does not have a MAC address");
-        }
+        
         DateTime currentDate = DateTime.UtcNow.Date;
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
@@ -104,7 +80,7 @@ public class TestController : ControllerBase
                 MaxSpO2 = maxSpo2,
                 MinSpO2 = minSpo2,
                 Timestamp = timestamp,
-                MacAddress = macAddress
+                MacAddress = elder.MacAddress
             });
 
             int steps = Random.Shared.Next(stepsMin, stepsMax);
@@ -114,13 +90,13 @@ public class TestController : ControllerBase
             {
                 StepsCount = steps,
                 Timestamp = timestamp,
-                MacAddress = macAddress
+                MacAddress = elder.MacAddress
             });
             await _kilometerRepository.Add(new DistanceInfo()
             {
                 Distance = distance,
                 Timestamp = timestamp,
-                MacAddress = macAddress
+                MacAddress = elder.MacAddress
             });
         }
 
@@ -129,7 +105,7 @@ public class TestController : ControllerBase
             Latitude = 57.012153,
             Longitude = 9.991292,
             Timestamp = currentDate,
-            MacAddress = macAddress
+            MacAddress = elder.MacAddress
         });
 
         await _locationRepository.Add(new Location
@@ -137,7 +113,7 @@ public class TestController : ControllerBase
             Latitude = 57.012153,
             Longitude = 9.991292,
             Timestamp = currentDate,
-            MacAddress = macAddress
+            MacAddress = elder.MacAddress
         });
 
         for (int k = 0; k < 100; k++)
@@ -156,10 +132,10 @@ public class TestController : ControllerBase
                             Latitude = 57.012153,
                             Longitude = 9.991292,
                             Timestamp = timestamp2,
-                            MacAddress = macAddress
+                            MacAddress = elder.MacAddress
                         },
                         Timestamp = timestamp2,
-                        MacAddress = macAddress
+                        MacAddress = elder.MacAddress
                     });
                 }
             }

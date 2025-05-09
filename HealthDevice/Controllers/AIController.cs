@@ -17,20 +17,10 @@ public class AiController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task<ActionResult> Compute([FromBody] List<int> predictions, string mac)
+    public async Task Compute([FromBody] List<int> predictions, string mac)
     {
-        if (predictions.Count == 0)
-        {
-            _logger.LogWarning("Received empty predictions list.");
-            return BadRequest("Predictions list cannot be empty.");
-        }
-        if (string.IsNullOrEmpty(mac))
-        {
-            _logger.LogWarning("Received empty MAC address.");
-            return BadRequest("MAC address cannot be empty.");
-        }
-        _logger.LogInformation("Received predictions: {predictions} for MAC address: {mac}", predictions, mac);
-        await _aiService.HandleAiRequest(predictions, mac);
-        return Ok();
+        _logger.LogInformation("Amount of received predictions: {predictions} for MAC address: {mac}", predictions.Count, mac);
+        if (!(predictions.Count == 0 || string.IsNullOrEmpty(mac))) 
+            await _aiService.HandleAiRequest(predictions, mac);
     }
 }

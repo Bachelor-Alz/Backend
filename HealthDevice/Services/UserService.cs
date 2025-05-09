@@ -136,7 +136,7 @@ public class UserService : IUserService
             float distance = GeoService.CalculateDistance(new Location { Latitude = gps.Latitude, Longitude = gps.Longitude }, elderLocation);
             int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes) * -1;
             if (!(distance < 0.5)) continue;
-            _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
+            _logger.LogInformation("Distance: {Distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
             ArduinoInfoDTO arduinoInfo = new ArduinoInfoDTO
             {
                 Id = gps.Id,

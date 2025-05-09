@@ -127,7 +127,7 @@ public class HealthService : IHealthService
 
         if (gpsData.Count < 2)
         {
-            _logger.LogWarning("Not enough GPS data to calculate distance for elder {Arduino}", arduino);
+            _logger.LogWarning("Not enough GPS data to calculate Distance for elder {Arduino}", arduino);
             return new DistanceInfo
             {
                 MacAddress = String.Empty
@@ -146,7 +146,7 @@ public class HealthService : IHealthService
 
         if (distance == 0)
         {
-            _logger.LogWarning("No distance data found for elder {Arduino}", arduino);
+            _logger.LogWarning("No Distance data found for elder {Arduino}", arduino);
             return new DistanceInfo
             {
                 MacAddress = String.Empty
@@ -748,9 +748,9 @@ public class HealthService : IHealthService
 
         return new DashBoard
         {
-            allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date)
+            FallCount = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date)
                 .Count(f => f.MacAddress == macAddress),
-            distance = kilometer?.Distance ?? 0,
+            Distance = kilometer?.Distance ?? 0,
             HeartRate = max30102?.LastHeartrate ?? 0,
             SpO2 = max30102?.LastSpO2 ?? 0,
             Steps = steps?.StepsCount ?? 0
