@@ -1,16 +1,7 @@
-﻿using System.Globalization;
-
-namespace HealthDevice.Services;
+﻿namespace HealthDevice.Services;
 
 public class TimeZoneService : ITimeZoneService
 {
-    private readonly ILogger<TimeZoneService> _logger;
-
-    public TimeZoneService(ILogger<TimeZoneService> logger)
-    {
-        _logger = logger;
-    }
-
     public DateTimeOffset UTCToLocalTime(TimeZoneInfo userTimeZone, DateTime utcInput)
     {
         utcInput = DateTime.SpecifyKind(utcInput, DateTimeKind.Utc);
@@ -28,5 +19,4 @@ public class TimeZoneService : ITimeZoneService
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc), userTimeZone);
         return DateTime.SpecifyKind(localTime, DateTimeKind.Utc); // Ensure the returned DateTime is UTC
     }
-
 }

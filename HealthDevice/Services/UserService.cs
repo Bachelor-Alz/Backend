@@ -104,11 +104,11 @@ public class UserService : IUserService
             new(ClaimTypes.Role, role)
         ];
 
-        JwtSecurityToken? token = new JwtSecurityToken(
+        JwtSecurityToken token = new JwtSecurityToken(
             issuer: "api.healthdevice.com",
             audience: "user.healthdevice.com",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(100),
+            expires: DateTime.Now.AddMinutes(15),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

@@ -9,9 +9,8 @@ namespace HealthDevice.Utils
     {
         public static void AddJwtAuthentication(this IServiceCollection services, string issuer, string audience, string secretKey)
         {
-            var key = Encoding.UTF8.GetBytes(secretKey);
-
-            // Default JWT authentication
+            Byte[] key = Encoding.UTF8.GetBytes(secretKey);
+            
             services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

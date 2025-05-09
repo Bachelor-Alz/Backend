@@ -27,7 +27,6 @@ namespace HealthDevice.Services
                     var hrRepository = scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
                     var spo2Repository = scope.ServiceProvider.GetRequiredService<IRepository<Spo2>>();
                     var distanceRepository = scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
-                    var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
 
                     List<Elder> elders = await elderRepository.Query().ToListAsync(cancellationToken: stoppingToken);

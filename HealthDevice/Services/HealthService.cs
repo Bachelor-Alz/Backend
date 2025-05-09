@@ -18,7 +18,6 @@ public class HealthService : IHealthService
     private readonly IRepository<Perimeter> _perimeterRepository;
     private readonly IRepository<Location> _locationRepository;
     private readonly IRepository<Max30102> _max30102Repository;
-    private readonly IRepository<GPSData> _gpsDataRepository;
     private readonly IRepository<Steps> _stepsRepository;
     private readonly IRepository<DistanceInfo> _distanceInfoRepository;
     private readonly IRepository<FallInfo> _fallInfoRepository;
@@ -26,7 +25,7 @@ public class HealthService : IHealthService
         IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService,
         IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
         IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository, 
-        IRepository<Max30102> max30102Repository, IRepository<GPSData> gpsDataRepository,
+        IRepository<Max30102> max30102Repository,
         IRepository<Steps> stepsRepository, IRepository<DistanceInfo> distanceInfoRepository,
         IRepository<FallInfo> fallInfoRepository
         )
@@ -41,7 +40,6 @@ public class HealthService : IHealthService
         _perimeterRepository = perimeterRepository;
         _locationRepository = locationRepository;
         _max30102Repository = max30102Repository;
-        _gpsDataRepository = gpsDataRepository;
         _stepsRepository = stepsRepository;
         _distanceInfoRepository = distanceInfoRepository;
         _fallInfoRepository = fallInfoRepository;
@@ -196,21 +194,21 @@ public class HealthService : IHealthService
         _logger.LogInformation("Deleted {Count} GPS records for elder {Arduino}", data.Count, arduino);
     }
 
-    public async Task ComputeOutOfPerimeter(string Arduino, Location location)
+    public async Task ComputeOutOfPerimeter(string arduino, Location location)
     {
         Perimeter? perimeter = await _perimeterRepository.Query()
-            .FirstOrDefaultAsync(p => p.MacAddress == Arduino);
+            .FirstOrDefaultAsync(p => p.MacAddress == arduino);
         if (perimeter == null)
         {
-            _logger.LogWarning("No perimeter found for elder with Arduino {Arduino}", Arduino);
+            _logger.LogWarning("No perimeter found for elder with arduino {arduino}", arduino);
             return;
         }
 
         Elder? elder = await _elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.MacAddress == Arduino);
+            .FirstOrDefaultAsync(e => e.MacAddress == arduino);
         if (elder == null)
         {
-            _logger.LogWarning("Elder with Arduino {Arduino} not found", Arduino);
+            _logger.LogWarning("Elder with arduino {arduino} not found", arduino);
             return;
         }
         if (perimeter.Latitude == null || perimeter.Longitude == null) return;

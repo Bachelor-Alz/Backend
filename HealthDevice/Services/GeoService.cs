@@ -1,8 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using HealthDevice.DTO;
 using HealthDevice.Models;
-
 
 namespace HealthDevice.Services;
 

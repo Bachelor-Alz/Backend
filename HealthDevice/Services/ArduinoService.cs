@@ -2,7 +2,6 @@
 using HealthDevice.Data;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HealthDevice.Services;
 

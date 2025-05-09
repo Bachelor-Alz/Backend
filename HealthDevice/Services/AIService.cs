@@ -16,7 +16,9 @@ public class AiService : IAIService
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Location> _locationRepository;
 
-    public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService, IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository, IRepository<FallInfo> fallInfoRepository, IRepository<Location> locationRepository)
+    public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService,
+        IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
+        IRepository<FallInfo> fallInfoRepository, IRepository<Location> locationRepository)
     {
         _logger = logger;
         _emailService = emailService;

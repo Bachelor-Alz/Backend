@@ -84,11 +84,11 @@ public class TestController : ControllerBase
         for (int i = -1500; i < 1500; i++)
         {
             DateTime timestamp = currentDate + TimeSpan.FromMinutes(i * 5);
-            int PreHeartrateMin = Random.Shared.Next(20, 45);
-            int PreHeartrateMax = Random.Shared.Next(140, 200);
-            int heartrate = Random.Shared.Next(PreHeartrateMin, PreHeartrateMax);
-            int minheartrate = Random.Shared.Next(PreHeartrateMin, heartrate);
-            int maxheartrate = Random.Shared.Next(heartrate, PreHeartrateMax);
+            int preHeartrateMin = Random.Shared.Next(20, 45);
+            int preHeartrateMax = Random.Shared.Next(140, 200);
+            int heartrate = Random.Shared.Next(preHeartrateMin, preHeartrateMax);
+            int minheartrate = Random.Shared.Next(preHeartrateMin, heartrate);
+            int maxheartrate = Random.Shared.Next(heartrate, preHeartrateMax);
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
             float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
             float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.EntityFrameworkCore;
 using HealthDevice.Data;
 
 public class DbHealthCheck : IHealthCheck

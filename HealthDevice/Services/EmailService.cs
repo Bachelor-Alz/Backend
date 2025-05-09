@@ -8,24 +8,29 @@ namespace HealthDevice.Services;
 public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
-    private readonly string smtpHost;
-    private readonly int smtpPort;
-    private readonly string smtpUser;
-    private readonly string smtpPassword;
+    private readonly string _smtpHost;
+    private readonly int _smtpPort;
+    private readonly string _smtpUser;
+    private readonly string _smtpPassword;
 
     public EmailService(ILogger<EmailService> logger)
     {
         _logger = logger;
-        smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? throw new ArgumentNullException("SMTP_HOST environment variable is not set.");
-        smtpPort = int.TryParse(Environment.GetEnvironmentVariable("SMTP_PORT"), out var port) ? port : throw new ArgumentNullException("SMTP_PORT environment variable is not set or invalid.");
-        smtpUser = Environment.GetEnvironmentVariable("SMTP_USER") ?? throw new ArgumentNullException("SMTP_USER environment variable is not set.");
-        smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? throw new ArgumentNullException("SMTP_PASSWORD environment variable is not set.");
+        _smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "";
+        _smtpPort = int.TryParse(Environment.GetEnvironmentVariable("SMTP_PORT"), out int port) ? port : 0;
+        _smtpUser = Environment.GetEnvironmentVariable("SMTP_USER") ?? "";
+        _smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
     }
 
     public async Task SendEmail(Email to, string subject, string body)
     {
+        if(_smtpHost == "" || _smtpPort == 0 || _smtpUser == "" || _smtpPassword == "")
+        {
+            _logger.LogWarning("SMTP configuration is not set. Email will not be sent.");
+            return;
+        }
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("Health Device", smtpUser));
+        message.From.Add(new MailboxAddress("Health Device", _smtpUser));
         message.To.Add(new MailboxAddress(to.Name, to.EmailAddress));
         message.Subject = subject;
         message.Body = new TextPart("plain")
@@ -34,11 +39,11 @@ public class EmailService : IEmailService
         };
 
         using var client = new SmtpClient();
-
+        
         try
         {
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
+            await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(_smtpUser, _smtpPassword);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
