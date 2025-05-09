@@ -10,6 +10,12 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+builder.Services.AddScoped<UserController>(); 
+builder.Services.AddScoped<ArduinoController>();
+builder.Services.AddScoped<HealthController>();
+builder.Services.AddScoped<AiController>();
+builder.Services.AddScoped<TestController>();
 builder.Services.AddHttpClient<AiController>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

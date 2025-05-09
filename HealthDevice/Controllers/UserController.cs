@@ -69,7 +69,7 @@ public class UserController : ControllerBase
             return BadRequest("Password must be at least 6 characters long.");
         }
         _logger.LogInformation("Login attempt for Email: {Email}", userLoginDto.Email);
-        string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
         return await _userService.HandleLogin(userLoginDto, ipAddress);
     }
 
@@ -108,7 +108,7 @@ public class UserController : ControllerBase
             return BadRequest("Caregiver registration should not include Latitude and Longitude.");
         }
         _logger.LogInformation("Registration attempt for Email: {Email} with Role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
-        string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
         return userRegisterDto.Role == Roles.Elder
             ? await _userService.HandleRegister(_elderManager, userRegisterDto,
                                                 new Elder

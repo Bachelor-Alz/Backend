@@ -11,10 +11,10 @@ public static class TestUserConfig
 {
     public static async Task MakeTestUserAsync(IServiceProvider serviceProvider)
     {
-        using IServiceScope scope = serviceProvider.CreateScope();
-        IServiceProvider scopedServices = scope.ServiceProvider;
+        using var scope = serviceProvider.CreateScope();
+        var scopedServices = scope.ServiceProvider;
 
-        UserController userController = scopedServices.GetRequiredService<UserController>();
+        var userController = scopedServices.GetRequiredService<UserController>();
 
         UserRegisterDTO elder = new UserRegisterDTO
         {
@@ -23,9 +23,9 @@ public static class TestUserConfig
             Password = "Test1234!",
             Latitude = 55.6761,
             Longitude = 12.5683,
-            Role = Roles.Elder,
+            Role = Roles.Elder
         };
-        ActionResult result = await userController.Register(elder);
+        var result = await userController.Register(elder);
 
         if (result is not OkObjectResult)
         {
@@ -38,7 +38,7 @@ public static class TestUserConfig
         elderEntity.MacAddress = "00:00:00:00:00:00";
         await elderRepository.Update(elderEntity);
 
-        TestController testController = scopedServices.GetRequiredService<TestController>();
+        var testController = scopedServices.GetRequiredService<TestController>();
         await testController.GenerateFakeData(elder.Email);
     }
 }
