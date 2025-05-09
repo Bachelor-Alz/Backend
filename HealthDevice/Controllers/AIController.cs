@@ -20,8 +20,8 @@ public class AiController : ControllerBase
     [HttpPost("compute")]
     public async Task Compute([FromBody] AiRequest request)
     {
-        _logger.LogInformation("Amount of received predictions: {predictions} for MAC address: {mac}", request.Predictions.Count, request.MacAddress);
-        if (!(request.Predictions.Count == 0 || string.IsNullOrEmpty(request.MacAddress))) 
-            await _aiService.HandleAiRequest(request.Predictions, request.MacAddress);
+        _logger.LogInformation("Amount of received predictions: {predictions} for MAC address: {mac}", request.Predictions.Count, request.Mac);
+        if (!(request.Predictions.Count == 0 || string.IsNullOrEmpty(request.Mac))) 
+            await _aiService.HandleAiRequest(request.Predictions, request.Mac);
     }
 }

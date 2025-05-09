@@ -26,6 +26,7 @@ public class ArduinoInfoDTO
 
 public class AiRequest
 {
+    public string Mac { get; set; }
     public List<int> Predictions { get; set; }
-    public string MacAddress { get; set; }
+ 
 }
