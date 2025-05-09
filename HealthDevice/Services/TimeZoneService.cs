@@ -1,4 +1,5 @@
-﻿namespace HealthDevice.Services;
+﻿// ReSharper disable SuggestVarOrType_SimpleTypes
+namespace HealthDevice.Services;
 
 public class TimeZoneService : ITimeZoneService
 {

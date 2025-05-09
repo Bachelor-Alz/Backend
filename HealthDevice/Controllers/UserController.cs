@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore; 
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Controllers;
 
@@ -140,7 +141,7 @@ public class UserController : ControllerBase
             return BadRequest("Elder is already invited by this caregiver.");
         }
 
-        caregiver.Invites ??= new List<Elder>();
+        caregiver.Invites ??= [];
         caregiver.Invites.Add(elder);
 
         try
@@ -242,7 +243,7 @@ public class UserController : ControllerBase
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Elders)
             .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
-        if (caregiver == null || caregiver.Elders == null)
+        if (caregiver?.Elders == null)
             return BadRequest("Caregiver not found or has no elders.");
         
         List<Elder> elders = caregiver.Elders;
@@ -374,7 +375,7 @@ public class UserController : ControllerBase
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Invites)
             .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
-        if (caregiver == null || caregiver.Invites == null)
+        if (caregiver?.Invites == null)
         {
             return BadRequest("Caregiver has no invites.");
         }
@@ -480,13 +481,12 @@ public class UserController : ControllerBase
         if (expTime > DateTime.UtcNow)
             return BadRequest("Token is not expired yet.");
 
-        if (DateTime.UtcNow <= expTime || expTime <= DateTime.UtcNow + TimeSpan.FromMinutes(5))
-        {
-            if (caregiver != null)
-                return _userService.GenerateJwt(caregiver, "Caregiver");
-            if (elder != null)
-                return _userService.GenerateJwt(elder, "Elder");
-        }
+        if (DateTime.UtcNow > expTime && expTime > DateTime.UtcNow + TimeSpan.FromMinutes(5))
+            return BadRequest("Token is expired.");
+        if (caregiver != null)
+            return _userService.GenerateJwt(caregiver, "Caregiver");
+        if (elder != null)
+            return _userService.GenerateJwt(elder, "Elder");
         return BadRequest("Token is not expired yet.");
     }
     

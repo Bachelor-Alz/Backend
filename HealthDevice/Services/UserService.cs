@@ -6,6 +6,7 @@ using HealthDevice.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 namespace HealthDevice.Services;
 
 

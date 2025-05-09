@@ -14,7 +14,7 @@ public class DbHealthCheck : IHealthCheck
     {
         try
         {
-            var canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);
+            bool canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);
             return canConnect
                 ? HealthCheckResult.Healthy("Database connection OK")
                 : HealthCheckResult.Unhealthy("Database connection failed");

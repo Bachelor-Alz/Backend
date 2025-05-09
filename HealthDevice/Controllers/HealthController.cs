@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Period = HealthDevice.DTO.Period;
 using StepsDTO = HealthDevice.DTO.StepsDTO;
+// ReSharper disable All
 
 namespace HealthDevice.Controllers
 {

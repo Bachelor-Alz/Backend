@@ -2,6 +2,7 @@
 using HealthDevice.Data;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 

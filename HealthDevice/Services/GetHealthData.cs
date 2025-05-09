@@ -1,6 +1,7 @@
 ﻿using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 
@@ -34,8 +35,7 @@ public class GetHealthDataService : IGetHealthData
         date = _timeZoneService.LocalTimeToUTC(timezone, date);
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
 
-        IRepository<Elder> elderRepository = _elderRepository;
-        Elder? elder = await elderRepository.Query()
+        Elder? elder = await _elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
 
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))

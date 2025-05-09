@@ -1,5 +1,4 @@
-﻿using HealthDevice.Models;
-namespace HealthDevice.DTO;
+﻿namespace HealthDevice.DTO;
 
 public class ElderLocationDTO
 {

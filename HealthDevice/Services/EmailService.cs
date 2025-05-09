@@ -1,9 +1,9 @@
-﻿using HealthDevice.DTO;
-using HealthDevice.Models;
+﻿using HealthDevice.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 

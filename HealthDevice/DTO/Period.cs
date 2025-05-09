@@ -25,7 +25,8 @@ public static class PeriodUtil
                 throw new ArgumentOutOfRangeException(nameof(period), "Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
         }
     }
-    public static DateTime GetSlotStart(this Period period, DateTime date)
+
+    private static DateTime GetSlotStart(this Period period, DateTime date)
     {
         switch (period)
         {
@@ -42,22 +43,18 @@ public static class PeriodUtil
         }
     }
 
-    public static int GetMaxDataSlots(this Period period)
+    private static int GetMaxDataSlots(this Period period)
     {
-        switch (period)
+        return period switch
         {
-            case Period.Hour:
-                return 60 / 5; // 5-minute intervals in an hour
-            case Period.Day:
-                return 24;
-            case Period.Week:
-                return 7;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(period), period, null);
-        }
+            Period.Hour => 60 / 5, // 5-minute intervals in an hour
+            Period.Day => 24,
+            Period.Week => 7,
+            _ => throw new ArgumentOutOfRangeException(nameof(period), period, null)
+        };
     }
 
-    public static IEnumerable<DateTime> GetExpectedSlots(this Period period, DateTime referenceDate)
+    private static IEnumerable<DateTime> GetExpectedSlots(this Period period, DateTime referenceDate)
     {
         int max = period.GetMaxDataSlots();
         switch (period)
@@ -111,19 +108,14 @@ public static class PeriodUtil
         Func<IEnumerable<TSource>, DateTime, TResult> aggregateFunc,
         Func<DateTime, TResult> defaultFactory)
     {
-        var grouped = data
+        Dictionary<DateTime, IGrouping<DateTime, TSource>> grouped = data
             .GroupBy(x => period.GetSlotStart(timestampSelector(x)))
             .ToDictionary(g => g.Key, g => g);
 
-        var slots = period.GetExpectedSlots(referenceDate);
-        var results = new List<TResult>();
-        foreach (var slot in slots)
-        {
-            if (grouped.TryGetValue(slot, out var group))
-                results.Add(aggregateFunc(group, slot));
-            else
-                results.Add(defaultFactory(slot));
-        }
-        return results;
+        IEnumerable<DateTime> slots = period.GetExpectedSlots(referenceDate);
+        return slots.Select(slot => grouped.TryGetValue(slot, out IGrouping<DateTime, TSource>? group)
+                ? aggregateFunc(group, slot)
+                : defaultFactory(slot))
+            .ToList();
     }
 }

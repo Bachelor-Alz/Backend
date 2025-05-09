@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services
 {

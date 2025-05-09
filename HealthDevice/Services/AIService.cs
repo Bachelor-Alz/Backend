@@ -1,7 +1,7 @@
-﻿using HealthDevice.DTO;
-using HealthDevice.Models;
+﻿using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 

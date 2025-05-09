@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using HealthDevice.Models;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 
@@ -93,9 +94,7 @@ public class GeoService : IGeoService
                    Math.Cos(lat1) * Math.Cos(lat2) *
                    Math.Pow(Math.Sin(dLon / 2), 2);
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        float d = (float)(6371 * c);
-
-        return d; // Distance in kilometers
+        return (float)(6371 * c); 
     }
 }
 
