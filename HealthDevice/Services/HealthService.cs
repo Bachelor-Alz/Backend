@@ -68,8 +68,6 @@ public class HealthService : IHealthService
             var heartRateInHour = heartRates.Where(h => h.Timestamp >= date1 && h.Timestamp < date1.AddHours(1));
             List<Max30102> rateInHour = heartRateInHour.ToList();
             if (rateInHour.Count == 0) continue;
-
-            _logger.LogInformation("Heart rate data found for mac-address {Address} in hour {Hour}", address, date);
             heartRateList.Add(new Heartrate
             {
                 Avgrate = (int)rateInHour.Average(hr => hr.AvgHeartrate),
@@ -79,7 +77,7 @@ public class HealthService : IHealthService
                 MacAddress = address
             });
         }
-
+        _logger.LogInformation("Found {Count} heart rate records for elder with MacAddress {Address}", heartRateList.Count, address);
         return heartRateList;
     }
 
@@ -103,8 +101,7 @@ public class HealthService : IHealthService
         {
             var hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
             if (hourlyData.Count == 0) continue;
-
-            _logger.LogInformation("SpO2 data found for mac-address {Address} in hour {Hour}", address, date);
+            
             spo2List.Add(new Spo2
             {
                 AvgSpO2 = hourlyData.Average(sp => sp.AvgSpO2),
@@ -114,7 +111,7 @@ public class HealthService : IHealthService
                 MacAddress = address
             });
         }
-
+        _logger.LogInformation("Found {Count} SpO2 records for elder with MacAddress {Address}", spo2List.Count, address);
         return spo2List;
     }
 

@@ -43,17 +43,14 @@ public class GetHealthDataService : IGetHealthData
             _logger.LogError("No elder found with Email {Email} or Arduino is not set", elderEmail);
             return [];
         }
-
-        string arduino = elder.MacAddress;
         IRepository<T> repository = _repositoryFactory.GetRepository<T>();
 
         List<T> data = await repository.Query()
-            .Where(d => d.MacAddress == arduino &&
+            .Where(d => d.MacAddress == elder.MacAddress &&
                          d.Timestamp >= earlierDate &&
                          d.Timestamp <= date)
             .ToListAsync();
-
-
+        
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
         return data;
     }
