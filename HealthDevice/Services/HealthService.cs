@@ -101,7 +101,7 @@ public class HealthService : IHealthService
         {
             List<Max30102> hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
             if (hourlyData.Count == 0) continue;
-            
+
             spo2List.Add(new Spo2
             {
                 AvgSpO2 = hourlyData.Average(sp => sp.AvgSpO2),
@@ -213,17 +213,21 @@ public class HealthService : IHealthService
         }
 
         if (perimeter.Latitude == null || perimeter.Longitude == null) return;
+        //The Haversine formula to calculate the distance between two points on the earth
+        //Link https://www.movable-type.co.uk/scripts/latlong.html
         double dLat = (perimeter.Latitude.Value - location.Latitude) * Math.PI / 180;
         double dLon = (perimeter.Longitude.Value - location.Longitude) * Math.PI / 180;
         double lat1 = location.Latitude * Math.PI / 180;
         double lat2 = perimeter.Latitude.Value * Math.PI / 180;
 
+        int RADIUS_OF_EARTH = 6371;
+
         double a = Math.Pow(Math.Sin(dLat / 2), 2) +
                    Math.Cos(lat1) * Math.Cos(lat2) *
                    Math.Pow(Math.Sin(dLon / 2), 2);
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        double d = 6371 * c;
-        
+        double d = RADIUS_OF_EARTH * c;
+
         if (elder.OutOfPerimeter)
         {
             if (d < perimeter.Radius)
@@ -302,7 +306,7 @@ public class HealthService : IHealthService
             await _perimeterRepository.Update(oldPerimeter);
         }
         _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
-        
+
         await _emailService.SendEmail(
             "Perimeter set",
             $"Perimeter set for elder {elder.Name} with radius {radius} meters.", elder);
@@ -331,7 +335,7 @@ public class HealthService : IHealthService
                 _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elder.Email);
                 continue;
             }
-            
+
             Location? location =
                 await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (location == null || elder.Email == null) continue;
@@ -505,7 +509,7 @@ public class HealthService : IHealthService
         DateTime endTime = period.GetEndDate(date);
         List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
             elderEmail, period, endTime, timezone);
-        
+
         List<FallDTO> result = PeriodUtil.AggregateByPeriod(
             data,
             period,
@@ -590,7 +594,7 @@ public class HealthService : IHealthService
 
         List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
             elderEmail, period, endTime, timezone);
-        
+
         List<Max30102> Max30102Data =
             await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
 
@@ -638,7 +642,7 @@ public class HealthService : IHealthService
 
         List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
             elderEmail, period, endTime, timezone);
-        
+
         List<Max30102> Max30102Data =
             await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
 
@@ -685,7 +689,7 @@ public class HealthService : IHealthService
             .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
             .OrderByDescending(m => m.Timestamp)
             .FirstOrDefaultAsync();
-        
+
         DistanceInfo? kilometer = await _distanceInfoRepository.Query()
             .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
             .GroupBy(s => s.Timestamp.Date)
