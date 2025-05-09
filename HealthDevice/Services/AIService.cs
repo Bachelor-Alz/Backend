@@ -53,7 +53,7 @@ public class AiService : IAIService
     {
         FallInfo fallInfo = new FallInfo()
         {
-            Timestamp = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0),
+            Timestamp = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime(),
             Location = new Location(),
             MacAddress = macAddress
         };
