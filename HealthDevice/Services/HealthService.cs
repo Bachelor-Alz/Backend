@@ -324,6 +324,7 @@ public class HealthService : IHealthService
             };
             await _perimeterRepository.Update(oldPerimeter);
         }
+
         // Send Email to caregiver
         await _emailService.SendEmail(
             "Perimeter set",
@@ -335,19 +336,21 @@ public class HealthService : IHealthService
     public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email)
     {
         Caregiver? caregiver = await _caregiverRepository.Query()
-               .Include(c => c.Elders)
-               .FirstOrDefaultAsync(c => c.Email == email);
+            .Include(c => c.Elders)
+            .FirstOrDefaultAsync(c => c.Email == email);
         if (caregiver == null)
         {
             _logger.LogError("Caregiver not found.");
             return new BadRequestObjectResult("Caregiver not found.");
         }
+
         List<Elder>? elders = caregiver.Elders;
         if (elders == null || elders.Count == 0)
         {
             _logger.LogError("No elders found for the caregiver.");
             return new BadRequestObjectResult("No elders found for the caregiver.");
         }
+
         _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count, email);
         List<ElderLocationDTO> elderLocations = [];
         foreach (Elder elder in elders)
@@ -357,296 +360,42 @@ public class HealthService : IHealthService
                 _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elder.Email);
                 continue;
             }
+
             _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elder.Email);
-            Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
-            if (location == null) continue;
-            {
-                _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elder.Email);
-                if (elder.Email == null) continue;
-                _logger.LogInformation("Fetching perimeter data for elder: {ElderEmail}", elder.Email);
-                Perimeter? perimeter = await _perimeterRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
-                if (perimeter != null)
+            Location? location =
+                await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+            if (location == null || elder.Email == null) continue;
+            Perimeter? perimeter = await _perimeterRepository.Query()
+                .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+                _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
+                elderLocations.Add(new ElderLocationDTO
                 {
-                    _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
-                    elderLocations.Add(new ElderLocationDTO
+                    Email = elder.Email,
+                    Name = elder.Name,
+                    Latitude = location.Latitude,
+                    Longitude = location.Longitude,
+                    LastUpdated = location.Timestamp,
+                    Perimeter = new Perimeter
                     {
-                        Email = elder.Email,
-                        Name = elder.Name,
-                        Latitude = location.Latitude,
-                        Longitude = location.Longitude,
-                        LastUpdated = location.Timestamp,
-                        Perimeter = new Perimeter
-                        {
-                            Latitude = perimeter.Latitude,
-                            Longitude = perimeter.Longitude,
-                            Radius = perimeter.Radius
-                        }
-                    });
-                }
-                else
-                {
-                    _logger.LogInformation("No perimeter data found for elder: {ElderEmail}", elder.Email);
-                    elderLocations.Add(new ElderLocationDTO
-                    {
-                        Email = elder.Email,
-                        Name = elder.Name,
-                        Latitude = location.Latitude,
-                        Longitude = location.Longitude,
-                        LastUpdated = location.Timestamp
-                    });
-                }
-            }
+                        Latitude = perimeter?.Latitude,
+                        Longitude = perimeter?.Longitude,
+                        Radius = perimeter?.Radius
+                    }
+                });
         }
-        if (elderLocations.Count == 0)
-        {
-            _logger.LogError("No location data found for the elders.");
-            return new BadRequestObjectResult("No location data found for the elders.");
-        }
+
         _logger.LogInformation("Found {LocationCount} locations for the elders.", elderLocations.Count);
         return elderLocations;
     }
-
-    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    
+     private List<PostHeartRate> GetHeartrateFallback(List<Heartrate> data,
+        List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
     {
-        DateTime endTime = period.GetEndDate(date);
-        switch (period)
-        {
-            case Period.Hour:
-                {
-                    _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
-                    List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                        elderEmail, period, endTime, timezone);
-                    _logger.LogInformation("Fetched fall data: {Count}", data.Count);
-                    List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = _timeZoneService.UTCToLocalTime(timezone, fall.Timestamp), FallCount = 1 })
-                        .ToList();
-                    _logger.LogInformation("Processed fall data: {Count}", result.Count);
-                    return result.Count != 0 ? result : [];
-                }
-            case Period.Day:
-                {
-                    _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
-                    List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                        elderEmail, period, endTime, timezone);
-                    // Group by the hour and select the latest fall for each hour and count the falls in that hour for each data point found in the hour
-                    List<FallDTO> result = data.Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
-                        .GroupBy(f => f.Timestamp.Hour)
-                        .Select(g => new FallDTO
-                        {
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp),
-                            FallCount = g.Count()
-                        }).ToList();
-
-                    // Add missing days with no falls
-                    DateTime startDate = new DateTime(endTime.Year, date.Month, date.Day, 0, 0, 0); // Adjust based on the period
-                    DateTime endDate = date.Date.AddHours(23).AddMinutes(59).AddSeconds(59); // Adjust based on the period
-                    for (DateTime currentDate = startDate; currentDate < endDate; currentDate = currentDate.AddHours(1))
-                    {
-                        if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
-                        {
-                            result.Add(new FallDTO
-                            {
-                                Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate.AddHours(-2)),
-                                FallCount = 0
-                            });
-                        }
-                    }
-
-                    return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Hour).ToList() : [];
-                }
-            default:
-                {
-                    _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
-                    //Find the end of the week the date is in 
-                    DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-                    List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-                        elderEmail, period, endTime, timezone);
-                    List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
-                        .GroupBy(f => f.Timestamp.Date)
-                        .Select(g => new FallDTO
-                        {
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                            FallCount = g.Count()
-                        }).ToList();
-
-                    // Add missing days with no falls
-                    DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6); // Adjust based on the period
-                    for (DateTime currentDate = startDate; currentDate < date.Date; currentDate = currentDate.AddDays(1))
-                    {
-                        if (result.All(r => r.Timestamp.Date != currentDate.Date))
-                        {
-                            result.Add(new FallDTO
-                            {
-                                Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                                FallCount = 0
-                            });
-                        }
-                    }
-
-                    return result.Count != 0 ? result.OrderBy(r => r.Timestamp.Date).ToList() : [];
-                }
-        }
-    }
-
-    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
-    {
-        DateTime endTime = period.GetEndDate(date);
-        switch (period)
-        {
-            case Period.Hour:
-                {
-                    _logger.LogInformation("Processing current Steps data for elder: {ElderEmail}", elderEmail);
-                    List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                        elderEmail, period, endTime, timezone);
-                    _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
-                    List<StepsDTO> steps = data.GroupBy(t => t.Timestamp).Select(s => new StepsDTO
-                    {
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
-                        StepsCount = s.Sum(c => c.StepsCount)
-                    }).OrderBy(t => t.Timestamp).ToList();
-                    return steps.Count != 0 ? steps : [];
-                }
-            case Period.Day:
-                {
-                    _logger.LogInformation("Processing daily Steps data for elder: {ElderEmail}", elderEmail);
-                    DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
-                    List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                        elderEmail, period, endTime, timezone);
-                    List<StepsDTO> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
-                        .Select(hour => new StepsDTO
-                        {
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
-                            StepsCount = data.Where(s => s.Timestamp.Hour == hour).Sum(s => s.StepsCount)
-                        }).ToList();
-                    _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
-                    return result.Count != 0 ? result : [];
-                }
-            default:
-                {
-                    _logger.LogInformation("Processing weekly Steps data for elder: {ElderEmail}", elderEmail);
-                    DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-                    List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
-                        elderEmail, period, endTime, timezone);
-                    List<StepsDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
-                        .GroupBy(s => s.Timestamp.Date) // Group by the date
-                        .Select(g => new StepsDTO
-                        {
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), // Use the date as the timestamp
-                            StepsCount = g.Sum(s => s.StepsCount) // Sum the Steps for each day
-                        }).ToList();
-                    _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
-                    return result.Count != 0 ? result : [];
-                }
-        }
-    }
-
-    public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
-    {
-        DateTime endTime = period.GetEndDate(date);
-        switch (period)
-        {
-            case Period.Hour:
-                {
-                    _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
-                    List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
-                        elderEmail, period, endTime, timezone);
-                    List<DistanceInfoDTO> distance = data.GroupBy(t => t.Timestamp).Select(s => new DistanceInfoDTO
-                    {
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
-                        Distance = s.Sum(c => c.Distance)
-                    }).OrderBy(t => t.Timestamp).ToList();
-                    _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                    return distance.Count != 0 ? distance : [];
-                }
-            case Period.Day:
-                {
-                    _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
-                    DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
-                    List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
-                        elderEmail, period, endTime, timezone);
-                    List<DistanceInfoDTO> result = Enumerable.Range(0, 24) // Ensure all 24 hours are included
-                        .Select(hour => new DistanceInfoDTO
-                        {
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
-                            Distance = data.Where(d => d.Timestamp.Hour == hour).Sum(d => d.Distance)
-                        }).ToList();
-                    _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                    return result.Count != 0 ? result : [];
-                }
-            default:
-                {
-                    _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
-                    DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-                    List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
-                        elderEmail, period, endTime, timezone);
-                    List<DistanceInfoDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
-                        .GroupBy(s => s.Timestamp.Date) // Group by the date
-                        .Select(g => new DistanceInfoDTO
-                        {
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), // Use the date as the timestamp
-                            Distance = g.Sum(s => s.Distance),
-                        }).ToList();
-                    _logger.LogInformation("Fetched distance data: {Count}", data.Count);
-                    return result.Count != 0 ? result : [];
-                }
-        }
-    }
-
-    public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
-    {
-        DateTime endTime = period.GetEndDate(date);
-        _logger.LogInformation("Time {Time}", endTime);
-
-        // Fetch historical heart rate data
-        List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
-            elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
-
-        // Fetch current heart rate data if historical data is unavailable
-        List<Max30102> Max30102Data =
-            await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched current heart rate data: {Count}", Max30102Data.Count);
-
-        if (data.Count != 0 && Max30102Data.Count < 7)
-        {
-            _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
-            switch (period)
-            {
-                case Period.Hour:
-                    return data.GroupBy(t => t.Timestamp).Select(hr => new PostHeartRate
-                    {
-                        Avgrate = (int)hr.Average(h => h.Avgrate),
-                        Maxrate = hr.Max(h => h.Maxrate),
-                        Minrate = hr.Min(h => h.Minrate),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, hr.Key),
-                        MacAddress = hr.First().MacAddress
-                    }).OrderBy(t => t.Timestamp).ToList();
-                case Period.Day:
-                    return data.GroupBy(t => t.Timestamp.Hour).Select(hr => new PostHeartRate
-                    {
-                        Avgrate = (int)hr.Average(h => h.Avgrate),
-                        Maxrate = hr.Max(h => h.Maxrate),
-                        Minrate = hr.Min(h => h.Minrate),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(hr.Key)),
-                        MacAddress = hr.First().MacAddress
-                    }).OrderBy(t => t.Timestamp).ToList();
-                default:
-                    return data.GroupBy(t => t.Timestamp.Date).Select(hr => new PostHeartRate
-                    {
-                        Avgrate = (int)hr.Average(h => h.Avgrate),
-                        Maxrate = hr.Max(h => h.Maxrate),
-                        Minrate = hr.Min(h => h.Minrate),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, hr.Key),
-                        MacAddress = hr.First().MacAddress
-                    }).OrderBy(t => t.Timestamp).ToList();
-            }
-        }
-
-        if (Max30102Data.Count == 0)
+         if (Max30102Data.Count == 0)
         {
             return new List<PostHeartRate>();
         }
-
-
+         
         // Process current heart rate data based on the period
         List<PostHeartRate> processedHeartrates = new();
         switch (period)
@@ -690,81 +439,29 @@ public class HealthService : IHealthService
 
                 for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
                 {
-                    if (processedHeartrates.All(hr => hr.Timestamp.Date != currentDate.Date))
+                    if (processedHeartrates.Any(hr => hr.Timestamp.Date == currentDate.Date)) continue;
+                    var fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
+                    if (fallbackData.Count != 0)
                     {
-                        var fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
-                        if (fallbackData.Count != 0)
+                        processedHeartrates.Add(new PostHeartRate
                         {
-                            processedHeartrates.Add(new PostHeartRate
-                            {
-                                Avgrate = (int)fallbackData.Average(h => h.Avgrate),
-                                Maxrate = fallbackData.Max(h => h.Maxrate),
-                                Minrate = fallbackData.Min(h => h.Minrate),
-                                Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                                MacAddress = fallbackData.First().MacAddress
-                            });
-                        }
+                            Avgrate = (int)fallbackData.Average(h => h.Avgrate),
+                            Maxrate = fallbackData.Max(h => h.Maxrate),
+                            Minrate = fallbackData.Min(h => h.Minrate),
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
+                            MacAddress = fallbackData.First().MacAddress
+                        });
                     }
-                }
-                processedHeartrates = processedHeartrates.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
-                break;
+                } 
+                return processedHeartrates.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
         }
-
-        _logger.LogInformation("ProcessedData {Count}", processedHeartrates.Count);
-        return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
+        return [];
     }
-
-    public async Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+     
+     private List<PostSpO2> GetSpO2FallBack(List<Spo2> data,
+        List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
     {
-        DateTime endTime = period.GetEndDate(date);
-        _logger.LogInformation("Time {Time}", endTime);
-
-        // Fetch historical SpO2 data
-        List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
-            elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
-
-        // Fetch current SpO2 data if historical data is unavailable
-        List<Max30102> Max30102Data =
-            await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched current SpO2 data: {Count}", Max30102Data.Count);
-
-        if (data.Count != 0 && Max30102Data.Count < 7)
-        {
-            _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
-            switch (period)
-            {
-                case Period.Hour:
-                    return data.GroupBy(t => t.Timestamp).Select(sp => new PostSpO2
-                    {
-                        AvgSpO2 = sp.Average(h => h.AvgSpO2),
-                        MaxSpO2 = sp.Max(s => s.MaxSpO2),
-                        MinSpO2 = sp.Min(s => s.MinSpO2),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, sp.Key),
-                        MacAddress = sp.First().MacAddress
-                    }).OrderBy(t => t.Timestamp).ToList();
-                case Period.Day:
-                    return data.GroupBy(t => t.Timestamp.Hour).Select(sp => new PostSpO2
-                    {
-                        AvgSpO2 = sp.Average(h => h.AvgSpO2),
-                        MaxSpO2 = sp.Max(s => s.MaxSpO2),
-                        MinSpO2 = sp.Min(s => s.MinSpO2),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(sp.Key)),
-                        MacAddress = sp.First().MacAddress
-                    }).OrderBy(t => t.Timestamp.Hour).ToList();
-                default:
-                    return data.GroupBy(t => t.Timestamp.Date).Select(sp => new PostSpO2
-                    {
-                        AvgSpO2 = sp.Average(h => h.AvgSpO2),
-                        MaxSpO2 = sp.Max(s => s.MaxSpO2),
-                        MinSpO2 = sp.Min(s => s.MinSpO2),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, sp.Key),
-                        MacAddress = sp.First().MacAddress
-                    }).OrderBy(t => t.Timestamp.Date).ToList();
-            }
-        }
-
-        if (Max30102Data.Count == 0)
+         if (Max30102Data.Count == 0)
         {
             return new List<PostSpO2>();
         }
@@ -829,10 +526,300 @@ public class HealthService : IHealthService
                         }
                     }
                 }
-                processedSpo2 = processedSpo2.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
-                break;
+
+                return processedSpo2.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
         }
 
+        return [];
+    }
+
+    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period,
+        TimeZoneInfo timezone)
+    {
+        DateTime endTime = period.GetEndDate(date);
+        switch (period)
+        {
+            case Period.Hour:
+            {
+                _logger.LogInformation("Processing current fall data for elder: {ElderEmail}", elderEmail);
+                List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched fall data: {Count}", data.Count);
+                return data.GroupBy(t => t.Timestamp).Select(fall => new FallDTO
+                        { Timestamp = _timeZoneService.UTCToLocalTime(timezone, fall.Key), FallCount = fall.Count()}).OrderBy(t => t.Timestamp)
+                    .ToList();
+            }
+            case Period.Day:
+            {
+                _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
+                List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
+                    elderEmail, period, endTime, timezone);
+                List<FallDTO> result = data
+                    .Where(t => t.Timestamp.Date >= date.Date.AddHours(23).AddMinutes(59).AddSeconds(59))
+                    .GroupBy(f => f.Timestamp.Hour)
+                    .Select(g => new FallDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone,
+                            g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp),
+                        FallCount = g.Count()
+                    }).ToList();
+                
+                DateTime startDate =
+                    new DateTime(endTime.Year, date.Month, date.Day, 0, 0, 0); 
+                for (DateTime currentDate = startDate; currentDate < endTime; currentDate = currentDate.AddHours(1))
+                {
+                    if (result.All(r => r.Timestamp.Hour != currentDate.Hour))
+                    {
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate.AddHours(-2)),
+                            FallCount = 0
+                        });
+                    }
+                }
+
+                return result.OrderBy(r => r.Timestamp.Hour).ToList();
+            }
+            default:
+            {
+                _logger.LogInformation("Processing daily fall data for elder: {ElderEmail}", elderEmail);
+                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+                List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
+                    elderEmail, period, endTime, timezone);
+                List<FallDTO> result = data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                    .GroupBy(f => f.Timestamp.Date)
+                    .Select(g => new FallDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
+                        FallCount = g.Count()
+                    }).ToList();
+
+                DateTime startDate = endOfWeek.Date - TimeSpan.FromDays(6);
+                for (DateTime currentDate = startDate; currentDate < date.Date; currentDate = currentDate.AddDays(1))
+                {
+                    if (result.All(r => r.Timestamp.Date != currentDate.Date))
+                    {
+                        result.Add(new FallDTO
+                        {
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
+                            FallCount = 0
+                        });
+                    }
+                }
+
+                return result.OrderBy(r => r.Timestamp.Date).ToList();
+            }
+        }
+    }
+
+    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period,
+        TimeZoneInfo timezone)
+    {
+        DateTime endTime = period.GetEndDate(date);
+        switch (period)
+        {
+            case Period.Hour:
+            {
+                _logger.LogInformation("Processing current Steps data for elder: {ElderEmail}", elderEmail);
+                List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
+                return data.GroupBy(t => t.Timestamp).Select(s => new StepsDTO
+                {
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
+                    StepsCount = s.Sum(c => c.StepsCount)
+                }).OrderBy(t => t.Timestamp).ToList();
+            }
+            case Period.Day:
+            {
+                _logger.LogInformation("Processing daily Steps data for elder: {ElderEmail}", elderEmail);
+                DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
+                List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
+                return Enumerable.Range(0, 24) // Ensure all 24 hours are included
+                    .Select(hour => new StepsDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
+                        StepsCount = data.Where(s => s.Timestamp.Hour == hour).Sum(s => s.StepsCount)
+                    }).ToList();
+            }
+            default:
+            {
+                _logger.LogInformation("Processing weekly Steps data for elder: {ElderEmail}", elderEmail);
+                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+                List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
+                return data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                    .GroupBy(s => s.Timestamp.Date)
+                    .Select(g => new StepsDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), 
+                        StepsCount = g.Sum(s => s.StepsCount)
+                    }).ToList();
+            }
+        }
+    }
+
+    public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period,
+        TimeZoneInfo timezone)
+    {
+        DateTime endTime = period.GetEndDate(date);
+        switch (period)
+        {
+            case Period.Hour:
+            {
+                _logger.LogInformation("Processing current distance data for elder: {ElderEmail}", elderEmail);
+                List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
+                return data.GroupBy(t => t.Timestamp).Select(s => new DistanceInfoDTO
+                {
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
+                    Distance = s.Sum(c => c.Distance)
+                }).OrderBy(t => t.Timestamp).ToList();
+            }
+            case Period.Day:
+            {
+                _logger.LogInformation("Processing daily distance data for elder: {ElderEmail}", elderEmail);
+                DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
+                List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
+                return Enumerable.Range(0, 24) // Ensure all 24 hours are included
+                    .Select(hour => new DistanceInfoDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
+                        Distance = data.Where(d => d.Timestamp.Hour == hour).Sum(d => d.Distance)
+                    }).ToList();
+            }
+            default:
+            {
+                _logger.LogInformation("Processing weekly distance data for elder: {ElderEmail}", elderEmail);
+                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
+                List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
+                    elderEmail, period, endTime, timezone);
+                _logger.LogInformation("Fetched distance data: {Count}", data.Count);
+                return data.Where(t => t.Timestamp.Date <= endOfWeek.Date)
+                    .GroupBy(s => s.Timestamp.Date) // Group by the date
+                    .Select(g => new DistanceInfoDTO
+                    {
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), // Use the date as the timestamp
+                        Distance = g.Sum(s => s.Distance),
+                    }).ToList();
+            }
+        }
+    }
+
+    public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period,
+        TimeZoneInfo timezone)
+    {
+        DateTime endTime = period.GetEndDate(date);
+        _logger.LogInformation("Time {Time}", endTime);
+
+        // Fetch historical heart rate data
+        List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
+            elderEmail, period, endTime, timezone);
+        _logger.LogInformation("Fetched historical heart rate data: {Count}", data.Count);
+
+        // Fetch current heart rate data if historical data is unavailable
+        List<Max30102> Max30102Data =
+            await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
+        _logger.LogInformation("Fetched current heart rate data: {Count}", Max30102Data.Count);
+
+        if (data.Count != 0 && Max30102Data.Count < 7)
+        {
+            _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
+            switch (period)
+            {
+                case Period.Hour:
+                    return data.GroupBy(t => t.Timestamp).Select(hr => new PostHeartRate
+                    {
+                        Avgrate = (int)hr.Average(h => h.Avgrate),
+                        Maxrate = hr.Max(h => h.Maxrate),
+                        Minrate = hr.Min(h => h.Minrate),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, hr.Key),
+                        MacAddress = hr.First().MacAddress
+                    }).OrderBy(t => t.Timestamp).ToList();
+                case Period.Day:
+                    return data.GroupBy(t => t.Timestamp.Hour).Select(hr => new PostHeartRate
+                    {
+                        Avgrate = (int)hr.Average(h => h.Avgrate),
+                        Maxrate = hr.Max(h => h.Maxrate),
+                        Minrate = hr.Min(h => h.Minrate),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(hr.Key)),
+                        MacAddress = hr.First().MacAddress
+                    }).OrderBy(t => t.Timestamp).ToList();
+                default:
+                    return data.GroupBy(t => t.Timestamp.Date).Select(hr => new PostHeartRate
+                    {
+                        Avgrate = (int)hr.Average(h => h.Avgrate),
+                        Maxrate = hr.Max(h => h.Maxrate),
+                        Minrate = hr.Min(h => h.Minrate),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, hr.Key),
+                        MacAddress = hr.First().MacAddress
+                    }).OrderBy(t => t.Timestamp).ToList();
+            }
+        }
+
+        List<PostHeartRate> processedHeartrates = GetHeartrateFallback(data, Max30102Data, period, timezone, endTime);
+        
+        _logger.LogInformation("ProcessedData {Count}", processedHeartrates.Count);
+        return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
+    }
+
+    public async Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period,
+        TimeZoneInfo timezone)
+    {
+        DateTime endTime = period.GetEndDate(date);
+        _logger.LogInformation("Time {Time}", endTime);
+
+        // Fetch historical SpO2 data
+        List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
+            elderEmail, period, endTime, timezone);
+        _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
+
+        // Fetch current SpO2 data if historical data is unavailable
+        List<Max30102> Max30102Data =
+            await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
+        _logger.LogInformation("Fetched current SpO2 data: {Count}", Max30102Data.Count);
+
+        if (data.Count != 0 && Max30102Data.Count < 7)
+        {
+            _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
+            switch (period)
+            {
+                case Period.Hour:
+                    return data.GroupBy(t => t.Timestamp).Select(sp => new PostSpO2
+                    {
+                        AvgSpO2 = sp.Average(h => h.AvgSpO2),
+                        MaxSpO2 = sp.Max(s => s.MaxSpO2),
+                        MinSpO2 = sp.Min(s => s.MinSpO2),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, sp.Key),
+                        MacAddress = sp.First().MacAddress
+                    }).OrderBy(t => t.Timestamp).ToList();
+                case Period.Day:
+                    return data.GroupBy(t => t.Timestamp.Hour).Select(sp => new PostSpO2
+                    {
+                        AvgSpO2 = sp.Average(h => h.AvgSpO2),
+                        MaxSpO2 = sp.Max(s => s.MaxSpO2),
+                        MinSpO2 = sp.Min(s => s.MinSpO2),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(sp.Key)),
+                        MacAddress = sp.First().MacAddress
+                    }).OrderBy(t => t.Timestamp.Hour).ToList();
+                default:
+                    return data.GroupBy(t => t.Timestamp.Date).Select(sp => new PostSpO2
+                    {
+                        AvgSpO2 = sp.Average(h => h.AvgSpO2),
+                        MaxSpO2 = sp.Max(s => s.MaxSpO2),
+                        MinSpO2 = sp.Min(s => s.MinSpO2),
+                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, sp.Key),
+                        MacAddress = sp.First().MacAddress
+                    }).OrderBy(t => t.Timestamp.Date).ToList();
+            }
+        }
+        List<PostSpO2> processedSpo2 = GetSpO2FallBack(data, Max30102Data, period, timezone, endTime);
         _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
         return processedSpo2.OrderBy(t => t.Timestamp).ToList();
     }
@@ -847,7 +834,8 @@ public class HealthService : IHealthService
             .FirstOrDefaultAsync();
 
         //Get the total amounts of Steps on the newest date using kilometer
-        DistanceInfo? kilometer = await _distanceInfoRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+        DistanceInfo? kilometer = await _distanceInfoRepository.Query()
+            .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
             .GroupBy(s => s.Timestamp.Date)
             .Select(g => new DistanceInfo
             {
@@ -870,7 +858,8 @@ public class HealthService : IHealthService
 
         return new DashBoard
         {
-            allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
+            allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date)
+                .Count(f => f.MacAddress == macAddress),
             distance = kilometer?.Distance ?? 0,
             HeartRate = max30102?.LastHeartrate ?? 0,
             SpO2 = max30102?.LastSpO2 ?? 0,
