@@ -468,26 +468,12 @@ public class UserController : ControllerBase
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
             return BadRequest("User claim is not available.");
-        
-        var elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-        var caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-        
+                
         var expiredClaim = User.Claims.FirstOrDefault(c => c.Type == "exp");
 
         if (expiredClaim == null)
             return BadRequest("Expiration claim not found.");
-
-        DateTime expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiredClaim.Value)).DateTime;
-        if (expTime > DateTime.UtcNow)
-            return BadRequest("Token is not expired yet.");
-
-        if (DateTime.UtcNow > expTime && expTime > DateTime.UtcNow + TimeSpan.FromMinutes(5))
-            return BadRequest("Token is expired.");
-        if (caregiver != null)
-            return _userService.GenerateJwt(caregiver, "Caregiver");
-        if (elder != null)
-            return _userService.GenerateJwt(elder, "Elder");
-        return BadRequest("Token is not expired yet.");
+        
+        return await _userService.RenewToken(userClaim, expiredClaim);
     }
-    
 }

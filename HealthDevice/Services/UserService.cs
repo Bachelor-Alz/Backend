@@ -137,4 +137,22 @@ public class UserService : IUserService
         _logger.LogInformation("Address not associated count: {addressNotAssociated}", addressNotAssociated.Count);
         return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
     }
+
+    public async Task<ActionResult<string>> RenewToken(Claim userClaim, Claim expiredClaim)
+    {
+        var elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        var caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+
+        DateTime expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiredClaim.Value)).DateTime;
+        if (expTime > DateTime.UtcNow)
+            return new BadRequestObjectResult("Token is not expired yet.");
+
+        if (DateTime.UtcNow > expTime && expTime > DateTime.UtcNow + TimeSpan.FromMinutes(5))
+            return new BadRequestObjectResult("Token is expired.");
+        if (caregiver != null)
+            return GenerateJwt(caregiver, "Caregiver");
+        if (elder != null)
+            return GenerateJwt(elder, "Elder");
+        return new BadRequestObjectResult("Token is not expired yet.");
+    }
 }
