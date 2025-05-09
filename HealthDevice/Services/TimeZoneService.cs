@@ -16,6 +16,6 @@ public class TimeZoneService : ITimeZoneService
     public DateTime LocalTimeToUTC(TimeZoneInfo userTimeZone, DateTime utcNow)
     {
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc), userTimeZone);
-        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc); // Ensure the returned DateTime is UTC
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc); 
     }
 }

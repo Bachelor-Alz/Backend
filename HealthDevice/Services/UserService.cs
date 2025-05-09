@@ -44,33 +44,24 @@ public class UserService : IUserService
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedResult();
             }
-            if (await _elderManager.IsLockedOutAsync(elder))
-            {
-                _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-                return new UnauthorizedResult();
-            }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), Role = Roles.Elder };
         }
 
         Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email != null && m.Email.ToLower() == userLoginDto.Email.ToLower());
-        if (caregiver == null)
+        if (caregiver != null)
         {
-            _logger.LogInformation("Couldnt find a user with the Email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new UnauthorizedResult();
+            if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
+            {
+                _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+                return new UnauthorizedResult();
+            }
+            _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+            return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), Role = Roles.Caregiver };
         }
-        if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
-        {
-            _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new UnauthorizedResult();
-        }
-        if (await _caregiverManager.IsLockedOutAsync(caregiver))
-        {
-            _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new UnauthorizedResult();
-        }
-        _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-        return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), Role = Roles.Caregiver };
+        
+        _logger.LogInformation("Couldnt find a user with the Email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+        return new UnauthorizedResult();
     }
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, string ipAddress) where T : IdentityUser
@@ -116,19 +107,14 @@ public class UserService : IUserService
 
     public async Task<ActionResult<List<ArduinoInfoDTO>>> GetUnusedArduino(Elder elder)
     {
-        _logger.LogInformation("Elder found. {elder}", elder);
         Location elderLocation = new Location
         {
             Latitude = elder.Latitude,
             Longitude = elder.Longitude
         };
-        _logger.LogInformation("Elder location: {elderLocation}", elderLocation);
         List<Elder> elders = await _elderRepository.Query().ToListAsync();
-        _logger.LogInformation("Elders count: {elders}", elders.Count);
         List<GPSData> gpsData = await _gpsRepository.Query().ToListAsync();
-        _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
         List<GPSData> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
-        _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
         List<ArduinoInfoDTO> addressNotAssociated = [];
         foreach (GPSData gps in filteredGpsData)
         {

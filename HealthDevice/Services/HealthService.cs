@@ -407,8 +407,7 @@ public class HealthService : IHealthService
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
                         MacAddress = g.First().MacAddress
                     }));
-                // Add missing days with heart rates from `data` for the missing days' timestamp
-                DateTime startDate = endTime.Date.AddDays(-6); // Assuming the week starts 6 days before the given date
+                DateTime startDate = endTime.Date.AddDays(-6);
                 DateTime endDate = endTime.Date;
 
                 for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
@@ -478,8 +477,7 @@ public class HealthService : IHealthService
                         MacAddress = g.First().MacAddress
                     }));
 
-                // Add missing days with heart rates from `data` for the missing days' timestamp
-                DateTime startDate = endTime.Date.AddDays(-6); // Assuming the week starts 6 days before the given date
+                DateTime startDate = endTime.Date.AddDays(-6);
                 DateTime endDate = endTime.Date;
 
                 for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
@@ -601,7 +599,6 @@ public class HealthService : IHealthService
         
         List<Max30102> Max30102Data =
             await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched current heart rate data: {Count}", Max30102Data.Count);
 
         if (data.Count != 0 && Max30102Data.Count < 7)
         {
@@ -632,7 +629,7 @@ public class HealthService : IHealthService
 
         List<PostHeartRate> processedHeartrates = GetHeartrateFallback(data, Max30102Data, period, timezone, endTime);
 
-        _logger.LogInformation("ProcessedData {Count}", processedHeartrates.Count);
+        _logger.LogInformation("Fetched Heartrate data: {Count}, for Elder {elder}", processedHeartrates.Count, elderEmail);
         return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
     }
 
@@ -640,17 +637,12 @@ public class HealthService : IHealthService
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
-        _logger.LogInformation("Time {Time}", endTime);
 
-        // Fetch historical SpO2 data
         List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
             elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched historical SpO2 data: {Count}", data.Count);
-
-        // Fetch current SpO2 data if historical data is unavailable
+        
         List<Max30102> Max30102Data =
             await _getHealthDataService.GetHealthData<Max30102>(elderEmail, period, endTime, timezone);
-        _logger.LogInformation("Fetched current SpO2 data: {Count}", Max30102Data.Count);
 
         if (data.Count != 0 && Max30102Data.Count < 7)
         {
@@ -679,20 +671,19 @@ public class HealthService : IHealthService
             );
         }
         List<PostSpO2> processedSpo2 = GetSpO2FallBack(data, Max30102Data, period, timezone, endTime);
-        _logger.LogInformation("ProcessedData {Count}", processedSpo2.Count);
+        _logger.LogInformation("Fetched SpO2 data: {Count}, for Elder {elder}", processedSpo2.Count, elderEmail);
         return processedSpo2.OrderBy(t => t.Timestamp).ToList();
     }
 
     public async Task<ActionResult<DashBoard>> GetDashboardData(string macAddress, Elder elder)
     {
         DateTime currentDate = DateTime.UtcNow;
-        // Query data objects using the MacAddress
+
         Max30102? max30102 = await _max30102Repository.Query()
             .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
             .OrderByDescending(m => m.Timestamp)
             .FirstOrDefaultAsync();
-
-        //Get the total amounts of Steps on the newest date using kilometer
+        
         DistanceInfo? kilometer = await _distanceInfoRepository.Query()
             .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
             .GroupBy(s => s.Timestamp.Date)
@@ -713,7 +704,7 @@ public class HealthService : IHealthService
                 MacAddress = macAddress
             }).FirstOrDefaultAsync();
 
-        _logger.LogInformation("Fetched data for elder: {ElderEmail}", elder.Email);
+        _logger.LogInformation("Fetched DashBoard for elder: {ElderEmail}", elder.Email);
 
         return new DashBoard
         {
