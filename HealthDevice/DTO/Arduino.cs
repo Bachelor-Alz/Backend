@@ -23,3 +23,9 @@ public class ArduinoInfoDTO
     public float Distance { get; set; }
     public int LastActivity { get; set; }
 }
+
+public class AiRequest
+{
+    public List<int> Predictions { get; set; }
+    public string MacAddress { get; set; }
+}

@@ -1,4 +1,5 @@
-﻿using HealthDevice.Services;
+﻿using HealthDevice.DTO;
+using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Controllers;
@@ -9,7 +10,7 @@ public class AiController : ControllerBase
 {
     private readonly IAIService _aiService;
     private readonly ILogger<AiController> _logger;
-
+    
     public AiController(IAIService aiService, ILogger<AiController> logger)
     {
         _logger = logger;
@@ -17,10 +18,10 @@ public class AiController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task Compute([FromBody] List<int> predictions, string mac)
+    public async Task Compute([FromBody] AiRequest request)
     {
-        _logger.LogInformation("Amount of received predictions: {predictions} for MAC address: {mac}", predictions.Count, mac);
-        if (!(predictions.Count == 0 || string.IsNullOrEmpty(mac))) 
-            await _aiService.HandleAiRequest(predictions, mac);
+        _logger.LogInformation("Amount of received predictions: {predictions} for MAC address: {mac}", request.Predictions.Count, request.MacAddress);
+        if (!(request.Predictions.Count == 0 || string.IsNullOrEmpty(request.MacAddress))) 
+            await _aiService.HandleAiRequest(request.Predictions, request.MacAddress);
     }
 }
