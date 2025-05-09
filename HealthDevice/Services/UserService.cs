@@ -43,7 +43,7 @@ public class UserService : IUserService
             if (!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-                return new UnauthorizedResult();
+                return new UnauthorizedObjectResult("Wrong password.");
             }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), Role = Roles.Elder };
@@ -55,7 +55,7 @@ public class UserService : IUserService
             if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-                return new UnauthorizedResult();
+                return new UnauthorizedObjectResult("Wrong password.");
             }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), Role = Roles.Caregiver };
