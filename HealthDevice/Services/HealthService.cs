@@ -274,14 +274,15 @@ public class HealthService : IHealthService
     public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
     {
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
-        if (elder is null ||string.IsNullOrEmpty(elder.MacAddress))
+        if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             return new BadRequestObjectResult("Elder Arduino not set.");
 
         if (radius < 0)
             return new BadRequestObjectResult("Invalid radius value.");
-        
-        Perimeter? oldPerimeter =
-            await _perimeterRepository.Query().OrderByDescending(i => i.Id).FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+
+        Perimeter? oldPerimeter = await _perimeterRepository.Query()
+            .OrderByDescending(i => i.Id)
+            .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
 
         if (oldPerimeter == null)
         {
@@ -296,18 +297,16 @@ public class HealthService : IHealthService
         }
         else
         {
-            oldPerimeter = new Perimeter
-            {
-                Latitude = elder.Latitude,
-                Longitude = elder.Longitude,
-                Radius = radius,
-                MacAddress = elder.MacAddress
-            };
-            _dbContext.Entry(oldPerimeter).State = EntityState.Modified;
-            _dbContext.Update(oldPerimeter);
+            // Update the existing perimeter instead of creating a new one
+            oldPerimeter.Latitude = elder.Latitude;
+            oldPerimeter.Longitude = elder.Longitude;
+            oldPerimeter.Radius = radius;
+
+            await _perimeterRepository.Update(oldPerimeter);
         }
-        await _dbContext.SaveChangesAsync();
+
         _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
+
         // Send Email to caregiver
         await _emailService.SendEmail(
             "Perimeter set",
