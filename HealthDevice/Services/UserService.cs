@@ -16,14 +16,21 @@ public class UserService : IUserService
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly IRepository<Elder> _elderRepository;
     private readonly IRepository<Caregiver> _caregiverRepository;
+    private readonly IRepository<GPSData> _gpsRepository;
+    private readonly GeoService _geoService;
 
-    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager, UserManager<Caregiver> caregiverManager, IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository)
+    public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager,
+        UserManager<Caregiver> caregiverManager, IRepository<Elder> elderRepository,
+        IRepository<Caregiver> caregiverRepository, IRepository<GPSData> gpsRepository,
+        GeoService geoService)
     {
         _logger = logger;
         _elderManager = elderManager;
         _caregiverManager = caregiverManager;
         _elderRepository = elderRepository;
         _caregiverRepository = caregiverRepository;
+        _gpsRepository = gpsRepository;
+        _geoService = geoService;
     }
 
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
@@ -105,5 +112,42 @@ public class UserService : IUserService
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<ActionResult<List<ArduinoInfoDTO>>> GetUnusedArduino(Elder elder)
+    {
+        _logger.LogInformation("Elder found. {elder}", elder);
+        Location elderLocation = new Location
+        {
+            Latitude = elder.Latitude,
+            Longitude = elder.Longitude
+        };
+        _logger.LogInformation("Elder location: {elderLocation}", elderLocation);
+        List<Elder> elders = await _elderRepository.Query().ToListAsync();
+        _logger.LogInformation("Elders count: {elders}", elders.Count);
+        List<GPSData> gpsData = await _gpsRepository.Query().ToListAsync();
+        _logger.LogInformation("GPS data count: {gpsData}", gpsData.Count);
+        List<GPSData> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
+        _logger.LogInformation("Filtered GPS data count: {filteredGpsData}", filteredGpsData.Count);
+        List<ArduinoInfoDTO> addressNotAssociated = [];
+        foreach (GPSData gps in filteredGpsData)
+        {
+            string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
+            float distance = GeoService.CalculateDistance(new Location { Latitude = gps.Latitude, Longitude = gps.Longitude }, elderLocation);
+            int minutesSinceActivity = ((int)(DateTime.UtcNow - gps.Timestamp).TotalMinutes) * -1;
+            if (!(distance < 0.5)) continue;
+            _logger.LogInformation("Distance: {distance} km, Address: {GpsAddress}, Minutes since activity: {minutesSinceActivity}", distance, GpsAddress, minutesSinceActivity);
+            ArduinoInfoDTO arduinoInfo = new ArduinoInfoDTO
+            {
+                Id = gps.Id,
+                MacAddress = gps.MacAddress,
+                Address = GpsAddress,
+                Distance = distance,
+                LastActivity = minutesSinceActivity
+            };
+            addressNotAssociated.Add(arduinoInfo);
+        }
+        _logger.LogInformation("Address not associated count: {addressNotAssociated}", addressNotAssociated.Count);
+        return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
     }
 }
