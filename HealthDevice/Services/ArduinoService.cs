@@ -38,13 +38,15 @@ public class ArduinoService : IArduinoService
         IRepository<T> sensorRepository = _repositoryFactory.GetRepository<T>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
-
         if (data.Count == 0)
         {
             _logger.LogWarning("{Timestamp}: {SensorType} data was empty from IP: {IP}.", receivedAt, typeof(T).Name, ip);
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
-
+        foreach (var entry in data)
+        {
+            entry.Timestamp = receivedAt;
+        }
         _logger.LogInformation("{Timestamp}: Data found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
         await sensorRepository.AddRange(data);
         await _dbContext.SaveChangesAsync();
