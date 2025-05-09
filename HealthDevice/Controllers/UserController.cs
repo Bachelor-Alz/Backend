@@ -85,8 +85,8 @@ public class UserController : ControllerBase
                                                 new Elder
                                                 {
                                                     Name = userRegisterDto.Name,
-                                                    Email = userRegisterDto.Email.ToLowerInvariant(),
-                                                    UserName = userRegisterDto.Email.ToLowerInvariant(),
+                                                    Email = userRegisterDto.Email.ToLower(),
+                                                    UserName = userRegisterDto.Email.ToLower(),
                                                     Latitude = (double)userRegisterDto.Latitude,
                                                     Longitude = (double)userRegisterDto.Longitude,
                                                     OutOfPerimeter = false

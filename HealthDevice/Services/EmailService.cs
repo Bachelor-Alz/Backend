@@ -28,18 +28,18 @@ public class EmailService : IEmailService
 
     public async Task SendEmail(string subject, string body, Elder elder)
     {
+        if(_smtpHost == "" || _smtpPort == 0 || _smtpUser == "" || _smtpPassword == "")
+        {
+            _logger.LogWarning("SMTP configuration is not set. Email will not be sent.");
+            return;
+        }
+        
         List<Caregiver> caregivers = await _caregiverRepository.Query()
             .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
             .ToListAsync();
         
         foreach (Caregiver caregiver in caregivers)
         {
-            _logger.LogInformation("Sending Email to {CaregiverEmail}", caregiver.Email);
-            if(_smtpHost == "" || _smtpPort == 0 || _smtpUser == "" || _smtpPassword == "")
-            {
-                _logger.LogWarning("SMTP configuration is not set. Email will not be sent.");
-                return;
-            }
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Health Device", _smtpUser));
             message.To.Add(new MailboxAddress(caregiver.Name, caregiver.Email));

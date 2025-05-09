@@ -21,9 +21,7 @@ public class GeoService : IGeoService
         string url = $"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}&zoom=18&addressdetails=1";
         HttpResponseMessage response = await _httpClient.GetAsync(url);
         string json = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation("Response from Nominatim: {json}", json);
         var data = JsonSerializer.Deserialize<NominatimResponse>(json);
-        _logger.LogInformation("Response from Nominatim: {data}", data);
         return data != null ? FormatAddress(data) : "Unknown location";
     }
 
@@ -41,16 +39,14 @@ public class GeoService : IGeoService
 
         string url = $"https://nominatim.openstreetmap.org/search?format=json&{query}";
         string json = await (await _httpClient.GetAsync(url)).Content.ReadAsStringAsync();
-
-        _logger.LogInformation("Response from Nominatim: {json}", json);
+        
 
         List<NominatimSearchResponse>? data = JsonSerializer.Deserialize<List<NominatimSearchResponse>>(json);
-        _logger.LogInformation("Response from Nominatim: {data}", data);
         string[]? box = data?.FirstOrDefault()?.BoundingBox;
 
         if (box?.Length >= 4 && double.TryParse(box[0], out double lat) && double.TryParse(box[2], out double lon))
         {
-            _logger.LogInformation("Coordinates from bounding box: {lat}, {lon}", lat, lon);
+            _logger.LogInformation("Coordinates from Geo API: {lat}, {lon}", lat, lon);
             return new Location { Latitude = lat, Longitude = lon };
         }
 
