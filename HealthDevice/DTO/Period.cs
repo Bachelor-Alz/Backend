@@ -30,6 +30,7 @@ public static class PeriodUtil
         switch (period)
         {
             case Period.Hour:
+                // Integer division resulting in (0, 5, 10, ...)
                 int minuteSlot = date.Minute / 5 * 5;
                 return new DateTime(date.Year, date.Month, date.Day, date.Hour, minuteSlot, 0, DateTimeKind.Utc);
             case Period.Day:
