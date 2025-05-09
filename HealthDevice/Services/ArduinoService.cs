@@ -37,7 +37,6 @@ public class ArduinoService : IArduinoService
         IRepository<T> sensorRepository = _repositoryFactory.GetRepository<T>();
         string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
-        _logger.LogInformation("{Timestamp}: Received {SensorType} data from IP: {IP}.", receivedAt, typeof(T).Name, ip);
 
         if (data.Count == 0)
         {
@@ -45,9 +44,8 @@ public class ArduinoService : IArduinoService
             return new BadRequestObjectResult($"{typeof(T).Name} data is empty.");
         }
 
-        _logger.LogInformation("{Timestamp}: No elder found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
+        _logger.LogInformation("{Timestamp}: Data found with MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.First().MacAddress, ip);
         await sensorRepository.AddRange(data);
-        _logger.LogInformation("Saving changes to the database.");
         await _dbContext.SaveChangesAsync();
         return new OkResult();
     }

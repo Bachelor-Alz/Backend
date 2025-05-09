@@ -377,9 +377,9 @@ public class HealthService : IHealthService
                 LastUpdated = location.Timestamp,
                 Perimeter = new PerimeterDTO
                 {
-                    Latitude = elder.Latitude,
-                    Longitude = elder.Longitude,
-                    Radius = perimeter?.Radius ?? 10
+                    HomeLatitude = elder.Latitude,
+                    HomeLongitude = elder.Longitude,
+                    HomeRadius = perimeter?.Radius ?? 10
                 }
             });
         }

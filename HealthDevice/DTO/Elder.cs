@@ -13,9 +13,9 @@ public class ElderLocationDTO
 
 public class PerimeterDTO
 {
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
-    public int Radius { get; set; }
+    public double HomeLatitude { get; set; }
+    public double HomeLongitude { get; set; }
+    public int HomeRadius { get; set; }
 }
 
 public class GetElderDTO
