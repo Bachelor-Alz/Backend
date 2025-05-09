@@ -11,7 +11,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<UserController>(); 
+builder.Services.AddScoped<UserController>();
 builder.Services.AddScoped<ArduinoController>();
 builder.Services.AddScoped<HealthController>();
 builder.Services.AddScoped<AiController>();
