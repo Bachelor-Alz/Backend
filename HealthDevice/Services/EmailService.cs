@@ -26,7 +26,7 @@ public class EmailService : IEmailService
     {
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("Health Device", smtpUser));
-        message.To.Add(new MailboxAddress(to.name, to.email));
+        message.To.Add(new MailboxAddress(to.Name, to.EmailAddress));
         message.Subject = subject;
         message.Body = new TextPart("plain")
         {
@@ -42,11 +42,11 @@ public class EmailService : IEmailService
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation("Email sent to {Email} with subject {Subject}.", to.email, subject);
+            _logger.LogInformation("Email sent to {Email} with subject {Subject}.", to.EmailAddress, subject);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending email to {Email} with subject {Subject}.", to.email, subject);
+            _logger.LogError(ex, "Error sending Email to {Email} with subject {Subject}.", to.EmailAddress, subject);
         }
     }
 }

@@ -34,7 +34,7 @@ public class UserService : IUserService
         {
             if (!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
             {
-                _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+                _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedResult();
             }
             if (await _elderManager.IsLockedOutAsync(elder))
@@ -42,19 +42,19 @@ public class UserService : IUserService
                 _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedResult();
             }
-            _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), role = Roles.Elder };
+            _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+            return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), Role = Roles.Elder };
         }
 
         Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userLoginDto.Email);
         if (caregiver == null)
         {
-            _logger.LogInformation("Couldnt find a user with the email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+            _logger.LogInformation("Couldnt find a user with the Email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new UnauthorizedResult();
         }
         if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
         {
-            _logger.LogWarning("Login failed for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+            _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new UnauthorizedResult();
         }
         if (await _caregiverManager.IsLockedOutAsync(caregiver))
@@ -62,8 +62,8 @@ public class UserService : IUserService
             _logger.LogWarning("Account locked out: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new UnauthorizedResult();
         }
-        _logger.LogInformation("Login successful for email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-        return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), role = Roles.Caregiver };
+        _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+        return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), Role = Roles.Caregiver };
     }
 
     public async Task<ActionResult> HandleRegister<T>(UserManager<T> userManager, UserRegisterDTO userRegisterDto, T user, string ipAddress) where T : IdentityUser
@@ -72,14 +72,14 @@ public class UserService : IUserService
 
         if (await userManager.Users.FirstOrDefaultAsync(m => m.Email == userRegisterDto.Email) != null)
         {
-            _logger.LogWarning("{timestamp}: Registration failed for email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
+            _logger.LogWarning("{timestamp}: Registration failed for Email: {Email} from IP: {IpAddress} - Email exists.", userRegisterDto.Email, ipAddress, timestamp);
             return new BadRequestObjectResult("Email already exists.");
         }
         IdentityResult result = await userManager.CreateAsync(user, userRegisterDto.Password);
 
         if (!result.Succeeded)
             return new BadRequestObjectResult(new { Message = "Registration failed.", result.Errors });
-        _logger.LogInformation("{timestamp}: Registration successful for email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
+        _logger.LogInformation("{timestamp}: Registration successful for Email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
         return new OkObjectResult("Registration successful.");
 
     }

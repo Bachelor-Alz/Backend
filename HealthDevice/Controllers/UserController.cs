@@ -60,20 +60,20 @@ public class UserController : ControllerBase
     {
         if (string.IsNullOrEmpty(userLoginDto.Email) || string.IsNullOrEmpty(userLoginDto.Password))
         {
-            _logger.LogWarning("Login attempt with empty email or password.");
+            _logger.LogWarning("Login attempt with empty Email or password.");
             return BadRequest("Email and password are required.");
         }
         if (!userLoginDto.Email.Contains('@'))
         {
-            _logger.LogWarning("Invalid email format: {Email}", userLoginDto.Email);
-            return BadRequest("Invalid email format.");
+            _logger.LogWarning("Invalid Email format: {Email}", userLoginDto.Email);
+            return BadRequest("Invalid Email format.");
         }
         if (userLoginDto.Password.Length < 6)
         {
             _logger.LogWarning("Password too short: {PasswordLength} characters", userLoginDto.Password.Length);
             return BadRequest("Password must be at least 6 characters long.");
         }
-        _logger.LogInformation("Login attempt for email: {Email}", userLoginDto.Email);
+        _logger.LogInformation("Login attempt for Email: {Email}", userLoginDto.Email);
         string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
         return await _userService.HandleLogin(userLoginDto, ipAddress);
     }
@@ -84,13 +84,13 @@ public class UserController : ControllerBase
     {
         if (string.IsNullOrEmpty(userRegisterDto.Email) || string.IsNullOrEmpty(userRegisterDto.Password))
         {
-            _logger.LogWarning("Registration attempt with empty email or password.");
+            _logger.LogWarning("Registration attempt with empty Email or password.");
             return BadRequest("Email and password are required.");
         }
         if (!userRegisterDto.Email.Contains('@'))
         {
-            _logger.LogWarning("Invalid email format: {Email}", userRegisterDto.Email);
-            return BadRequest("Invalid email format.");
+            _logger.LogWarning("Invalid Email format: {Email}", userRegisterDto.Email);
+            return BadRequest("Invalid Email format.");
         }
         if (userRegisterDto.Password.Length < 6)
         {
@@ -99,20 +99,20 @@ public class UserController : ControllerBase
         }
         if (userRegisterDto.Role != Roles.Elder && userRegisterDto.Role != Roles.Caregiver)
         {
-            _logger.LogWarning("Invalid role: {Role}", userRegisterDto.Role);
-            return BadRequest("Invalid role.");
+            _logger.LogWarning("Invalid Role: {Role}", userRegisterDto.Role);
+            return BadRequest("Invalid Role.");
         }
-        if (userRegisterDto.Role == Roles.Elder && (userRegisterDto.latitude == null || userRegisterDto.longitude == null))
+        if (userRegisterDto.Role == Roles.Elder && (userRegisterDto.Latitude == null || userRegisterDto.Longitude == null))
         {
-            _logger.LogWarning("Elder registration requires latitude and longitude.");
-            return BadRequest("Elder registration requires latitude and longitude.");
+            _logger.LogWarning("Elder registration requires Latitude and Longitude.");
+            return BadRequest("Elder registration requires Latitude and Longitude.");
         }
-        if (userRegisterDto is { Role: Roles.Caregiver, latitude: not null, longitude: not null })
+        if (userRegisterDto is { Role: Roles.Caregiver, Latitude: not null, Longitude: not null })
         {
-            _logger.LogWarning("Caregiver registration should not include latitude and longitude.");
-            return BadRequest("Caregiver registration should not include latitude and longitude.");
+            _logger.LogWarning("Caregiver registration should not include Latitude and Longitude.");
+            return BadRequest("Caregiver registration should not include Latitude and Longitude.");
         }
-        _logger.LogInformation("Registration attempt for email: {Email} with role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
+        _logger.LogInformation("Registration attempt for Email: {Email} with Role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
         string ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
         return userRegisterDto.Role == Roles.Elder
             ? await _userService.HandleRegister(_elderManager, userRegisterDto,
@@ -121,9 +121,9 @@ public class UserController : ControllerBase
                                                     Name = userRegisterDto.Name,
                                                     Email = userRegisterDto.Email,
                                                     UserName = userRegisterDto.Email,
-                                                    latitude = (double)userRegisterDto.latitude,
-                                                    longitude = (double)userRegisterDto.longitude,
-                                                    outOfPerimeter = false
+                                                    Latitude = (double)userRegisterDto.Latitude,
+                                                    Longitude = (double)userRegisterDto.Longitude,
+                                                    OutOfPerimeter = false
                                                 }, ipAddress)
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto,
                                                 new Caregiver
@@ -146,7 +146,7 @@ public class UserController : ControllerBase
         {
             Email = e.Email,
             Name = e.Name,
-            role = Roles.Elder
+            Role = Roles.Elder
         }).ToList();
     }
 
@@ -345,7 +345,7 @@ public class UserController : ControllerBase
             {
                 Name = e.Name,
                 Email = e.Email,
-                role = Roles.Elder
+                Role = Roles.Elder
             }).ToList();
             return elderDTOs;
         }
@@ -371,8 +371,8 @@ public class UserController : ControllerBase
         _logger.LogInformation("Elder found. {elder}", elder);
         Location elderLocation = new Location
         {
-            Latitude = elder.latitude,
-            Longitude = elder.longitude
+            Latitude = elder.Latitude,
+            Longitude = elder.Longitude
         };
         _logger.LogInformation("Elder location: {elderLocation}", elderLocation);
         List<Elder> elders = await _elderRepository.Query().ToListAsync();
@@ -396,7 +396,7 @@ public class UserController : ControllerBase
                 MacAddress = gps.MacAddress,
                 Address = GpsAddress,
                 Distance = distance,
-                lastActivity = minutesSinceActivity
+                LastActivity = minutesSinceActivity
             };
             addressNotAssociated.Add(arduinoInfo);
         }
@@ -519,8 +519,8 @@ public class UserController : ControllerBase
             _logger.LogError("Failed to get coordinates from address.");
             return BadRequest("Failed to get coordinates from address.");
         }
-        elder.latitude = result.Latitude;
-        elder.longitude = result.Longitude;
+        elder.Latitude = result.Latitude;
+        elder.Longitude = result.Longitude;
         _logger.LogInformation("Setting address for elder {elder.Email} to {address}.", elder.Email, address);
         try
         {
@@ -567,7 +567,7 @@ public class UserController : ControllerBase
                 {
                     Name = elder.Name,
                     Email = elder.Email,
-                    role = Roles.Elder
+                    Role = Roles.Elder
                 });
             }
             return invites;

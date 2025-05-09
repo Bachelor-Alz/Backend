@@ -2,6 +2,6 @@
 
 public abstract class Sensor
 {
-    public string? MacAddress { get; set; }
+    public required string MacAddress { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
 }

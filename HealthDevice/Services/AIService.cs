@@ -74,19 +74,19 @@ public class AiService : IAIService
             {
                 Email emailInfo = new Email
                 {
-                    name = caregiver.Name,
-                    email = caregiver.Email
+                    Name = caregiver.Name,
+                    EmailAddress = caregiver.Email
                 };
-                if (emailInfo.name == null || emailInfo.email == null)
+                if (emailInfo.Name == null || emailInfo.EmailAddress == null)
                 {
-                    _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
+                    _logger.LogWarning("No Email found for caregiver {caregiver}", caregiver.Email);
                     return;
                 }
                 Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
                 if (location == null) continue;
                 string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
 
-                _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
+                _logger.LogInformation("Sending Email to {caregiver}", caregiver.Email);
                 try
                 {
                     await _emailService.SendEmail(emailInfo, "Fall detected",
@@ -94,7 +94,7 @@ public class AiService : IAIService
                 }
                 catch
                 {
-                    _logger.LogError("Failed to send email to {caregiver}", caregiver.Email);
+                    _logger.LogError("Failed to send Email to {caregiver}", caregiver.Email);
                     return;
                 }
             }

@@ -109,14 +109,14 @@ namespace HealthDevice.Controllers
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
-                _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
+                _logger.LogError("Elder not found or Arduino not set for Email: {ElderEmail}", elderEmail);
                 return new DashBoard
                 {
                     allFall = 0,
                     distance = 0,
                     HeartRate = 0,
                     SpO2 = 0,
-                    steps = 0
+                    Steps = 0
                 };
             }
             _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderEmail);
@@ -129,13 +129,14 @@ namespace HealthDevice.Controllers
                 .OrderByDescending(m => m.Timestamp)
                 .FirstOrDefaultAsync();
 
-            //Get the total amounts of steps on the newest date using kilometer
+            //Get the total amounts of Steps on the newest date using kilometer
             DistanceInfo? kilometer = await _kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
                 .GroupBy(s => s.Timestamp.Date)
                 .Select(g => new DistanceInfo
                 {
                     Distance = g.Sum(s => s.Distance),
-                    Timestamp = g.Key
+                    Timestamp = g.Key,
+                    MacAddress = macAddress
                 }).FirstOrDefaultAsync();
 
             Steps? steps = await _stepsRepository.Query()
@@ -144,7 +145,8 @@ namespace HealthDevice.Controllers
                 .Select(g => new Steps
                 {
                     StepsCount = g.Sum(s => s.StepsCount),
-                    Timestamp = g.Key
+                    Timestamp = g.Key,
+                    MacAddress = macAddress
                 }).FirstOrDefaultAsync();
 
             _logger.LogInformation("Fetched data for elder: {ElderEmail}", elderEmail);
@@ -155,7 +157,7 @@ namespace HealthDevice.Controllers
                 distance = kilometer?.Distance ?? 0,
                 HeartRate = max30102?.LastHeartrate ?? 0,
                 SpO2 = max30102?.LastSpO2 ?? 0,
-                steps = steps?.StepsCount ?? 0
+                Steps = steps?.StepsCount ?? 0
             };
         }
 
@@ -179,7 +181,7 @@ namespace HealthDevice.Controllers
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null)
             {
-                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                _logger.LogError("Elder not found for Email: {ElderEmail}", elderEmail);
                 return BadRequest("Elder not found.");
             }
             if (string.IsNullOrEmpty(elder.MacAddress))
@@ -220,7 +222,7 @@ namespace HealthDevice.Controllers
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null)
             {
-                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                _logger.LogError("Elder not found for Email: {ElderEmail}", elderEmail);
                 return BadRequest("Elder not found.");
             }
             if (string.IsNullOrEmpty(elder.MacAddress))

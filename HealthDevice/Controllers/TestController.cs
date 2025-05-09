@@ -77,7 +77,7 @@ public class TestController : ControllerBase
         const int stepsMin = 0;
         const int stepsMax = 328; //Corresponds to 0.25 km
         const float distanceMin = 0;
-        const float distanceMax = 0.25F; //Corresponds to 328 steps
+        const float distanceMax = 0.25F; //Corresponds to 328 Steps
         const int fallMin = 0;
         const int fallMax = 20;
 

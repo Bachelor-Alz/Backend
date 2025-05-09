@@ -27,8 +27,8 @@ public static class TestUserConfig
             Name = "Test",
             Email = "Test@Test.dk",
             Password = "Test1234!",
-            latitude = 55.6761,
-            longitude = 12.5683,
+            Latitude = 55.6761,
+            Longitude = 12.5683,
             Role = Roles.Elder,
         };
 

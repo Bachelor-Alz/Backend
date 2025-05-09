@@ -40,7 +40,7 @@ public class GetHealthDataService : IGetHealthData
 
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
-            _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
+            _logger.LogError("No elder found with Email {Email} or Arduino is not set", elderEmail);
             return [];
         }
 

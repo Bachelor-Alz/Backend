@@ -1,4 +1,6 @@
-﻿namespace HealthDevice.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace HealthDevice.Models;
 
 public class Location
 {
@@ -6,5 +8,6 @@ public class Location
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public DateTime Timestamp { get; set; }
+    [MaxLength(18)]
     public string? MacAddress { get; set; }
 }

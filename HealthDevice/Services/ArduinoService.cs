@@ -69,7 +69,7 @@ public class ArduinoService : IArduinoService
 
         await _stepsRepository.Add(new Steps
         {
-            StepsCount = data.steps,
+            StepsCount = data.Steps,
             Timestamp = receivedAt,
             MacAddress = data.MacAddress
         });
@@ -78,7 +78,7 @@ public class ArduinoService : IArduinoService
         float totalSpO2 = 0;
         foreach (var entry in data.Max30102)
         {
-            totalHr += entry.heartRate;
+            totalHr += entry.HeartRate;
             totalSpO2 += entry.SpO2;
         }
         if (data.Max30102.Count == 0)
@@ -88,10 +88,10 @@ public class ArduinoService : IArduinoService
         }
         await _max30102Repository.Add(new Max30102
         {
-            LastHeartrate = data.Max30102.Last().heartRate,
+            LastHeartrate = data.Max30102.Last().HeartRate,
             AvgHeartrate = totalHr / data.Max30102.Count,
-            MaxHeartrate = data.Max30102.Max(x => x.heartRate),
-            MinHeartrate = data.Max30102.Min(x => x.heartRate),
+            MaxHeartrate = data.Max30102.Max(x => x.HeartRate),
+            MinHeartrate = data.Max30102.Min(x => x.HeartRate),
             LastSpO2 = data.Max30102.Last().SpO2,
             AvgSpO2 = totalSpO2 / data.Max30102.Count,
             MaxSpO2 = data.Max30102.Max(x => x.SpO2),

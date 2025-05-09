@@ -112,7 +112,10 @@ public class HealthService : IHealthService
         if (gpsData.Count < 2)
         {
             _logger.LogWarning("Not enough GPS data to calculate distance for elder {Arduino}", arduino);
-            return new DistanceInfo();
+            return new DistanceInfo
+            {
+                MacAddress = String.Empty
+            };
         }
 
         float distance = 0;
@@ -128,14 +131,18 @@ public class HealthService : IHealthService
         if (distance == 0)
         {
             _logger.LogWarning("No distance data found for elder {Arduino}", arduino);
-            return new DistanceInfo();
+            return new DistanceInfo
+            {
+                MacAddress = String.Empty
+            };
         }
 
         _logger.LogInformation("Distance data found for elder {Arduino}", arduino);
         return new DistanceInfo
         {
             Distance = distance,
-            Timestamp = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 0)
+            Timestamp = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 0),
+            MacAddress = arduino
         };
     }
 
@@ -205,11 +212,11 @@ public class HealthService : IHealthService
         Console.WriteLine($"Perimeter: ({perimeter.Latitude.Value}, {perimeter.Longitude.Value})");
 
         _logger.LogInformation("Distance from perimeter: {Distance}", d);
-        if (elder.outOfPerimeter)
+        if (elder.OutOfPerimeter)
         {
             if (d < perimeter.Radius)
             {
-                elder.outOfPerimeter = false;
+                elder.OutOfPerimeter = false;
                 await _elderRepository.Update(elder);
                 _logger.LogInformation("Elder {Email} is back in perimeter", elder.Email);
                 return;
@@ -220,7 +227,7 @@ public class HealthService : IHealthService
         if (d > perimeter.Radius)
         {
             _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
-            elder.outOfPerimeter = true;
+            elder.OutOfPerimeter = true;
             await _elderRepository.Update(elder);
         }
     }
@@ -254,7 +261,7 @@ public class HealthService : IHealthService
         _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
         if (elder is null)
         {
-            _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+            _logger.LogError("Elder not found for Email: {ElderEmail}", elderEmail);
             return new BadRequestObjectResult("Elder not found.");
         }
         if (string.IsNullOrEmpty(elder.MacAddress))
@@ -274,8 +281,8 @@ public class HealthService : IHealthService
             _logger.LogInformation("Creating new perimeter for elder: {ElderEmail}", elderEmail);
             Perimeter perimeter = new Perimeter
             {
-                Latitude = elder.latitude,
-                Longitude = elder.longitude,
+                Latitude = elder.Latitude,
+                Longitude = elder.Longitude,
                 Radius = radius,
                 MacAddress = elder.MacAddress
             };
@@ -286,21 +293,21 @@ public class HealthService : IHealthService
             _logger.LogInformation("Updating existing perimeter for elder: {ElderEmail}", elderEmail);
             oldPerimeter = new Perimeter
             {
-                Latitude = elder.latitude,
-                Longitude = elder.longitude,
+                Latitude = elder.Latitude,
+                Longitude = elder.Longitude,
                 Radius = radius,
                 MacAddress = elder.MacAddress
             };
             await _perimeterRepository.Update(oldPerimeter);
 
-            // Send email to caregiver
+            // Send Email to caregiver
             List<Caregiver> caregivers = await _caregiverRepository.Query()
                 .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
                 .ToListAsync();
             foreach (Caregiver caregiver in caregivers)
             {
-                Email emailInfo = new Email { name = caregiver.Name, email = caregiver.Email };
-                _logger.LogInformation("Sending email to {CaregiverEmail}", caregiver.Email);
+                Email emailInfo = new Email { Name = caregiver.Name, EmailAddress = caregiver.Email };
+                _logger.LogInformation("Sending Email to {CaregiverEmail}", caregiver.Email);
                 await _emailService.SendEmail(emailInfo, "Elder changed their perimeter", $"Elder {elder.Name} changed their perimeter to {radius} kilometers.");
             }
         }
@@ -345,12 +352,12 @@ public class HealthService : IHealthService
                     _logger.LogInformation("Fetched perimeter data for elder: {ElderEmail}", elder.Email);
                     elderLocations.Add(new ElderLocationDTO
                     {
-                        email = elder.Email,
-                        name = elder.Name,
-                        latitude = location.Latitude,
-                        longitude = location.Longitude,
-                        lastUpdated = location.Timestamp,
-                        perimeter = new Perimeter
+                        Email = elder.Email,
+                        Name = elder.Name,
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude,
+                        LastUpdated = location.Timestamp,
+                        Perimeter = new Perimeter
                         {
                             Latitude = perimeter.Latitude,
                             Longitude = perimeter.Longitude,
@@ -363,11 +370,11 @@ public class HealthService : IHealthService
                     _logger.LogInformation("No perimeter data found for elder: {ElderEmail}", elder.Email);
                     elderLocations.Add(new ElderLocationDTO
                     {
-                        email = elder.Email,
-                        name = elder.Name,
-                        latitude = location.Latitude,
-                        longitude = location.Longitude,
-                        lastUpdated = location.Timestamp
+                        Email = elder.Email,
+                        Name = elder.Name,
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude,
+                        LastUpdated = location.Timestamp
                     });
                 }
             }
@@ -392,7 +399,7 @@ public class HealthService : IHealthService
                     List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
                         elderEmail, period, newTime, timezone);
                     _logger.LogInformation("Fetched fall data: {Count}", data.Count);
-                    List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = _timeZoneService.UTCToLocalTime(timezone, fall.Timestamp), fallCount = 1 })
+                    List<FallDTO> result = data.Select(fall => new FallDTO { Timestamp = _timeZoneService.UTCToLocalTime(timezone, fall.Timestamp), FallCount = 1 })
                         .ToList();
                     _logger.LogInformation("Processed fall data: {Count}", result.Count);
                     return result.Count != 0 ? result : [];
@@ -409,7 +416,7 @@ public class HealthService : IHealthService
                         .Select(g => new FallDTO
                         {
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.OrderByDescending(f => f.Timestamp.Hour).First().Timestamp),
-                            fallCount = g.Count()
+                            FallCount = g.Count()
                         }).ToList();
 
                     // Add missing days with no falls
@@ -422,7 +429,7 @@ public class HealthService : IHealthService
                             result.Add(new FallDTO
                             {
                                 Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate.AddHours(-2)),
-                                fallCount = 0
+                                FallCount = 0
                             });
                         }
                     }
@@ -442,7 +449,7 @@ public class HealthService : IHealthService
                         .Select(g => new FallDTO
                         {
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                            fallCount = g.Count()
+                            FallCount = g.Count()
                         }).ToList();
 
                     // Add missing days with no falls
@@ -454,7 +461,7 @@ public class HealthService : IHealthService
                             result.Add(new FallDTO
                             {
                                 Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                                fallCount = 0
+                                FallCount = 0
                             });
                         }
                     }
@@ -470,11 +477,11 @@ public class HealthService : IHealthService
         {
             case Period.Hour:
                 {
-                    _logger.LogInformation("Processing current steps data for elder: {ElderEmail}", elderEmail);
+                    _logger.LogInformation("Processing current Steps data for elder: {ElderEmail}", elderEmail);
                     DateTime newTime = new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
                     List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
                         elderEmail, period, newTime, timezone);
-                    _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+                    _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
                     List<StepsDTO> steps = data.GroupBy(t => t.Timestamp).Select(s => new StepsDTO
                     {
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, s.Key),
@@ -484,7 +491,7 @@ public class HealthService : IHealthService
                 }
             case Period.Day:
                 {
-                    _logger.LogInformation("Processing daily steps data for elder: {ElderEmail}", elderEmail);
+                    _logger.LogInformation("Processing daily Steps data for elder: {ElderEmail}", elderEmail);
                     DateTime startTime = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0).ToUniversalTime();
                     DateTime endTime = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
                     List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
@@ -495,12 +502,12 @@ public class HealthService : IHealthService
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, startTime.AddHours(hour)),
                             StepsCount = data.Where(s => s.Timestamp.Hour == hour).Sum(s => s.StepsCount)
                         }).ToList();
-                    _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+                    _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
                     return result.Count != 0 ? result : [];
                 }
             default:
                 {
-                    _logger.LogInformation("Processing weekly steps data for elder: {ElderEmail}", elderEmail);
+                    _logger.LogInformation("Processing weekly Steps data for elder: {ElderEmail}", elderEmail);
                     DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
                     DateTime newTime = new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();// End of the week
                     List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(
@@ -510,9 +517,9 @@ public class HealthService : IHealthService
                         .Select(g => new StepsDTO
                         {
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key), // Use the date as the timestamp
-                            StepsCount = g.Sum(s => s.StepsCount) // Sum the steps for each day
+                            StepsCount = g.Sum(s => s.StepsCount) // Sum the Steps for each day
                         }).ToList();
-                    _logger.LogInformation("Fetched steps data: {Count}", data.Count);
+                    _logger.LogInformation("Fetched Steps data: {Count}", data.Count);
                     return result.Count != 0 ? result : [];
                 }
         }
