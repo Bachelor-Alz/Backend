@@ -1,4 +1,5 @@
-﻿using HealthDevice.Services;
+﻿using HealthDevice.DTO;
+using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthDevice.Controllers;
@@ -9,7 +10,7 @@ public class AiController : ControllerBase
 {
     private readonly IAIService _aiService;
     private readonly ILogger<AiController> _logger;
-
+    
     public AiController(IAIService aiService, ILogger<AiController> logger)
     {
         _logger = logger;
@@ -17,20 +18,10 @@ public class AiController : ControllerBase
     }
 
     [HttpPost("compute")]
-    public async Task<ActionResult> Compute([FromBody] List<int> predictions, string mac)
+    public async Task Compute([FromBody] AiRequest request)
     {
-        if (predictions.Count == 0)
-        {
-            _logger.LogWarning("Received empty predictions list.");
-            return BadRequest("Predictions list cannot be empty.");
-        }
-        if (string.IsNullOrEmpty(mac))
-        {
-            _logger.LogWarning("Received empty MAC address.");
-            return BadRequest("MAC address cannot be empty.");
-        }
-        _logger.LogInformation("Received predictions: {predictions} for MAC address: {mac}", predictions, mac);
-        await _aiService.HandleAiRequest(predictions, mac);
-        return Ok();
+        _logger.LogInformation("Amount of received predictions: {predictions} for MAC address: {mac}", request.Predictions.Count, request.Mac);
+        if (!(request.Predictions.Count == 0 || string.IsNullOrEmpty(request.Mac))) 
+            await _aiService.HandleAiRequest(request.Predictions, request.Mac);
     }
 }

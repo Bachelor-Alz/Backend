@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Period = HealthDevice.DTO.Period;
 using StepsDTO = HealthDevice.DTO.StepsDTO;
+// ReSharper disable All
 
 namespace HealthDevice.Controllers
 {
@@ -20,10 +21,6 @@ namespace HealthDevice.Controllers
         private readonly ILogger<HealthController> _logger;
         private readonly GeoService _geoService;
         private readonly IRepository<Elder> _elderRepository;
-        private readonly IRepository<Max30102> _max30102Repository;
-        private readonly IRepository<DistanceInfo> _kilometerRepository;
-        private readonly IRepository<Steps> _stepsRepository;
-        private readonly IRepository<FallInfo> _fallInfoRepository;
         private readonly IRepository<Location> _locationRepository;
 
         public HealthController
@@ -32,10 +29,6 @@ namespace HealthDevice.Controllers
             ILogger<HealthController> logger,
             GeoService geoService,
             IRepository<Elder> elderRepository,
-            IRepository<Max30102> max30102Repository,
-            IRepository<DistanceInfo> kilometerRepository,
-            IRepository<Steps> stepsRepository,
-            IRepository<FallInfo> fallInfoRepository,
             IRepository<Location> locationRepository
         )
         {
@@ -43,10 +36,6 @@ namespace HealthDevice.Controllers
             _logger = logger;
             _geoService = geoService;
             _elderRepository = elderRepository;
-            _max30102Repository = max30102Repository;
-            _kilometerRepository = kilometerRepository;
-            _stepsRepository = stepsRepository;
-            _fallInfoRepository = fallInfoRepository;
             _locationRepository = locationRepository;
         }
 
@@ -56,7 +45,6 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
-                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
@@ -68,7 +56,6 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
-                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
@@ -81,7 +68,6 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
-                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
@@ -94,7 +80,6 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
-                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
@@ -105,58 +90,21 @@ namespace HealthDevice.Controllers
         [HttpGet("Dashboard")]
         public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderEmail)
         {
-            DateTime currentDate = DateTime.UtcNow;
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
-                _logger.LogError("Elder not found or Arduino not set for email: {ElderEmail}", elderEmail);
+                _logger.LogError("Elder not found or Arduino not set for Email: {ElderEmail}", elderEmail);
                 return new DashBoard
                 {
-                    allFall = 0,
-                    distance = 0,
+                    FallCount = 0,
+                    Distance = 0,
                     HeartRate = 0,
                     SpO2 = 0,
-                    steps = 0
+                    Steps = 0
                 };
             }
             _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderEmail);
-
-            string macAddress = elder.MacAddress;
-
-            // Query data objects using the MacAddress
-            Max30102? max30102 = await _max30102Repository.Query()
-                .Where(m => m.MacAddress == macAddress && m.Timestamp.Date == currentDate.Date)
-                .OrderByDescending(m => m.Timestamp)
-                .FirstOrDefaultAsync();
-
-            //Get the total amounts of steps on the newest date using kilometer
-            DistanceInfo? kilometer = await _kilometerRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
-                .GroupBy(s => s.Timestamp.Date)
-                .Select(g => new DistanceInfo
-                {
-                    Distance = g.Sum(s => s.Distance),
-                    Timestamp = g.Key
-                }).FirstOrDefaultAsync();
-
-            Steps? steps = await _stepsRepository.Query()
-                .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
-                .GroupBy(s => s.Timestamp.Date)
-                .Select(g => new Steps
-                {
-                    StepsCount = g.Sum(s => s.StepsCount),
-                    Timestamp = g.Key
-                }).FirstOrDefaultAsync();
-
-            _logger.LogInformation("Fetched data for elder: {ElderEmail}", elderEmail);
-
-            return new DashBoard
-            {
-                allFall = _fallInfoRepository.Query().Where(t => t.Timestamp.Date == currentDate.Date).Count(f => f.MacAddress == macAddress),
-                distance = kilometer?.Distance ?? 0,
-                HeartRate = max30102?.LastHeartrate ?? 0,
-                SpO2 = max30102?.LastSpO2 ?? 0,
-                steps = steps?.StepsCount ?? 0
-            };
+            return await _healthService.GetDashboardData(elder.MacAddress, elder);
         }
 
         [HttpGet("Falls")]
@@ -165,7 +113,6 @@ namespace HealthDevice.Controllers
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
-                _logger.LogError("Invalid period specified: {Period}", period);
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
@@ -177,25 +124,18 @@ namespace HealthDevice.Controllers
         public async Task<ActionResult<Location>> GetLocaiton(string elderEmail)
         {
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
-            if (elder is null)
+            if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
-                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                _logger.LogError("Elder not found with: {ElderEmail} and Arduino: {mac}", elderEmail, elder?.MacAddress);
                 return BadRequest("Elder not found.");
-            }
-            if (string.IsNullOrEmpty(elder.MacAddress))
-            {
-                _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
-                return BadRequest("Elder Arduino not set.");
             }
             _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elderEmail);
             Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
-            if (location is null)
-            {
-                _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
-                return BadRequest("Location not found.");
-            }
-            _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elderEmail);
-            return location;
+            if (location is not null)return location;
+            
+            _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
+            return BadRequest("Location not found.");
+            
         }
 
         [HttpGet("Coordinates/Elders")]
@@ -204,10 +144,8 @@ namespace HealthDevice.Controllers
         {
             Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
-            {
-                _logger.LogError("User claim is null or empty.");
                 return BadRequest("User claim is not available.");
-            }
+
             _logger.LogInformation("Fetching elder locations for caregiver: {CaregiverEmail}", userClaim.Value);
             return await _healthService.GetEldersLocation(userClaim.Value);
         }
@@ -215,33 +153,21 @@ namespace HealthDevice.Controllers
         [HttpGet("Address")]
         public async Task<ActionResult<string>> GetAddress(string elderEmail)
         {
-
-
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
-            if (elder is null)
+            if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
-                _logger.LogError("Elder not found for email: {ElderEmail}", elderEmail);
+                _logger.LogError("Elder not found with: {ElderEmail} and Arduino: {mac}", elderEmail, elder?.MacAddress);
                 return BadRequest("Elder not found.");
             }
-            if (string.IsNullOrEmpty(elder.MacAddress))
-            {
-                _logger.LogError("Elder Arduino not set for elder: {ElderEmail}", elderEmail);
-                return BadRequest("Elder Arduino not set.");
-            }
-            _logger.LogInformation("Fetching address data for elder: {ElderEmail}", elderEmail);
             Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (location is null)
-            {
-                _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
                 return BadRequest("Location not found.");
-            }
+
             string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-            _logger.LogInformation("Fetched address data for elder: {ElderEmail}", elder.Email);
-            if (string.IsNullOrEmpty(address))
-            {
-                _logger.LogError("Address not found for elder: {ElderEmail}", elderEmail);
+            
+            if (string.IsNullOrEmpty(address))  
                 return BadRequest("Address not found.");
-            }
+
             _logger.LogInformation("Fetched address data for elder: {ElderEmail}", elder.Email);
             return address;
         }

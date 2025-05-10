@@ -1,8 +1,4 @@
 ﻿using HealthDevice.Data;
-using HealthDevice.DTO;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace HealthDevice.Services;
 
@@ -44,4 +40,5 @@ public class Repository<T> : IRepository<T> where T : class
         _dbContext.Set<T>().Add(entity);
         await _dbContext.SaveChangesAsync();
     }
+    
 }

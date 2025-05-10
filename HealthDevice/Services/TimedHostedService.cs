@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services
 {
@@ -23,11 +24,10 @@ namespace HealthDevice.Services
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
                     // Resolving scoped services within the scope
-                    var elderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Elder>>();
-                    var hrRepository = scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
-                    var spo2Repository = scope.ServiceProvider.GetRequiredService<IRepository<Spo2>>();
-                    var distanceRepository = scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
-                    var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
+                    IRepository<Elder> elderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Elder>>();
+                    IRepository<Heartrate> hrRepository = scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
+                    IRepository<Spo2> spo2Repository = scope.ServiceProvider.GetRequiredService<IRepository<Spo2>>();
+                    IRepository<DistanceInfo> distanceRepository = scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
 
                     List<Elder> elders = await elderRepository.Query().ToListAsync(cancellationToken: stoppingToken);

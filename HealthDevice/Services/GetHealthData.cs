@@ -1,6 +1,7 @@
 ﻿using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 
@@ -34,26 +35,22 @@ public class GetHealthDataService : IGetHealthData
         date = _timeZoneService.LocalTimeToUTC(timezone, date);
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
 
-        IRepository<Elder> elderRepository = _elderRepository;
-        Elder? elder = await elderRepository.Query()
+        Elder? elder = await _elderRepository.Query()
             .FirstOrDefaultAsync(e => e.Email == elderEmail);
 
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
-            _logger.LogError("No elder found with email {Email} or Arduino is not set", elderEmail);
+            _logger.LogError("No elder found with Email {Email} or Arduino is not set", elderEmail);
             return [];
         }
-
-        string arduino = elder.MacAddress;
         IRepository<T> repository = _repositoryFactory.GetRepository<T>();
 
         List<T> data = await repository.Query()
-            .Where(d => d.MacAddress == arduino &&
+            .Where(d => d.MacAddress == elder.MacAddress &&
                          d.Timestamp >= earlierDate &&
                          d.Timestamp <= date)
             .ToListAsync();
-
-
+        
         _logger.LogInformation("Retrieved {Count} records for type {Type}", data.Count, typeof(T).Name);
         return data;
     }

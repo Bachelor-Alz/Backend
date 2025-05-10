@@ -1,17 +1,18 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using HealthDevice.DTO;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
 namespace HealthDevice.Models;
 
 public class Elder : IdentityUser
 {
+    [MaxLength(30)]
     public required string Name { get; set; }
-    public DashBoard? dashBoard { get; set; }
+    [MaxLength(18)]
     public string? MacAddress { get; set; }
-    public double latitude { get; set; }
-    public double longitude { get; set; }
-    public bool outOfPerimeter { get; set; }
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+    public bool OutOfPerimeter { get; set; }
 
     // Foreign key for the assigned caregiver
     public string? CaregiverId { get; set; }

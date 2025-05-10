@@ -19,7 +19,7 @@ public class RepositoryFactory : IRepositoryFactory
     public IRepository<T> GetRepository<T>() where T : Sensor
     {
         var scope = _scopeFactory.CreateScope();
-        var repository = scope.ServiceProvider.GetService<IRepository<T>>();
+        IRepository<T>? repository = scope.ServiceProvider.GetService<IRepository<T>>();
         if (repository == null)
         {
             throw new InvalidOperationException($"No repository found for type {typeof(T).Name}");

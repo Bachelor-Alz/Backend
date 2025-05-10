@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services
 {
@@ -20,10 +21,8 @@ namespace HealthDevice.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Timed GPS Service is working.");
-
                 using (IServiceScope scope = _serviceProvider.CreateScope())
                 {
-                    var repositoryFactory = scope.ServiceProvider.GetRequiredService<IRepositoryFactory>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
                     List<Elder> elders = await _elderRepository.Query().Where(e => e.MacAddress != null).ToListAsync(cancellationToken: stoppingToken);
 
@@ -36,7 +35,6 @@ namespace HealthDevice.Services
                         }
                     }
                 }
-
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
