@@ -19,8 +19,10 @@ public static class PeriodUtil
             case Period.Day:
                 return new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             case Period.Week:
-                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-                return new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
+                DateTime sunday = date.DayOfWeek == DayOfWeek.Sunday ? date.Date : // If it's already Sunday, use the current date
+                    date.Date.AddDays(7 - (int)date.DayOfWeek); // Otherwise, find the next Sunday
+                return new DateTime(sunday.Year, sunday.Month, sunday.Day, 23, 59, 59).ToUniversalTime();
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(period), "Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
         }

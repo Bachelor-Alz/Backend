@@ -424,6 +424,17 @@ public class HealthService : IHealthService
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }
+                    else
+                    {
+                        processedHeartrates.Add(new PostHeartRate
+                        {
+                            Avgrate = 0,
+                            Maxrate = 0,
+                            Minrate = 0,
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
+                            MacAddress = processedHeartrates.First().MacAddress
+                        });
+                    }
                 }
                 return processedHeartrates.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
             default:
@@ -493,6 +504,17 @@ public class HealthService : IHealthService
                             MinSpO2 = fallbackData.Min(h => h.MinSpO2),
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
                             MacAddress = fallbackData.First().MacAddress
+                        });
+                    }
+                    else
+                    {
+                        processedSpo2.Add(new PostSpO2
+                        {
+                            AvgSpO2 = 0,
+                            MaxSpO2 = 0,
+                            MinSpO2 = 0,
+                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
+                            MacAddress = processedSpo2.First().MacAddress
                         });
                     }
                 }

@@ -24,7 +24,7 @@ public class GetHealthDataService : IGetHealthData
     {
         Period.Hour => date - TimeSpan.FromHours(1),
         Period.Day => date.Date,
-        Period.Week => date.AddDays(-6).Date,
+        Period.Week => date.Date.AddDays(-6),
         _ => throw new ArgumentException("Invalid period specified")
     };
 
