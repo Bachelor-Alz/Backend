@@ -72,7 +72,7 @@ public static class PeriodUtil
                     yield return dayStart.AddHours(i);
                 break;
             case Period.Week:
-                var weekStart = referenceDate.Date.AddDays(-(int)referenceDate.DayOfWeek);
+                var weekStart = referenceDate.Date.AddDays(-(((int)referenceDate.DayOfWeek + 6) % 7));
                 for (int i = 0; i < max; i++)
                     yield return weekStart.AddDays(i);
                 break;

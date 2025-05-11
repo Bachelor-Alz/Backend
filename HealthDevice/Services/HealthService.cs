@@ -654,7 +654,28 @@ public class HealthService : IHealthService
         List<PostHeartRate> processedHeartrates = GetHeartrateFallback(data, Max30102Data, period, timezone, endTime);
 
         _logger.LogInformation("Fetched Heartrate data: {Count}, for Elder {elder}", processedHeartrates.Count, elderEmail);
-        return processedHeartrates.OrderBy(t => t.Timestamp).ToList();
+        return PeriodUtil.AggregateByPeriod(processedHeartrates, period, date, t => t.Timestamp.DateTime,
+            (group, slot) =>
+            {
+                IEnumerable<PostHeartRate> heartrates = group.ToList();
+                return new PostHeartRate
+                {
+                    Avgrate = (int)heartrates.Average(h => h.Avgrate),
+                    Maxrate = heartrates.Max(h => h.Maxrate),
+                    Minrate = heartrates.Min(h => h.Minrate),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
+                    MacAddress = heartrates.First().MacAddress
+                };
+            },
+            slot => new PostHeartRate
+            {
+                Avgrate = 0,
+                Maxrate = 0,
+                Minrate = 0,
+                Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
+                MacAddress = string.Empty
+            }
+        ).OrderBy(t => t.Timestamp).ToList();
     }
 
     public async Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period,
@@ -700,7 +721,28 @@ public class HealthService : IHealthService
         }
         List<PostSpO2> processedSpo2 = GetSpO2FallBack(data, Max30102Data, period, timezone, endTime);
         _logger.LogInformation("Fetched SpO2 data: {Count}, for Elder {elder}", processedSpo2.Count, elderEmail);
-        return processedSpo2.OrderBy(t => t.Timestamp).ToList();
+        return PeriodUtil.AggregateByPeriod(processedSpo2, period, date, t => t.Timestamp.DateTime,
+            (group, slot) =>
+            {
+                IEnumerable<PostSpO2> spo2 = group.ToList();
+                return new PostSpO2
+                {
+                    AvgSpO2 = spo2.Average(h => h.AvgSpO2),
+                    MaxSpO2 = spo2.Max(h => h.MaxSpO2),
+                    MinSpO2 = spo2.Min(h => h.MinSpO2),
+                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
+                    MacAddress = spo2.First().MacAddress
+                };
+            },
+            slot => new PostSpO2
+            {
+                AvgSpO2 = 0,
+                MaxSpO2 = 0,
+                MinSpO2 = 0,
+                Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
+                MacAddress = string.Empty
+            }
+        ).OrderBy(t => t.Timestamp).ToList();
     }
 
     public async Task<ActionResult<DashBoard>> GetDashboardData(string macAddress, Elder elder)
