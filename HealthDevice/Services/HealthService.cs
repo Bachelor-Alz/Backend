@@ -424,7 +424,7 @@ public class HealthService : IHealthService
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }
-                    else
+                    else if(processedHeartrates.Count != 0) //If there is some Max30102 data and no fallback data return a zeroed object
                     {
                         processedHeartrates.Add(new PostHeartRate
                         {
@@ -506,7 +506,7 @@ public class HealthService : IHealthService
                             MacAddress = fallbackData.First().MacAddress
                         });
                     }
-                    else
+                    else if(processedSpo2.Count != 0) //If there is some Max30102 data and no fallback data return a zeroed object
                     {
                         processedSpo2.Add(new PostSpO2
                         {
