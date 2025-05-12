@@ -314,6 +314,34 @@ public class HealthService : IHealthService
         return new OkObjectResult("Perimeter set successfully");
     }
 
+    public async Task<ActionResult<PerimeterDTO>> GetElderPerimeter(string elderEmail)
+    {
+        Elder? elder = await _elderRepository.Query()
+            .Include(e => e.Caregiver)
+            .FirstOrDefaultAsync(m => m.Email == elderEmail);
+        if (elder == null)
+            return new BadRequestObjectResult("Elder not found.");
+
+        if (string.IsNullOrEmpty(elder.MacAddress))
+            return new BadRequestObjectResult("Elder Arduino not set.");
+
+        Location? location = await _locationRepository.Query()
+            .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+        if (location == null)
+            return new BadRequestObjectResult("Location not found.");
+
+        Perimeter? perimeter = await _perimeterRepository.Query()
+            .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+
+        _logger.LogInformation("Fetched location data for elder: {ElderEmail}", elder.Email);
+        return new PerimeterDTO
+        {
+            HomeLatitude = elder.Latitude,
+            HomeLongitude = elder.Longitude,
+            HomeRadius = perimeter?.Radius ?? 10
+        };
+    }
+
     public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email)
     {
         Caregiver? caregiver = await _caregiverRepository.Query()
