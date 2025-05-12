@@ -282,12 +282,12 @@ public class HealthService : IHealthService
 
     public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
     {
+        if (radius < 0)
+            return new BadRequestObjectResult("Invalid radius value.");
+            
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
         if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             return new BadRequestObjectResult("Elder Arduino not set.");
-
-        if (radius < 0)
-            return new BadRequestObjectResult("Invalid radius value.");
 
         Perimeter? oldPerimeter = await _perimeterRepository.Query()
             .OrderByDescending(i => i.Id)
