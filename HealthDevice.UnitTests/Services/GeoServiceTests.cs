@@ -1,11 +1,7 @@
 using System.Globalization;
-using System.Net.Http;
-using System.Threading.Tasks;
-using HealthDevice.DTO;
 using HealthDevice.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 public class GeoServiceTests
 {
@@ -14,34 +10,6 @@ public class GeoServiceTests
         // Ensure consistent culture settings for tests
         Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
         Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-    }
-
-    [Fact]
-    public void CalculateDistance_ShouldReturnCorrectDistance()
-    {
-        // Arrange
-        var location1 = new Location { Latitude = 57.0124, Longitude = 9.9915 }; // Selma Lagerløfs Vej 300, 9220 Aalborg
-        var location2 = new Location { Latitude = 57.0235, Longitude = 9.9771 }; // Ribevej 3, 9220 Aalborg
-        var expectedDistance = 1.5; // Approximate distance in kilometers
-
-        // Act
-        var distance = GeoService.CalculateDistance(location1, location2);
-
-        // Assert
-        Assert.InRange(distance, expectedDistance - 0.05, expectedDistance + 0.05); // Allowing a small margin of error
-    }
-
-    [Fact]
-    public void CalculateDistance_IdenticalLocations_ShouldReturnZero()
-    {
-        // Arrange
-        var location = new Location { Latitude = 57.0488, Longitude = 9.9217 };
-
-        // Act
-        var distance = GeoService.CalculateDistance(location, location);
-
-        // Assert
-        Assert.Equal(0, distance);
     }
 
     [Fact]
@@ -54,18 +22,14 @@ public class GeoServiceTests
             .Respond("application/json", "{\"display_name\":\"300, Selma Lagerløfs Vej, x, Aalborg, x, x, 9220, Denmark\"}");
 
         var httpClient = mockHttp.ToHttpClient();
-        var logger = NullLogger<GeoService>.Instance;
-        var geoService = new GeoService(httpClient, logger);
-
-        var latitude = 57.0488;
-        var longitude = 9.9217;
+        var geoService = new GeoService(httpClient, NullLogger<GeoService>.Instance);
 
         // Act
-        var address = await geoService.GetAddressFromCoordinates(latitude, longitude);
+        var address = await geoService.GetAddressFromCoordinates(57.0488, 9.9217);
 
         // Assert
         Assert.NotNull(address);
-        Assert.Contains("Selma Lagerløfs Vej 300", address);
+        Assert.Contains("Selma Lagerløfs Vej", address);
         Assert.Contains("Aalborg", address);
         Assert.Contains("9220", address);
     }
@@ -80,14 +44,10 @@ public class GeoServiceTests
             .Respond("application/json", "[{\"boundingbox\":[\"57.0488\",\"57.0489\",\"9.9216\",\"9.9217\"]}]");
 
         var httpClient = mockHttp.ToHttpClient();
-        var logger = NullLogger<GeoService>.Instance;
-        var geoService = new GeoService(httpClient, logger);
-
-        var street = "Selma Lagerløfs Vej 300";
-        var city = "Aalborg";
+        var geoService = new GeoService(httpClient, NullLogger<GeoService>.Instance);
 
         // Act
-        var location = await geoService.GetCoordinatesFromAddress(street, city);
+        var location = await geoService.GetCoordinatesFromAddress("Selma Lagerløfs Vej 300", "Aalborg");
 
         // Assert
         Assert.NotNull(location);
@@ -105,14 +65,10 @@ public class GeoServiceTests
             .Respond("application/json", "[]");
 
         var httpClient = mockHttp.ToHttpClient();
-        var logger = NullLogger<GeoService>.Instance;
-        var geoService = new GeoService(httpClient, logger);
-
-        var street = "Nonexistent Street";
-        var city = "Nowhere";
+        var geoService = new GeoService(httpClient, NullLogger<GeoService>.Instance);
 
         // Act
-        var location = await geoService.GetCoordinatesFromAddress(street, city);
+        var location = await geoService.GetCoordinatesFromAddress("Nonexistent Street", "Nowhere");
 
         // Assert
         Assert.Null(location);

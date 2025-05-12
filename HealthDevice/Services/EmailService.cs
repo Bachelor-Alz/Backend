@@ -3,7 +3,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
-// ReSharper disable SuggestVarOrType_SimpleTypes
+using Microsoft.Extensions.Logging;
 
 namespace HealthDevice.Services;
 
@@ -37,6 +37,12 @@ public class EmailService : IEmailService
         List<Caregiver> caregivers = await _caregiverRepository.Query()
             .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
             .ToListAsync();
+
+        if (!caregivers.Any())
+        {
+            _logger.LogWarning("No caregivers found for elder: {ElderName}", elder.Name);
+            return;
+        }
         
         foreach (Caregiver caregiver in caregivers)
         {

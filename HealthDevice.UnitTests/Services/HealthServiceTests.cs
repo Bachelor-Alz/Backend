@@ -1,115 +1,327 @@
 using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore.Query; 
+using System.Linq.Expressions; 
+using HealthDevice.UnitTests.Helpers; 
+using System.Threading; 
 
 public class HealthServiceTests
-{/*
+{
     private readonly Mock<ILogger<HealthService>> _mockLogger;
     private readonly Mock<IRepositoryFactory> _mockRepositoryFactory;
+    private readonly Mock<IEmailService> _mockEmailService;
     private readonly Mock<IGetHealthData> _mockGetHealthDataService;
+    private readonly Mock<ITimeZoneService> _mockTimeZoneService;
+
+    // Specific Repository Mocks used in the service methods being tested
+    private readonly Mock<IRepository<Elder>> _mockElderRepository;
+    private readonly Mock<IRepository<GPSData>> _mockGpsRepository;
+    private readonly Mock<IRepository<Perimeter>> _mockPerimeterRepository;
+    private readonly Mock<IRepository<Location>> _mockLocationRepository;
+    private readonly Mock<IRepository<Max30102>> _mockMax30102Repository;
+    private readonly Mock<IRepository<Steps>> _mockStepsRepository;
+    private readonly Mock<IRepository<DistanceInfo>> _mockDistanceInfoRepository;
+    private readonly Mock<IRepository<FallInfo>> _mockFallInfoRepository;
+
+
     private readonly HealthService _healthService;
 
     public HealthServiceTests()
     {
         _mockLogger = new Mock<ILogger<HealthService>>();
         _mockRepositoryFactory = new Mock<IRepositoryFactory>();
+        _mockEmailService = new Mock<IEmailService>();
         _mockGetHealthDataService = new Mock<IGetHealthData>();
+        _mockTimeZoneService = new Mock<ITimeZoneService>();
+
+        // Initialize specific repository mocks
+        _mockElderRepository = new Mock<IRepository<Elder>>();
+        _mockGpsRepository = new Mock<IRepository<GPSData>>();
+        _mockPerimeterRepository = new Mock<IRepository<Perimeter>>();
+        _mockLocationRepository = new Mock<IRepository<Location>>();
+        _mockMax30102Repository = new Mock<IRepository<Max30102>>();
+        _mockStepsRepository = new Mock<IRepository<Steps>>();
+        _mockDistanceInfoRepository = new Mock<IRepository<DistanceInfo>>();
+        _mockFallInfoRepository = new Mock<IRepository<FallInfo>>();
+
+
         _healthService = new HealthService(
             _mockLogger.Object,
             _mockRepositoryFactory.Object,
-            Mock.Of<IEmailService>(),
-            _mockGetHealthDataService.Object
+            _mockEmailService.Object,
+            _mockGetHealthDataService.Object,
+            _mockTimeZoneService.Object,
+            _mockElderRepository.Object, // Pass elder repository mock
+            Mock.Of<IRepository<Caregiver>>(), // Caregiver repository is not used in the methods being tested
+            _mockPerimeterRepository.Object, // Pass perimeter repository mock
+            _mockLocationRepository.Object, // Pass location repository mock
+            _mockMax30102Repository.Object, // Pass Max30102 repository mock
+            _mockStepsRepository.Object, // Pass Steps repository mock
+            _mockDistanceInfoRepository.Object, // Pass DistanceInfo repository mock
+            _mockFallInfoRepository.Object // Pass FallInfo repository mock
+        );
+    }
+
+    // Helper method to create an IQueryable mock using helpers
+    private static IQueryable<T> CreateMockQueryable<T>(IEnumerable<T> data) where T : class
+    {
+        var queryable = data.AsQueryable();
+        var testDbAsyncEnumerable = new TestDbAsyncEnumerable<T>(queryable.Expression);
+        var testDbAsyncQueryProvider = new TestDbAsyncQueryProvider<T>(queryable.Provider);
+
+        var mock = new Mock<IQueryable<T>>();
+        mock.As<IQueryable<T>>().Setup(m => m.Provider).Returns(testDbAsyncQueryProvider);
+        mock.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+        mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+        mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
+         mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+            .Returns(((IAsyncEnumerable<T>)new TestDbAsyncEnumerable<T>(data)).GetAsyncEnumerator());
+
+        return mock.Object;
+    }
+
+
+    [Fact]
+    public async Task DeleteGpsData_NoDataFound_LogsWarning()
+    {
+        // Arrange
+        _mockGpsRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<GPSData>()));
+        _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
+
+        // Act
+        await _healthService.DeleteGpsData(DateTime.UtcNow, "MacAddress");
+
+        // Assert
+        _mockLogger.Verify(
+            logger => logger.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No GPS data found to delete for elder MacAddress")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
         );
     }
 
     [Fact]
-    public async Task GetHeartrate_ShouldReturnHourlyData_WhenPeriodIsHour()
+    public async Task DeleteGpsData_DataFound_DeletesData()
     {
         // Arrange
-        var elderEmail = "test@example.com";
-        var date = new DateTime(2025, 5, 1, 10, 0, 0);
-        var period = Period.Hour;
-
-        var mockData = new List<Heartrate>
+        var gpsData = new List<GPSData>
         {
-            new Heartrate { Timestamp = date.AddMinutes(-30), Avgrate = 70, Maxrate = 80, Minrate = 60 },
-            new Heartrate { Timestamp = date.AddMinutes(-15), Avgrate = 75, Maxrate = 85, Minrate = 65 }
+            new GPSData { Timestamp = DateTime.UtcNow.AddDays(-1), MacAddress = "test-mac-address" }
         };
-
-        _mockGetHealthDataService
-            .Setup(s => s.GetHealthData<Heartrate>(elderEmail, period, It.IsAny<DateTime>()))
-            .ReturnsAsync(mockData);
+        _mockGpsRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(gpsData));
+        _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
 
         // Act
-        var result = await _healthService.GetHeartrate(elderEmail, date, period);
+        await _healthService.DeleteGpsData(DateTime.UtcNow, "test-mac-address");
 
         // Assert
-        var actionResult = Assert.IsType<ActionResult<List<Heartrate>>>(result);
-        var heartrates = Assert.IsType<List<Heartrate>>(actionResult.Value);
-        Assert.Equal(2, heartrates.Count);
-        Assert.Equal(70, heartrates[0].Avgrate);
-        Assert.Equal(75, heartrates[1].Avgrate);
+        _mockGpsRepository.Verify(r => r.RemoveRange(It.IsAny<List<GPSData>>()), Times.Once);
+        _mockLogger.Verify(
+            logger => logger.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Deleted 1 GPS records for elder test-mac-address")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
+        );
     }
 
     [Fact]
-    public async Task GetHeartrate_ShouldReturnDailyData_WhenPeriodIsDay()
+    public async Task SetPerimeter_InvalidRadius_ReturnsBadRequest()
     {
         // Arrange
-        var elderEmail = "test@example.com";
-        var date = new DateTime(2025, 5, 1);
-        var period = Period.Day;
-
-        var mockData = new List<Heartrate>
-        {
-            new Heartrate { Timestamp = date.AddHours(1), Avgrate = 70, Maxrate = 80, Minrate = 60 },
-            new Heartrate { Timestamp = date.AddHours(2), Avgrate = 75, Maxrate = 85, Minrate = 65 }
-        };
-
-        _mockGetHealthDataService
-            .Setup(s => s.GetHealthData<Heartrate>(elderEmail, period, It.IsAny<DateTime>()))
-            .ReturnsAsync(mockData);
+        _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder>()));
 
         // Act
-        var result = await _healthService.GetHeartrate(elderEmail, date, period);
+        var result = await _healthService.SetPerimeter(-1, "elder@test.com");
 
         // Assert
-        var actionResult = Assert.IsType<ActionResult<List<Heartrate>>>(result);
-        var heartrates = Assert.IsType<List<Heartrate>>(actionResult.Value);
-        Assert.Equal(2, heartrates.Count);
-        Assert.Equal(70, heartrates[0].Avgrate);
-        Assert.Equal(75, heartrates[1].Avgrate);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid radius value.", badRequest.Value);
     }
 
     [Fact]
-    public async Task GetHeartrate_ShouldReturnWeeklyData_WhenPeriodIsWeek()
+    public async Task SetPerimeter_ElderNotFound_ReturnsBadRequest()
     {
         // Arrange
-        var elderEmail = "test@example.com";
-        var date = new DateTime(2025, 5, 1);
-        var period = Period.Week;
-
-        var mockData = new List<Heartrate>
-        {
-            new Heartrate { Timestamp = date.AddDays(-1), Avgrate = 70, Maxrate = 80, Minrate = 60 },
-            new Heartrate { Timestamp = date.AddDays(-2), Avgrate = 75, Maxrate = 85, Minrate = 65 }
-        };
-
-        _mockGetHealthDataService
-            .Setup(s => s.GetHealthData<Heartrate>(elderEmail, period, It.IsAny<DateTime>()))
-            .ReturnsAsync(mockData);
+        _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder>()));
 
         // Act
-        var result = await _healthService.GetHeartrate(elderEmail, date, period);
+        var result = await _healthService.SetPerimeter(10, "elder@test.com");
 
         // Assert
-        var actionResult = Assert.IsType<ActionResult<List<Heartrate>>>(result);
-        var heartrates = Assert.IsType<List<Heartrate>>(actionResult.Value);
-        Assert.Equal(2, heartrates.Count);
-        Assert.Equal(70, heartrates[0].Avgrate);
-        Assert.Equal(75, heartrates[1].Avgrate);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        // The service returns "Elder Arduino not set." if the elder is null OR elder.MacAddress is null/empty
+        Assert.Equal("Elder Arduino not set.", badRequest.Value);
     }
-    */
+
+    [Fact]
+    public async Task ComputeOutOfPerimeter_ShouldUpdateElderLocation_WhenElderIsOutOfPerimeter()
+    {
+        // Arrange
+        var arduino = "test-mac-address";
+        var location = new Location { Latitude = 56.0124, Longitude = 9.9915, Timestamp = DateTime.UtcNow };
+        var perimeter = new Perimeter { Latitude = 57.0000, Longitude = 10.0000, Radius = 5, MacAddress = arduino };
+        var elder = new Elder { Name = "Test Elder", Email = "test@example.com", MacAddress = arduino, OutOfPerimeter = true };
+
+        _mockPerimeterRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Perimeter> { perimeter }));
+        _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
+        _mockElderRepository.Setup(r => r.Update(It.IsAny<Elder>())).Returns(Task.CompletedTask);
+
+
+        // Act
+        await _healthService.ComputeOutOfPerimeter(arduino, location);
+
+        // Assert
+        Assert.True(elder.OutOfPerimeter, "Elder should remain out of perimeter.");
+        _mockElderRepository.Verify(r => r.Update(It.IsAny<Elder>()), Times.Never);
+        _mockLogger.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Elder {elder.Email} is already out of perimeter")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task ComputeOutOfPerimeter_ShouldUpdateElderLocation_WhenElderIsInPerimeter()
+    {
+        // Arrange
+        var arduino = "test-mac-address";
+        var location = new Location { Latitude = 57.0010, Longitude = 10.0010, Timestamp = DateTime.UtcNow };
+        var perimeter = new Perimeter { Latitude = 57.0000, Longitude = 10.0000, Radius = 5, MacAddress = arduino };
+        var elder = new Elder { Name = "Test Elder", Email = "test@example.com", MacAddress = arduino, OutOfPerimeter = true };
+
+        _mockPerimeterRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Perimeter> { perimeter }));
+        _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
+
+        // Act
+        await _healthService.ComputeOutOfPerimeter(arduino, location);
+
+        // Assert
+        Assert.False(elder.OutOfPerimeter, "Elder should be marked as in the perimeter.");
+        _mockElderRepository.Verify(r => r.Update(It.Is<Elder>(e => e.MacAddress == arduino && e.OutOfPerimeter == false)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ComputeOutOfPerimeter_ShouldUpdateElderLocation_WhenElderWasInPerimeterAndGoesOut()
+    {
+        // Arrange
+        var arduino = "test-mac-address";
+
+        var location = new Location { Latitude = 56.0124, Longitude = 9.9915, Timestamp = DateTime.UtcNow };
+        var perimeter = new Perimeter { Latitude = 57.0000, Longitude = 10.0000, Radius = 5, MacAddress = arduino };
+        var elder = new Elder { Name = "Test Elder", Email = "test@example.com", MacAddress = arduino, OutOfPerimeter = false };
+
+        var mockPerimeterRepository = new Mock<IRepository<Perimeter>>();
+        var mockElderRepository = new Mock<IRepository<Elder>>();
+
+        _mockPerimeterRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Perimeter> { perimeter }));
+        _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
+        _mockElderRepository.Setup(r => r.Update(It.IsAny<Elder>())).Returns(Task.CompletedTask);
+
+
+        // Act
+        await _healthService.ComputeOutOfPerimeter(arduino, location);
+
+        // Assert
+        Assert.True(elder.OutOfPerimeter, "Elder should be marked as out of perimeter.");
+        _mockElderRepository.Verify(r => r.Update(It.Is<Elder>(e => e.MacAddress == arduino && e.OutOfPerimeter == true)), Times.Once);
+        _mockLogger.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Elder {elder.Email} is out of perimeter")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task GetLocation_ShouldReturnElderLocation_WhenGPSExists()
+    {
+        // Arrange
+        var arduino = "test-mac-address";
+        var currentTime = DateTime.UtcNow;
+
+        var gpsData = new GPSData
+        {
+            Latitude = 57.0124,
+            Longitude = 9.9915,
+            Timestamp = currentTime.AddMinutes(-5),
+            MacAddress = arduino
+        };
+
+        _mockGpsRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<GPSData> { gpsData }));
+        _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
+
+        // Act
+        var result = await _healthService.GetLocation(currentTime, arduino);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.IsType<Location>(result);
+        Assert.Equal(gpsData.Latitude, result.Latitude);
+        Assert.Equal(gpsData.Longitude, result.Longitude);
+        Assert.Equal(gpsData.Timestamp, result.Timestamp);
+        _mockLogger.Verify(
+            logger => logger.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"GPS data found for elder {arduino}")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
+        );
+    }
+
+
+    [Fact]
+    public async Task GetLocation_ShouldReturnDefaultLocation_WhenGPSDataIsNull()
+    {
+        // Arrange
+        var arduino = "test-mac-address";
+        var currentTime = DateTime.UtcNow;
+
+        _mockGpsRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<GPSData>()));
+        _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
+
+        // Act
+        var result = await _healthService.GetLocation(currentTime, arduino);
+
+        // Assert
+        Assert.NotNull(result);
+        var locationResult = Assert.IsType<Location>(result);
+        Assert.Equal(0, locationResult.Latitude);
+        Assert.Equal(0, locationResult.Longitude);
+        Assert.Equal(default, locationResult.Timestamp);
+
+        _mockLogger.Verify(
+            logger => logger.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"No GPS data found for elder {arduino}")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once
+        );
+    }
 }
