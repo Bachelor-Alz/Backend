@@ -19,18 +19,10 @@ public class GetHealthDataService : IGetHealthData
         _timeZoneService = timeZoneService;
         _elderRepository = elderRepository;
     }
-
-    private DateTime GetEarlierDate(DateTime date, Period period) => period switch
-    {
-        Period.Hour => date - TimeSpan.FromHours(1),
-        Period.Day => date.Date,
-        Period.Week => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7)),
-        _ => throw new ArgumentException("Invalid period specified")
-    };
-
+    
     public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, TimeZoneInfo timezone) where T : Sensor
     {
-        DateTime earlierDate = GetEarlierDate(date, period);
+        DateTime earlierDate = PeriodUtil.GetEarlierDate(date, period);
         earlierDate = _timeZoneService.LocalTimeToUTC(timezone, earlierDate);
         date = _timeZoneService.LocalTimeToUTC(timezone, date);
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);

@@ -120,4 +120,12 @@ public static class PeriodUtil
                 : defaultFactory(slot))
             .ToList();
     }
+    
+    public static DateTime GetEarlierDate(DateTime date, Period period) => period switch
+    {
+        Period.Hour => date - TimeSpan.FromHours(1),
+        Period.Day => date.Date,
+        Period.Week => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7)),
+        _ => throw new ArgumentException("Invalid period specified")
+    };
 }
