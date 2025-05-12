@@ -31,16 +31,15 @@ public class ArduinoServiceTests
         _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(_mockMax30102Repository.Object);
         _mockRepositoryFactory.Setup(f => f.GetRepository<Steps>()).Returns(_mockStepsRepository.Object);
 
-        #pragma warning disable CS8625
+#pragma warning disable CS8625
         _arduinoService = new ArduinoService(
             _mockLogger.Object,
             _mockRepositoryFactory.Object,
             null, // ApplicationDbContext is not used in this test, null is fine here
             _mockGpsRepository.Object,
             _mockMax30102Repository.Object,
-            _mockStepsRepository.Object
-);
-
+            _mockStepsRepository.Object);
+#pragma warning restore CS8625
     }
 
     [Fact]

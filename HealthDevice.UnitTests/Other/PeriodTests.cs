@@ -1,6 +1,6 @@
 using HealthDevice.DTO;
 
-public class PeriodUtilTests
+public class PeriodTests
 {
     [Fact]
     public void GetEndDate_PeriodHour_ReturnsCorrectEndDate()

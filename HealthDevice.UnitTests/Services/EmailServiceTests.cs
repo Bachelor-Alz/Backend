@@ -1,11 +1,7 @@
 using HealthDevice.Models;
 using HealthDevice.Services;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 using HealthDevice.UnitTests.Helpers;
 
 public class EmailServiceTests
@@ -31,7 +27,7 @@ public class EmailServiceTests
         );
     }
 
-    // Helper method to create an IQueryable mock using helpers
+    // Helper method to create an IQueryable mock
     private static IQueryable<T> CreateMockQueryable<T>(IEnumerable<T> data) where T : class
     {
         var queryable = data.AsQueryable();
@@ -64,7 +60,7 @@ public class EmailServiceTests
         // Recreate the service with invalid config
         var emailService = new EmailService(loggerMock.Object, repoMock.Object);
 
-        var elder = new Elder { Name = "Invalid Elder", Email = "invalid@elder.com", MacAddress = null };
+        var elder = new Elder { Name = "Test Elder", Email = "Test@Elder.com" };
 
         // Act
         await emailService.SendEmail("Subject", "Body", elder);
@@ -86,7 +82,7 @@ public class EmailServiceTests
     public async Task SendEmail_NoCaregiversAssociated_LogsWarning()
     {
         // Arrange
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = null };
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com" };
 
         // Mock caregiver repository to return no caregivers
         _mockCaregiverRepository.Setup(r => r.Query())
@@ -104,7 +100,7 @@ public class EmailServiceTests
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()
             ),
-            Times.AtLeastOnce
+            Times.Once
         );
     }
 }

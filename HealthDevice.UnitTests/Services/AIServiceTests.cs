@@ -48,8 +48,8 @@ public class AIServiceTests
         mock.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
         mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
         mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
-         mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
-            .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
+        mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+           .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
 
         return mock.Object;
     }
@@ -60,26 +60,26 @@ public class AIServiceTests
     {
         // Arrange
         var request = new List<int> { 1, 1, 1, 1 }; // Simulates a fall
-        var arduino = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "test@example.com", MacAddress = arduino, OutOfPerimeter = true };
+        var macAddress = "test-mac-address";
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress };
 
         _mockLogger.Setup(l => l.Log(
             LogLevel.Information,
             It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Fall detected for elder {arduino}")),
+            It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Fall detected for elder {macAddress}")),
             null,
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()
         ));
 
         // Act
-        await _aiService.HandleAiRequest(request, arduino);
+        await _aiService.HandleAiRequest(request, macAddress);
 
         // Assert
         _mockLogger.Verify(
             l => l.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Fall detected for elder {arduino}")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Fall detected for elder {macAddress}")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once

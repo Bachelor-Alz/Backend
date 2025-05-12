@@ -7,7 +7,7 @@ public class GeoServiceTests
 {
     public GeoServiceTests()
     {
-        // Ensure consistent culture settings for tests
+        // Ensure consistent culture settings for tests to prevent , . issues
         Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
         Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
     }

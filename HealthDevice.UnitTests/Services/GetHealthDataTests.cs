@@ -28,7 +28,7 @@ public class GetHealthDataTests
         );
     }
 
-    // Helper method to create an IQueryable mock using helpers
+    // Helper method to create an IQueryable mock
     private static IQueryable<T> CreateMockQueryable<T>(IEnumerable<T> data) where T : class
     {
         var queryable = data.AsQueryable();
@@ -40,8 +40,8 @@ public class GetHealthDataTests
         mock.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
         mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
         mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
-         mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
-            .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
+        mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+           .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
 
         return mock.Object;
     }
@@ -96,14 +96,14 @@ public class GetHealthDataTests
     public async Task GetHealthData_ValidData_ReturnsData()
     {
         // Arrange
-        var arduino = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = arduino };
+        var macAddress = "test-mac-address";
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress };
         var testTime = new DateTime(2025, 5, 14, 12, 0, 0, DateTimeKind.Utc);
 
         var sensorData = new List<Max30102>
         {
-            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1).AddSeconds(1), MacAddress = arduino },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddMinutes(-1).AddSeconds(-1), MacAddress = arduino } 
+            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1).AddSeconds(1), MacAddress = macAddress },
+            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddMinutes(-1).AddSeconds(-1), MacAddress = macAddress }
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
@@ -112,8 +112,8 @@ public class GetHealthDataTests
         mockSensorRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(sensorData));
         _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(mockSensorRepository.Object);
 
-         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
-                             .Returns((TimeZoneInfo tz, DateTime dt) => dt);
+        _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
+                            .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
         var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Hour, testTime, TimeZoneInfo.Utc);
@@ -140,8 +140,8 @@ public class GetHealthDataTests
     public async Task GetHealthData_InvalidPeriod_ThrowsException()
     {
         // Arrange
-        var arduino = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = arduino, OutOfPerimeter = false };
+        var macAddress = "test-mac-address";
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false };
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
 
         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
@@ -157,15 +157,15 @@ public class GetHealthDataTests
     public async Task GetHealthData_PeriodDay_FiltersCorrectly()
     {
         // Arrange
-        var arduino = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = arduino, OutOfPerimeter = false };
+        var macAddress = "test-mac-address";
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false };
         var testTime = new DateTime(2025, 5, 14, 12, 0, 0, DateTimeKind.Utc);
 
         var sensorData = new List<Max30102>
         {
-            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = arduino },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = arduino },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = arduino } 
+            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
+            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
+            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
 
         };
 
@@ -175,8 +175,8 @@ public class GetHealthDataTests
         mockSensorRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(sensorData));
         _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(mockSensorRepository.Object);
 
-         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
-                             .Returns((TimeZoneInfo tz, DateTime dt) => dt);
+        _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
+                            .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
         var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Day, testTime, TimeZoneInfo.Utc);
@@ -186,20 +186,19 @@ public class GetHealthDataTests
         Assert.Equal(2, result.Count);
     }
 
-        [Fact]
+    [Fact]
     public async Task GetHealthData_PeriodDay_FiltersCorrectlyTwo()
     {
         // Arrange
-        var arduino = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = arduino, OutOfPerimeter = false };
+        var macAddress = "test-mac-address";
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false };
         var testTime = new DateTime(2025, 5, 14, 12, 0, 0, DateTimeKind.Utc);
 
         var sensorData = new List<Max30102>
         {
-            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = arduino },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = arduino },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = arduino } 
-
+            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
+            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
+            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
@@ -208,8 +207,8 @@ public class GetHealthDataTests
         mockSensorRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(sensorData));
         _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(mockSensorRepository.Object);
 
-         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
-                             .Returns((TimeZoneInfo tz, DateTime dt) => dt);
+        _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
+                            .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
         var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Day, testTime, TimeZoneInfo.Utc);

@@ -1,21 +1,12 @@
 using Moq;
-using Xunit;
 using HealthDevice.Services;
 using HealthDevice.DTO;
 using HealthDevice.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query; // Required for IAsyncQueryProvider
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Linq;
-using System.Linq.Expressions; // Required for Expression
-using HealthDevice.UnitTests.Helpers; // Import your helpers namespace
+using HealthDevice.UnitTests.Helpers;
 
 public class UserServiceTests
 {
@@ -94,8 +85,8 @@ public class UserServiceTests
         mock.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
         mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
         mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
-         mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
-            .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
+        mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+           .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
 
         return mock.Object;
     }
@@ -134,10 +125,10 @@ public class UserServiceTests
         // Arrange
         var userLoginDto = new UserLoginDTO { Email = "elder@test.com", Password = "WrongPassword" };
         var ipAddress = "127.0.0.1";
-        var elder = new Elder { Email = userLoginDto.Email, Name = "Default Name" };
+        var elder = new Elder { Email = userLoginDto.Email, Name = "Test Elder" };
 
         _mockElderRepository.Setup(repo => repo.Query())
-            .Returns(CreateMockQueryable(new List<Elder> { elder }));
+            .Returns(CreateMockQueryable([elder]));
 
         _mockElderManager.Setup(manager => manager.CheckPasswordAsync(elder, userLoginDto.Password))
             .ReturnsAsync(false);
@@ -154,7 +145,7 @@ public class UserServiceTests
     public async Task HandleLogin_UserNotFound_ReturnsUnauthorized()
     {
         // Arrange
-        var userLoginDto = new UserLoginDTO { Email = "fake@test.com", Password = "Password123" };
+        var userLoginDto = new UserLoginDTO { Email = "elder@test.com", Password = "Password123!" };
         var ipAddress = "127.0.0.1";
 
         _mockElderRepository.Setup(repo => repo.Query())
@@ -175,7 +166,7 @@ public class UserServiceTests
     {
         // Arrange
         var userManager = _mockElderManager.Object; // Or _mockCaregiverManager.Object
-        var userRegisterDto = new UserRegisterDTO { Email = "elder@test.com", Password = "Password123!", Name = "New User", Role = Roles.Elder };
+        var userRegisterDto = new UserRegisterDTO { Email = "elder@test.com", Password = "Password123!", Name = "Test Elder", Role = Roles.Elder };
         var newUser = new Elder { Email = userRegisterDto.Email, Name = userRegisterDto.Name };
         var ipAddress = "127.0.0.1";
 
@@ -199,13 +190,13 @@ public class UserServiceTests
     {
         // Arrange
         var userManager = _mockElderManager.Object;
-        var userRegisterDto = new UserRegisterDTO { Email = "elder@test.com", Password = "Password123!", Name = "Existing User", Role = Roles.Elder };
-        var existingUser = new Elder { Email = userRegisterDto.Email, Name = "Existing User" };
+        var userRegisterDto = new UserRegisterDTO { Email = "elder@test.com", Password = "Password123!", Name = "Test Elder", Role = Roles.Elder };
+        var existingUser = new Elder { Email = userRegisterDto.Email, Name = "Test Elder" };
         var newUser = new Elder { Email = userRegisterDto.Email, Name = userRegisterDto.Name };
         var ipAddress = "127.0.0.1";
 
         _mockElderManager.Setup(manager => manager.Users)
-            .Returns(CreateMockQueryable(new List<Elder> { existingUser }));
+            .Returns(CreateMockQueryable([existingUser]));
 
         // Act
         var result = await _userService.HandleRegister(userManager, userRegisterDto, newUser, ipAddress);
