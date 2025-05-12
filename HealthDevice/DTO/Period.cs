@@ -72,7 +72,7 @@ public static class PeriodUtil
                     yield return dayStart.AddHours(i);
                 break;
             case Period.Week:
-                var weekStart = referenceDate.Date.AddDays(-(((int)referenceDate.DayOfWeek + 6) % 7));
+                var weekStart = referenceDate.Date.AddDays(- (((int)referenceDate.DayOfWeek + (int)DayOfWeek.Saturday) % 7) );
                 for (int i = 0; i < max; i++)
                     yield return weekStart.AddDays(i);
                 break;
@@ -125,7 +125,7 @@ public static class PeriodUtil
     {
         Period.Hour => date - TimeSpan.FromHours(1),
         Period.Day => date.Date,
-        Period.Week => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7)),
+        Period.Week => date.Date.AddDays(- (((int)date.DayOfWeek + (int)DayOfWeek.Saturday) % 7) ),
         _ => throw new ArgumentException("Invalid period specified")
     };
 }
