@@ -56,7 +56,7 @@ public class HealthServiceTests
         );
     }
 
-    // Helper method to create an IQueryable mock using helpers
+    // Helper method to create an IQueryable mock
     private static IQueryable<T> CreateMockQueryable<T>(IEnumerable<T> data) where T : class
     {
         var queryable = data.AsQueryable();
@@ -69,7 +69,7 @@ public class HealthServiceTests
         mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
         mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
         mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
-           .Returns(((IAsyncEnumerable<T>)new TestDbAsyncEnumerable<T>(data)).GetAsyncEnumerator());
+           .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
 
         return mock.Object;
     }
@@ -243,13 +243,13 @@ public class HealthServiceTests
     {
         // Arrange
         var macAddress = "test-mac-address";
-        var currentTime = DateTime.UtcNow;
+        var testTime = DateTime.UtcNow;
 
         var gpsData = new GPSData
         {
             Latitude = 57.0124,
             Longitude = 9.9915,
-            Timestamp = currentTime.AddMinutes(-5),
+            Timestamp = testTime.AddMinutes(-5),
             MacAddress = macAddress
         };
 
@@ -257,7 +257,7 @@ public class HealthServiceTests
         _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
 
         // Act
-        var result = await _healthService.GetLocation(currentTime, macAddress);
+        var result = await _healthService.GetLocation(testTime, macAddress);
 
         // Assert
         Assert.NotNull(result);
@@ -282,13 +282,13 @@ public class HealthServiceTests
     {
         // Arrange
         var macAddress = "test-mac-address";
-        var currentTime = DateTime.UtcNow;
+        var testTime = DateTime.UtcNow;
 
         _mockGpsRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<GPSData>()));
         _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
 
         // Act
-        var result = await _healthService.GetLocation(currentTime, macAddress);
+        var result = await _healthService.GetLocation(testTime, macAddress);
 
         // Assert
         Assert.NotNull(result);

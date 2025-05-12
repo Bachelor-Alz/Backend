@@ -54,7 +54,7 @@ public class GetHealthDataTests
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder>()));
 
         // Act
-        var result = await _getHealthDataService.GetHealthData<Max30102>("nonexistent-elder@test.com", Period.Day, DateTime.UtcNow, TimeZoneInfo.Utc); // Use Max30102
+        var result = await _getHealthDataService.GetHealthData<Max30102>("test@elder.com", Period.Day, DateTime.UtcNow, TimeZoneInfo.Utc);
 
         // Assert
         Assert.Empty(result);
@@ -62,7 +62,7 @@ public class GetHealthDataTests
             logger => logger.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No elder found with Email nonexistent-elder@test.com or Arduino is not set")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No elder found with Email test@elder.com or Arduino is not set")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once
@@ -102,8 +102,8 @@ public class GetHealthDataTests
 
         var sensorData = new List<Max30102>
         {
-            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1).AddSeconds(1), MacAddress = macAddress },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddMinutes(-1).AddSeconds(-1), MacAddress = macAddress }
+            new() { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1).AddSeconds(1), MacAddress = macAddress },
+            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddMinutes(-1).AddSeconds(-1), MacAddress = macAddress }
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
@@ -163,9 +163,9 @@ public class GetHealthDataTests
 
         var sensorData = new List<Max30102>
         {
-            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
+            new() { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
+            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
+            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
 
         };
 
@@ -196,9 +196,9 @@ public class GetHealthDataTests
 
         var sensorData = new List<Max30102>
         {
-            new Max30102 { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
-            new Max30102 { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
+            new() { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
+            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
+            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));

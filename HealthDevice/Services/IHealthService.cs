@@ -16,6 +16,7 @@ public interface IHealthService
     Task<Location> GetLocation(DateTime currentTime, string arduino);
     Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email);
+    Task<ActionResult<PerimeterDTO>> GetElderPerimeter(string elderEmail);
     Task<ActionResult> SetPerimeter(int radius, string elderEmail);
     Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
     Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);

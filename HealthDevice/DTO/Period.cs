@@ -19,8 +19,10 @@ public static class PeriodUtil
             case Period.Day:
                 return new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             case Period.Week:
-                DateTime endOfWeek = date.AddDays(7 - (int)date.DayOfWeek).Date;
-                return new DateTime(endOfWeek.Year, endOfWeek.Month, endOfWeek.Day, 23, 59, 59).ToUniversalTime();
+                DateTime sunday = date.DayOfWeek == DayOfWeek.Sunday ? date.Date : 
+                    date.Date.AddDays(7 - (int)date.DayOfWeek); 
+                return new DateTime(sunday.Year, sunday.Month, sunday.Day, 23, 59, 59).ToUniversalTime();
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(period), "Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
         }
@@ -70,7 +72,7 @@ public static class PeriodUtil
                     yield return dayStart.AddHours(i);
                 break;
             case Period.Week:
-                var weekStart = referenceDate.Date.AddDays(-(int)referenceDate.DayOfWeek);
+                var weekStart = referenceDate.Date.AddDays(- (((int)referenceDate.DayOfWeek + (int)DayOfWeek.Saturday) % 7) );
                 for (int i = 0; i < max; i++)
                     yield return weekStart.AddDays(i);
                 break;
@@ -118,4 +120,12 @@ public static class PeriodUtil
                 : defaultFactory(slot))
             .ToList();
     }
+    
+    public static DateTime GetEarlierDate(DateTime date, Period period) => period switch
+    {
+        Period.Hour => date - TimeSpan.FromHours(1),
+        Period.Day => date.Date,
+        Period.Week => date.Date.AddDays(- (((int)date.DayOfWeek + (int)DayOfWeek.Saturday) % 7) ),
+        _ => throw new ArgumentException("Invalid period specified")
+    };
 }

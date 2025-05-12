@@ -121,21 +121,15 @@ namespace HealthDevice.Controllers
 
 
         [HttpGet("Coordinates")]
-        public async Task<ActionResult<Location>> GetLocaiton(string elderEmail)
+        [Authorize(Roles = "Elder")]
+        public async Task<ActionResult<PerimeterDTO>> GetLocation()
         {
-            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
-            if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
-            {
-                _logger.LogError("Elder not found with: {ElderEmail} and Arduino: {mac}", elderEmail, elder?.MacAddress);
-                return BadRequest("Elder not found.");
-            }
-            _logger.LogInformation("Fetching location data for elder: {ElderEmail}", elderEmail);
-            Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
-            if (location is not null)return location;
-            
-            _logger.LogError("Location not found for elder: {ElderEmail}", elderEmail);
-            return BadRequest("Location not found.");
-            
+            Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+                return BadRequest("User claim is not available.");
+
+            _logger.LogInformation("Fetching elder location for: {ElderEmail}", userClaim.Value);
+            return await _healthService.GetElderPerimeter(userClaim.Value);
         }
 
         [HttpGet("Coordinates/Elders")]
@@ -164,8 +158,8 @@ namespace HealthDevice.Controllers
                 return BadRequest("Location not found.");
 
             string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
-            
-            if (string.IsNullOrEmpty(address))  
+
+            if (string.IsNullOrEmpty(address))
                 return BadRequest("Address not found.");
 
             _logger.LogInformation("Fetched address data for elder: {ElderEmail}", elder.Email);
