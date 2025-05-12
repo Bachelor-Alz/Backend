@@ -1,17 +1,21 @@
 using HealthDevice.Data;
 using HealthDevice.Controllers;
-using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using HealthDevice.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using dotenv.net;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<UserController>();
+builder.Services.AddScoped<ArduinoController>();
+builder.Services.AddScoped<HealthController>();
+builder.Services.AddScoped<AiController>();
+builder.Services.AddScoped<TestController>();
 builder.Services.AddHttpClient<AiController>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -33,6 +37,7 @@ builder.Services.AddIdentityCore<Caregiver>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+
 // Register UserManager and RoleManager for Elder
 builder.Services.AddScoped<UserManager<Elder>>();
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
@@ -49,6 +54,8 @@ builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
 
+builder.Services.AddControllers();
+
 // Register generic repository and factory
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<ApplicationDbContext>();
@@ -62,6 +69,7 @@ builder.Services.AddScoped<IArduinoService, ArduinoService>();
 builder.Services.AddScoped<IAIService, AiService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IGetHealthData, GetHealthDataService>();
+builder.Services.AddScoped<ITimeZoneService, TimeZoneService>();
 
 builder.Services.ConfigureApplicationCookie();
 
@@ -71,6 +79,7 @@ builder.Services.AddJwtAuthentication(
     "user.healthdevice.com",
     "UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"
 );
+
 
 builder.Services.AddAuthorization(options =>
 {
@@ -95,9 +104,16 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddHostedService<TimedHostedService>();
-builder.Services.AddHostedService<TimedGPSService>();
+builder.Services.AddScoped<TimedGPSService>();
+
+builder.Services.AddHealthChecks()
+    .AddCheck<EnvVarHealthCheck>("Environment Variables")
+    .AddCheck<DbHealthCheck>("Database");
+
 
 var app = builder.Build();
+
+app.UseHealthChecks("/health");
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
@@ -112,6 +128,11 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync(); // Applies any pending migrations
+    // Call MakeTestUserAsync with the service provider
+    if (Environment.GetEnvironmentVariable("IS_TESTING") == "true")
+    {
+        await TestUserConfig.MakeTestUserAsync(scope.ServiceProvider);
+    }
 }
 
 app.Run();

@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+
+WORKDIR /app
+
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true
+
+COPY Backend.sln ./
+COPY HealthDevice/*.csproj ./HealthDevice/
+
+# Create folder to satisfy the next COPY
+RUN mkdir -p HealthDevice
+
+COPY . .
+
+# Restore dependencies (after full source copied)
+RUN dotnet restore "HealthDevice/HealthDevice.csproj"
+
+# Build the project to catch early errors
+RUN dotnet build "HealthDevice/HealthDevice.csproj"
+
+# Launch with hot reload
+CMD ["dotnet", "watch", "--project", "HealthDevice/HealthDevice.csproj", "run", "--no-launch-profile"]

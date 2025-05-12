@@ -1,8 +1,8 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Models;
 
 namespace HealthDevice.Services;
 
 public interface IEmailService
 {
-    Task SendEmail(Email to, string subject, string body);
+    Task SendEmail(string subject, string body, Elder elder);
 }

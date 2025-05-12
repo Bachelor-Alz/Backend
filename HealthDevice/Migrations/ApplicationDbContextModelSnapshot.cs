@@ -22,7 +22,7 @@ namespace HealthDevice.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
+            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -78,7 +78,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Caregiver");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.DashBoard", b =>
+            modelBuilder.Entity("HealthDevice.Models.DistanceInfo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -86,27 +86,22 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("HeartRate")
-                        .HasColumnType("integer");
-
-                    b.Property<float>("SpO2")
+                    b.Property<float>("Distance")
                         .HasColumnType("real");
 
-                    b.Property<int>("allFall")
-                        .HasColumnType("integer");
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<float>("distance")
-                        .HasColumnType("real");
-
-                    b.Property<int>("steps")
-                        .HasColumnType("integer");
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.ToTable("DashBoard");
+                    b.ToTable("Distance");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
+            modelBuilder.Entity("HealthDevice.Models.Elder", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -129,24 +124,35 @@ namespace HealthDevice.Migrations
                     b.Property<string>("InvitedCaregiverId")
                         .HasColumnType("text");
 
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("MacAddress")
-                        .HasColumnType("text");
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasColumnType("text");
 
                     b.Property<string>("NormalizedUserName")
                         .HasColumnType("text");
+
+                    b.Property<bool>("OutOfPerimeter")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
@@ -166,30 +172,16 @@ namespace HealthDevice.Migrations
                     b.Property<string>("UserName")
                         .HasColumnType("text");
 
-                    b.Property<int?>("dashBoardId")
-                        .HasColumnType("integer");
-
-                    b.Property<double>("latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<bool>("outOfPerimeter")
-                        .HasColumnType("boolean");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CaregiverId");
 
                     b.HasIndex("InvitedCaregiverId");
 
-                    b.HasIndex("dashBoardId");
-
                     b.ToTable("Elder");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
+            modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -201,6 +193,7 @@ namespace HealthDevice.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("MacAddress")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Timestamp")
@@ -213,7 +206,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("FallInfo");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.GPS", b =>
+            modelBuilder.Entity("HealthDevice.Models.GPSData", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -228,6 +221,7 @@ namespace HealthDevice.Migrations
                         .HasColumnType("double precision");
 
                     b.Property<string>("MacAddress")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Timestamp")
@@ -238,7 +232,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("GPSData");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Heartrate", b =>
+            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -250,6 +244,7 @@ namespace HealthDevice.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("MacAddress")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Maxrate")
@@ -266,29 +261,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Heartrate");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Kilometer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<float>("Distance")
-                        .HasColumnType("real");
-
-                    b.Property<string>("MacAddress")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Distance");
-                });
-
-            modelBuilder.Entity("HealthDevice.DTO.Location", b =>
+            modelBuilder.Entity("HealthDevice.Models.Location", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -303,7 +276,8 @@ namespace HealthDevice.Migrations
                         .HasColumnType("double precision");
 
                     b.Property<string>("MacAddress")
-                        .HasColumnType("text");
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -313,7 +287,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Location");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Max30102", b =>
+            modelBuilder.Entity("HealthDevice.Models.Max30102", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -327,7 +301,14 @@ namespace HealthDevice.Migrations
                     b.Property<float>("AvgSpO2")
                         .HasColumnType("real");
 
+                    b.Property<int>("LastHeartrate")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("LastSpO2")
+                        .HasColumnType("real");
+
                     b.Property<string>("MacAddress")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("MaxHeartrate")
@@ -342,9 +323,6 @@ namespace HealthDevice.Migrations
                     b.Property<float>("MinSpO2")
                         .HasColumnType("real");
 
-                    b.Property<float>("SpO2")
-                        .HasColumnType("real");
-
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
@@ -353,7 +331,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("MAX30102");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Perimeter", b =>
+            modelBuilder.Entity("HealthDevice.Models.Perimeter", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -368,9 +346,10 @@ namespace HealthDevice.Migrations
                         .HasColumnType("double precision");
 
                     b.Property<string>("MacAddress")
-                        .HasColumnType("text");
+                        .HasMaxLength(18)
+                        .HasColumnType("character varying(18)");
 
-                    b.Property<int>("Radius")
+                    b.Property<int?>("Radius")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -378,7 +357,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("Perimeter");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Spo2", b =>
+            modelBuilder.Entity("HealthDevice.Models.Spo2", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -390,6 +369,7 @@ namespace HealthDevice.Migrations
                         .HasColumnType("real");
 
                     b.Property<string>("MacAddress")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<float>("MaxSpO2")
@@ -406,7 +386,7 @@ namespace HealthDevice.Migrations
                     b.ToTable("SpO2");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Steps", b =>
+            modelBuilder.Entity("HealthDevice.Models.Steps", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -415,6 +395,7 @@ namespace HealthDevice.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("MacAddress")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("StepsCount")
@@ -428,39 +409,33 @@ namespace HealthDevice.Migrations
                     b.ToTable("Steps");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Elder", b =>
+            modelBuilder.Entity("HealthDevice.Models.Elder", b =>
                 {
-                    b.HasOne("HealthDevice.DTO.Caregiver", "Caregiver")
+                    b.HasOne("HealthDevice.Models.Caregiver", "Caregiver")
                         .WithMany("Elders")
                         .HasForeignKey("CaregiverId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("HealthDevice.DTO.Caregiver", "InvitedCaregiver")
+                    b.HasOne("HealthDevice.Models.Caregiver", "InvitedCaregiver")
                         .WithMany("Invites")
                         .HasForeignKey("InvitedCaregiverId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("HealthDevice.DTO.DashBoard", "dashBoard")
-                        .WithMany()
-                        .HasForeignKey("dashBoardId");
-
                     b.Navigation("Caregiver");
 
                     b.Navigation("InvitedCaregiver");
-
-                    b.Navigation("dashBoard");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.FallInfo", b =>
+            modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
                 {
-                    b.HasOne("HealthDevice.DTO.Location", "Location")
+                    b.HasOne("HealthDevice.Models.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
 
                     b.Navigation("Location");
                 });
 
-            modelBuilder.Entity("HealthDevice.DTO.Caregiver", b =>
+            modelBuilder.Entity("HealthDevice.Models.Caregiver", b =>
                 {
                     b.Navigation("Elders");
 

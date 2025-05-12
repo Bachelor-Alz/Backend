@@ -1,18 +1,18 @@
 ﻿namespace HealthDevice.DTO;
-
-public class FallInfo
-{
-    public int Id { get; set; }
-    public DateTime Timestamp { get; set; }
-    public Location? Location { get; set; }
-    public string? MacAddress { get; set; }
-}
-
 public class FallDTO
 {
-    public int Id { get; set; }
-    public DateTime Timestamp { get; set; }
-    public int fallCount { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
+    public int FallCount { get; set; }
 }
 
-//We need to send when a fall is detected
+public class StepsDTO
+{
+    public int StepsCount { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
+}
+
+public class DistanceInfoDTO
+{
+    public float Distance { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
+}

@@ -1,4 +1,5 @@
 ﻿using HealthDevice.DTO;
+using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,47 +19,18 @@ public class ArduinoController : ControllerBase
     }
 
     [HttpPost("gps")]
-    public async Task<ActionResult> PostGps([FromBody] List<GPS> data)
+    public async Task PostGps([FromBody] List<GPSData> data)
     {
-        if (data.Count == 0)
-        {
-            _logger.LogWarning("Received empty GPS data.");
-            return BadRequest("GPS data cannot be empty.");
-        }
-        if (string.IsNullOrEmpty(data.First().MacAddress))
-        {
-            _logger.LogWarning("Received empty MAC address.");
-            return BadRequest("MAC address cannot be empty.");
-        }
-        _logger.LogInformation("Received GPS data: {data}", data);
-        return await _arduinoService.HandleSensorData(data, HttpContext);
-    }
-
-    [HttpPost("max30102")]
-    public async Task<ActionResult> PostMax30102([FromBody] List<Max30102> data)
-    {
-        if (data.Count == 0)
-        {
-            _logger.LogWarning("Received empty Max30102 data.");
-            return BadRequest("Max30102 data cannot be empty.");
-        }
-        if (string.IsNullOrEmpty(data.First().MacAddress))
-        {
-            _logger.LogWarning("Received empty MAC address.");
-            return BadRequest("MAC address cannot be empty.");
-        }
-        _logger.LogInformation("Received Max30102 data: {data}", data);
-        return await _arduinoService.HandleSensorData(data, HttpContext);
+        _logger.LogInformation("Received {data} GPS data, with MacAddress {}", data.Count, data.First().MacAddress);
+        if (!(data.Count == 0 || string.IsNullOrEmpty(data.First().MacAddress)))
+            await _arduinoService.HandleSensorData(data, HttpContext);
     }
 
     [HttpPost("data")]
-    public async Task PostData([FromBody] Arduino data)
+    public async Task PostData([FromBody] ArduinoDTO data)
     {
-        if (string.IsNullOrEmpty(data.MacAddress))
-        {
-            _logger.LogWarning("Received empty MAC address.");
-        }
         _logger.LogInformation("Received Arduino data: {data}", data);
-        await _arduinoService.HandleArduinoData(data, HttpContext);
+        if (!string.IsNullOrEmpty(data.MacAddress))
+            await _arduinoService.HandleArduinoData(data, HttpContext);
     }
 }

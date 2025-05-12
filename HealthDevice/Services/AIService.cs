@@ -1,103 +1,81 @@
-﻿using HealthDevice.DTO;
+﻿using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 
 public class AiService : IAIService
 {
-    
+
     private readonly ILogger<AiService> _logger;
     private readonly IEmailService _emailService;
     private readonly IGeoService _geoService;
-    private readonly IRepositoryFactory _repositoryFactory;
-    
-    public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService, IRepositoryFactory repositoryFactory)
+    private readonly IRepository<Elder> _elderRepository;
+    private readonly IRepository<Caregiver> _caregiverRepository;
+    private readonly IRepository<FallInfo> _fallInfoRepository;
+    private readonly IRepository<Location> _locationRepository;
+
+    public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService,
+        IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
+        IRepository<FallInfo> fallInfoRepository, IRepository<Location> locationRepository)
     {
         _logger = logger;
         _emailService = emailService;
         _geoService = geoService;
-        _repositoryFactory = repositoryFactory;
+        _elderRepository = elderRepository;
+        _caregiverRepository = caregiverRepository;
+        _fallInfoRepository = fallInfoRepository;
+        _locationRepository = locationRepository;
     }
+
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
     {
-        string count = "";
+        int count = 0;
         foreach (int t in request)
         {
-            count += t.ToString();
-            if (count.Contains("0"))
+            if (t == 0)
+                count = 0;
+            else
             {
-                count = "";
-            }
-            if(count.Length >= 4)
-            {
+                count++;
+                if (count < 4) continue;
                 _logger.LogInformation("Fall detected for elder {address}", address);
                 await HandleFall(address);
                 return;
             }
+            
         }
         _logger.LogInformation("No fall detected for elder {address}", address);
     }
 
-    private async Task HandleFall(string addrees)
+    private async Task HandleFall(string macAddress)
     {
-        IRepository<Elder> elderRepository = _repositoryFactory.GetRepository<Elder>();
-        IRepository<Caregiver> caregiverRepository = _repositoryFactory.GetRepository<Caregiver>();
-        IRepository<FallInfo> fallInfoRepository = _repositoryFactory.GetRepository<FallInfo>();
-        IRepository<Location> locationRepository = _repositoryFactory.GetRepository<Location>();
         FallInfo fallInfo = new FallInfo()
         {
-            Timestamp = DateTime.UtcNow,
+            Timestamp = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime(),
             Location = new Location(),
-            MacAddress = addrees
+            MacAddress = macAddress
         };
-        await fallInfoRepository.Add(fallInfo);
+        await _fallInfoRepository.Add(fallInfo);
         try
         {
-            Elder? elder =  await elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == addrees);
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == macAddress);
             if (elder == null)
-            {
-                _logger.LogWarning("Elder {address} does not exist", addrees);
                 return;
-            }
-            List<Caregiver> caregivers = await caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
-            if(caregivers.Count == 0)
-            {
-                _logger.LogWarning("No caregivers found for elder {elder}", elder.Email);
+            
+            List<Caregiver> caregivers = await _caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
+            Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
+            if (location == null || caregivers.Count == 0)
                 return;
-            }
-            foreach (var caregiver in caregivers)
-            {
-                Email emailInfo = new Email
-                {
-                    name = caregiver.Name,
-                    email = caregiver.Email
-                };
-                if (emailInfo.name == null || emailInfo.email == null)
-                {
-                    _logger.LogWarning("No email found for caregiver {caregiver}", caregiver.Email);
-                    return;
-                }
-                Location? location = await locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
-                if (location == null) continue;
-                string address = await _geoService.GetAddressFromCoordinates(location.Latitude,location.Longitude);
 
-                _logger.LogInformation("Sending email to {caregiver}", caregiver.Email);
-                try
-                {
-                    await _emailService.SendEmail(emailInfo, "Fall detected",
-                        $"Fall detected for elder {elder.Name} at location {address}.");
-                }
-                catch
-                {
-                    _logger.LogError("Failed to send email to {caregiver}", caregiver.Email);
-                    return;
-                }
-            }
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            await _emailService.SendEmail("Fall detected",
+                $"Fall detected for elder {elder.Name} at location {address}.", elder);
         }
         catch
         {
-           _logger.LogError("Failed to handle fall");
+            _logger.LogError("Failed to handle fall");
         }
     }
-    }
+}
