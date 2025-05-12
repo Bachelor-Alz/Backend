@@ -3,6 +3,7 @@ using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StepsDTO = HealthDevice.DTO.StepsDTO;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
@@ -65,7 +66,8 @@ public class HealthService : IHealthService
         for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
             var date1 = date;
-            IEnumerable<Max30102> heartRateInHour = heartRates.Where(h => h.Timestamp >= date1 && h.Timestamp < date1.AddHours(1));
+            IEnumerable<Max30102> heartRateInHour =
+                heartRates.Where(h => h.Timestamp >= date1 && h.Timestamp < date1.AddHours(1));
             List<Max30102> rateInHour = heartRateInHour.ToList();
             if (rateInHour.Count == 0) continue;
             heartRateList.Add(new Heartrate
@@ -77,7 +79,9 @@ public class HealthService : IHealthService
                 MacAddress = address
             });
         }
-        _logger.LogInformation("Found {Count} heart rate records for elder with MacAddress {Address}", heartRateList.Count, address);
+
+        _logger.LogInformation("Found {Count} heart rate records for elder with MacAddress {Address}",
+            heartRateList.Count, address);
         return heartRateList;
     }
 
@@ -99,7 +103,8 @@ public class HealthService : IHealthService
 
         for (DateTime date = earliestDate; date <= currentDate; date = date.AddHours(1))
         {
-            List<Max30102> hourlyData = spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
+            List<Max30102> hourlyData =
+                spo2Data.Where(s => s.Timestamp >= date && s.Timestamp < date.AddHours(1)).ToList();
             if (hourlyData.Count == 0) continue;
 
             spo2List.Add(new Spo2
@@ -111,7 +116,9 @@ public class HealthService : IHealthService
                 MacAddress = address
             });
         }
-        _logger.LogInformation("Found {Count} SpO2 records for elder with MacAddress {Address}", spo2List.Count, address);
+
+        _logger.LogInformation("Found {Count} SpO2 records for elder with MacAddress {Address}", spo2List.Count,
+            address);
         return spo2List;
     }
 
@@ -305,6 +312,7 @@ public class HealthService : IHealthService
 
             await _perimeterRepository.Update(oldPerimeter);
         }
+
         _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
 
         await _emailService.SendEmail(
@@ -362,14 +370,13 @@ public class HealthService : IHealthService
     }
 
     private List<PostHeartRate> GetHeartrateFallback(List<Heartrate> data,
-       List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
+        List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
     {
         if (Max30102Data.Count == 0)
         {
             return [];
         }
 
-        // Process current heart rate data based on the period
         List<PostHeartRate> processedHeartrates = [];
         switch (period)
         {
@@ -380,7 +387,6 @@ public class HealthService : IHealthService
                     Maxrate = g.MaxHeartrate,
                     Minrate = g.MinHeartrate,
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
-                    MacAddress = g.MacAddress
                 }));
                 return processedHeartrates;
             case Period.Day:
@@ -392,7 +398,6 @@ public class HealthService : IHealthService
                         Maxrate = g.Max(h => h.MaxHeartrate),
                         Minrate = g.Min(h => h.MinHeartrate),
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(g.Key)),
-                        MacAddress = g.First().MacAddress
                     }));
                 return processedHeartrates;
             case Period.Week:
@@ -404,7 +409,6 @@ public class HealthService : IHealthService
                         Maxrate = g.Max(h => h.MaxHeartrate),
                         Minrate = g.Min(h => h.MinHeartrate),
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                        MacAddress = g.First().MacAddress
                     }));
                 DateTime startDate = endTime.Date.AddDays(-6);
                 DateTime endDate = endTime.Date;
@@ -421,10 +425,9 @@ public class HealthService : IHealthService
                             Maxrate = fallbackData.Max(h => h.Maxrate),
                             Minrate = fallbackData.Min(h => h.Minrate),
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                            MacAddress = fallbackData.First().MacAddress
                         });
                     }
-                    else if(processedHeartrates.Count != 0) //If there is some Max30102 data and no fallback data return a zeroed object
+                    else if (processedHeartrates.Count != 0)
                     {
                         processedHeartrates.Add(new PostHeartRate
                         {
@@ -432,10 +435,10 @@ public class HealthService : IHealthService
                             Maxrate = 0,
                             Minrate = 0,
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                            MacAddress = processedHeartrates.First().MacAddress
                         });
                     }
                 }
+
                 return processedHeartrates.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
             default:
                 return [];
@@ -443,14 +446,13 @@ public class HealthService : IHealthService
     }
 
     private List<PostSpO2> GetSpO2FallBack(List<Spo2> data,
-       List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
+        List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
     {
         if (Max30102Data.Count == 0)
         {
             return [];
         }
 
-        // Process current SpO2 data based on the period
         List<PostSpO2> processedSpo2 = [];
         switch (period)
         {
@@ -461,7 +463,6 @@ public class HealthService : IHealthService
                     MaxSpO2 = g.MaxSpO2,
                     MinSpO2 = g.MinSpO2,
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
-                    MacAddress = g.MacAddress
                 }));
                 return processedSpo2;
             case Period.Day:
@@ -473,7 +474,6 @@ public class HealthService : IHealthService
                         MaxSpO2 = g.Max(s => s.MaxSpO2),
                         MinSpO2 = g.Min(s => s.MinSpO2),
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(g.Key)),
-                        MacAddress = g.First().MacAddress
                     }));
                 return processedSpo2;
             case Period.Week:
@@ -485,7 +485,6 @@ public class HealthService : IHealthService
                         MaxSpO2 = g.Max(s => s.MaxSpO2),
                         MinSpO2 = g.Min(s => s.MinSpO2),
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                        MacAddress = g.First().MacAddress
                     }));
 
                 DateTime startDate = endTime.Date.AddDays(-6);
@@ -503,10 +502,9 @@ public class HealthService : IHealthService
                             MaxSpO2 = fallbackData.Max(h => h.MaxSpO2),
                             MinSpO2 = fallbackData.Min(h => h.MinSpO2),
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                            MacAddress = fallbackData.First().MacAddress
                         });
                     }
-                    else if(processedSpo2.Count != 0) //If there is some Max30102 data and no fallback data return a zeroed object
+                    else if (processedSpo2.Count != 0)
                     {
                         processedSpo2.Add(new PostSpO2
                         {
@@ -514,7 +512,6 @@ public class HealthService : IHealthService
                             MaxSpO2 = 0,
                             MinSpO2 = 0,
                             Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                            MacAddress = processedSpo2.First().MacAddress
                         });
                     }
                 }
@@ -526,7 +523,7 @@ public class HealthService : IHealthService
     }
 
     public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period,
-      TimeZoneInfo timezone)
+        TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
         List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
@@ -550,11 +547,11 @@ public class HealthService : IHealthService
         );
         _logger.LogInformation("Fetched fall data: {Count}, for Elder {elder}", result.Count, elderEmail);
         return result;
-
     }
 
 
-    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone)
+    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period,
+        TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
         List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(elderEmail, period, endTime, timezone);
@@ -605,7 +602,6 @@ public class HealthService : IHealthService
         );
         _logger.LogInformation("Fetched distance data: {Count}, for Elder {elder}", result.Count, elderEmail);
         return result;
-
     }
 
 
@@ -637,7 +633,6 @@ public class HealthService : IHealthService
                         Maxrate = heartrates.Max(h => h.Maxrate),
                         Minrate = heartrates.Min(h => h.Minrate),
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                        MacAddress = heartrates.First().MacAddress
                     };
                 },
                 slot => new PostHeartRate
@@ -646,14 +641,14 @@ public class HealthService : IHealthService
                     Maxrate = 0,
                     Minrate = 0,
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                    MacAddress = string.Empty
                 }
             );
         }
 
         List<PostHeartRate> processedHeartrates = GetHeartrateFallback(data, Max30102Data, period, timezone, endTime);
 
-        _logger.LogInformation("Fetched Heartrate data: {Count}, for Elder {elder}", processedHeartrates.Count, elderEmail);
+        _logger.LogInformation("Fetched Heartrate data: {Count}, for Elder {elder}", processedHeartrates.Count,
+            elderEmail);
         return PeriodUtil.AggregateByPeriod(processedHeartrates, period, date, t => t.Timestamp.DateTime,
             (group, slot) =>
             {
@@ -664,7 +659,6 @@ public class HealthService : IHealthService
                     Maxrate = heartrates.Max(h => h.Maxrate),
                     Minrate = heartrates.Min(h => h.Minrate),
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                    MacAddress = heartrates.First().MacAddress
                 };
             },
             slot => new PostHeartRate
@@ -673,7 +667,6 @@ public class HealthService : IHealthService
                 Maxrate = 0,
                 Minrate = 0,
                 Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                MacAddress = string.Empty
             }
         ).OrderBy(t => t.Timestamp).ToList();
     }
@@ -706,7 +699,6 @@ public class HealthService : IHealthService
                         MaxSpO2 = enumerable.Max(h => h.MaxSpO2),
                         MinSpO2 = enumerable.Min(h => h.MinSpO2),
                         Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                        MacAddress = enumerable.First().MacAddress
                     };
                 },
                 slot => new PostSpO2
@@ -715,10 +707,10 @@ public class HealthService : IHealthService
                     MaxSpO2 = 0,
                     MinSpO2 = 0,
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                    MacAddress = string.Empty
                 }
             );
         }
+
         List<PostSpO2> processedSpo2 = GetSpO2FallBack(data, Max30102Data, period, timezone, endTime);
         _logger.LogInformation("Fetched SpO2 data: {Count}, for Elder {elder}", processedSpo2.Count, elderEmail);
         return PeriodUtil.AggregateByPeriod(processedSpo2, period, date, t => t.Timestamp.DateTime,
@@ -731,7 +723,6 @@ public class HealthService : IHealthService
                     MaxSpO2 = spo2.Max(h => h.MaxSpO2),
                     MinSpO2 = spo2.Min(h => h.MinSpO2),
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                    MacAddress = spo2.First().MacAddress
                 };
             },
             slot => new PostSpO2
@@ -740,7 +731,6 @@ public class HealthService : IHealthService
                 MaxSpO2 = 0,
                 MinSpO2 = 0,
                 Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                MacAddress = string.Empty
             }
         ).OrderBy(t => t.Timestamp).ToList();
     }

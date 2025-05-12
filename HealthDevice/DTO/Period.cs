@@ -19,8 +19,8 @@ public static class PeriodUtil
             case Period.Day:
                 return new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             case Period.Week:
-                DateTime sunday = date.DayOfWeek == DayOfWeek.Sunday ? date.Date : // If it's already Sunday, use the current date
-                    date.Date.AddDays(7 - (int)date.DayOfWeek); // Otherwise, find the next Sunday
+                DateTime sunday = date.DayOfWeek == DayOfWeek.Sunday ? date.Date : 
+                    date.Date.AddDays(7 - (int)date.DayOfWeek); 
                 return new DateTime(sunday.Year, sunday.Month, sunday.Day, 23, 59, 59).ToUniversalTime();
 
             default:
