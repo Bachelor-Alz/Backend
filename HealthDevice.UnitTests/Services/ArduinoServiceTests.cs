@@ -1,12 +1,9 @@
-using HealthDevice.DTO;
-using HealthDevice.Data;
 using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 
 public class ArduinoServiceTests
 {

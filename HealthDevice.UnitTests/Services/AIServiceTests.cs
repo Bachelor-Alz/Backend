@@ -36,7 +36,7 @@ public class AIServiceTests
         );
     }
 
-    // Helper method to create an IQueryable mock using helpers
+    // Helper method to create an IQueryable mock
     private static IQueryable<T> CreateMockQueryable<T>(IEnumerable<T> data) where T : class
     {
         var queryable = data.AsQueryable();

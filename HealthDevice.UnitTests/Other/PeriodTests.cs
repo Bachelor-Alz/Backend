@@ -50,13 +50,13 @@ public class PeriodTests
         // Arrange
         var data = new List<DateTime>
         {
-            new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
-            new DateTime(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc),
-            new DateTime(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc)
+            new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
+            new(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc),
+            new(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc)
         };
 
         Period period = Period.Hour;
-        DateTime referenceDate = new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
+        DateTime referenceDate = new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
 
         // Act
         var result = PeriodUtil.AggregateByPeriod(
@@ -70,14 +70,12 @@ public class PeriodTests
 
         // Assert
         Assert.Equal(12, result.Count); // 12 slots in an hour
-
-        // Dynamically determine slots with data
         var slotsWithData = result.Where(r => r.Count > 0).Select(r => r.Slot).ToList();
 
         // Assert that slots with data match the input data
-        Assert.Contains(new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.Contains(new DateTime(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.Contains(new DateTime(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc), slotsWithData);
 
         // Assert that slots without data have a count of 0
         Assert.All(result.Where(r => !slotsWithData.Contains(r.Slot)), r => Assert.Equal(0, r.Count));
@@ -89,7 +87,7 @@ public class PeriodTests
         // Arrange
         var data = new List<DateTime>();
         Period period = Period.Week;
-        DateTime referenceDate = new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
+        DateTime referenceDate = new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
 
         // Act
         var result = PeriodUtil.AggregateByPeriod(
@@ -112,12 +110,12 @@ public class PeriodTests
         // Arrange
         var data = new List<DateTime>
         {
-            new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
-            new DateTime(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc)
+            new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
+            new(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc)
         };
 
         Period period = Period.Day;
-        DateTime referenceDate = new DateTime(2025, 5, 12, 0, 0, 0, DateTimeKind.Utc);
+        DateTime referenceDate = new(2025, 5, 12, 0, 0, 0, DateTimeKind.Utc);
 
         // Act
         var result = PeriodUtil.AggregateByPeriod(
@@ -132,8 +130,8 @@ public class PeriodTests
         // Assert
         Assert.Equal(24, result.Count);
         var slotsWithData = result.Where(r => r.Count > 0).Select(r => r.Slot).ToList();
-        Assert.Contains(new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.Contains(new DateTime(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc), slotsWithData);
         Assert.All(result.Where(r => !slotsWithData.Contains(r.Slot)), r => Assert.Equal(0, r.Count));
     }
 
@@ -143,8 +141,8 @@ public class PeriodTests
         // Arrange
         var data = new List<DateTime>
         {
-            new DateTime(2025, 5, 12, 10, 59, 59, DateTimeKind.Utc), // Last second of the hour
-            new DateTime(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc) // First second of the next hour
+            new(2025, 5, 12, 10, 59, 59, DateTimeKind.Utc), // Last second of the hour
+            new(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc) // First second of the next hour
         };
 
         Period period = Period.Hour;
