@@ -55,7 +55,7 @@ public class UserService : IUserService
                 userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO
             {
-                Token = _tokenService.GenerateAccessToken(elder, "Elder"), Role = Roles.Elder, id = elder.Id,
+                Token = _tokenService.GenerateAccessToken(elder, "Elder"), Role = Roles.Elder, userId = elder.Id,
                 RefreshToken = refreshTokenResult.Token
             };
         }
@@ -79,7 +79,7 @@ public class UserService : IUserService
             return new LoginResponseDTO
             {
                 Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"), Role = Roles.Caregiver,
-                id = caregiver.Id, RefreshToken = refreshTokenResult.Token
+                userId = caregiver.Id, RefreshToken = refreshTokenResult.Token
             };
         }
 
