@@ -10,6 +10,8 @@ public class Elder : IdentityUser
     public required string Name { get; set; }
     [MaxLength(18)]
     public string? MacAddress { get; set; }
+    [ForeignKey("MacAddress")]
+    public Arduino? Arduino { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public bool OutOfPerimeter { get; set; }

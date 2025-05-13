@@ -4,6 +4,7 @@ public class ElderLocationDTO
 {
     public required string Name { get; set; }
     public required string Email { get; set; }
+    public string userId { get; set; } = string.Empty;
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public PerimeterDTO? Perimeter { get; set; }
