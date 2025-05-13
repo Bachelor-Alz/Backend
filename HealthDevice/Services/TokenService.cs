@@ -71,7 +71,7 @@ public class TokenService
 
         // Revoke all previous active tokens for this user
         var tokensToRevoke = await _dbContext.RefreshToken
-            .Where(rt => rt.Email == userEmail && !rt.IsRevoked && !rt.IsExpired)
+            .Where(rt => rt.Email == userEmail && !rt.IsRevoked && rt.Expiration > DateTime.UtcNow)
             .ToListAsync();
 
         foreach (var rt in tokensToRevoke)
@@ -97,7 +97,7 @@ public class TokenService
         var oldToken = await _dbContext.RefreshToken
             .FirstOrDefaultAsync(rt => rt.TokenHash == oldTokenHash);
 
-        if (oldToken == null || oldToken.IsRevoked || oldToken.IsExpired)
+        if (oldToken == null || oldToken.IsRevoked || oldToken.Expiration < DateTime.UtcNow)
             return null;
 
         var newRawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));

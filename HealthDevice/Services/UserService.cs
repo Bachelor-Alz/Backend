@@ -42,12 +42,13 @@ public class UserService : IUserService
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email != null && m.Email.ToLower() == userLoginDto.Email.ToLower());
         if (elder != null && elder.Email != null)
         {
-            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(elder.Email, ipAdress);
+
             if (!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedObjectResult("Wrong password.");
             }
+            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(elder.Email, ipAdress);
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(elder, "Elder"), Role = Roles.Elder, RefreshToken = refreshTokenResult.Token };
         }
@@ -57,13 +58,14 @@ public class UserService : IUserService
         if (caregiver != null && caregiver.Email != null)
         {
 
-            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(caregiver.Email, ipAdress);
+
             if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedObjectResult("Wrong password.");
             }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
+            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(caregiver.Email, ipAdress);
             return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"), Role = Roles.Caregiver, RefreshToken = refreshTokenResult.Token };
         }
 
