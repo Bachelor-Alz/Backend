@@ -304,7 +304,7 @@ public class UserController : ControllerBase
 
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == userClaim.Value);
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
-            return BadRequest("Arduino address is already null.");
+            return BadRequest("Couldn't find the elder with a mac address.");
 
         _logger.LogInformation("Removing Arduino address for elder {elder.Email}.", elder.Email);
         

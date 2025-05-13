@@ -13,6 +13,7 @@ public class ArduinoServiceTests
     private readonly Mock<IRepository<Heartrate>> _mockHeartrateRepository;
     private readonly Mock<IRepository<Spo2>> _mockspo2Repository;
     private readonly Mock<IRepository<Steps>> _mockStepsRepository;
+    private readonly Mock<IRepository<Arduino>> _mockArduinoRepository;
     private readonly Mock<HttpContext> _mockHttpContext;
     private readonly ArduinoService _arduinoService;
 
@@ -24,6 +25,7 @@ public class ArduinoServiceTests
         _mockHeartrateRepository = new Mock<IRepository<Heartrate>>();
         _mockspo2Repository = new Mock<IRepository<Spo2>>();
         _mockStepsRepository = new Mock<IRepository<Steps>>();
+        _mockArduinoRepository = new Mock<IRepository<Arduino>>();
         _mockHttpContext = new Mock<HttpContext>();
 
         _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
@@ -39,7 +41,8 @@ public class ArduinoServiceTests
             _mockGpsRepository.Object,
             _mockStepsRepository.Object,
             _mockHeartrateRepository.Object,
-            _mockspo2Repository.Object);
+            _mockspo2Repository.Object,
+            _mockArduinoRepository.Object);
 #pragma warning restore CS8625
     }
 
