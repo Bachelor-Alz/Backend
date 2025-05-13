@@ -132,7 +132,7 @@ public class UserController : ControllerBase
         if (caregiver == null)
             return BadRequest("Caregiver not found.");
 
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(e => e.Email == userClaim.Value);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(e => e.Id == userClaim.Value);
         if (elder == null)
             return NotFound("Elder not found.");
 
@@ -169,7 +169,7 @@ public class UserController : ControllerBase
             return BadRequest("User claim is not available.");
 
         Elder? elder = await _elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Email == userClaim.Value);
+            .FirstOrDefaultAsync(e => e.Id == userClaim.Value);
 
         if (elder == null)
             return NotFound("Elder not found.");
@@ -201,7 +201,7 @@ public class UserController : ControllerBase
 
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Elders)
-            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+            .FirstOrDefaultAsync(c => c.Id == userClaim.Value);
 
         if (caregiver == null || caregiver.Elders == null)
             return BadRequest("Caregiver not found.");
@@ -235,7 +235,7 @@ public class UserController : ControllerBase
 
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Elders)
-            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+            .FirstOrDefaultAsync(c => c.Id == userClaim.Value);
         if (caregiver?.Elders == null)
             return BadRequest("Caregiver not found or has no elders.");
 
@@ -257,7 +257,7 @@ public class UserController : ControllerBase
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
             return BadRequest("User claim is not available.");
 
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == userClaim.Value);
         if (elder == null)
             return NotFound();
 
@@ -271,7 +271,7 @@ public class UserController : ControllerBase
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
             return BadRequest("User claim is not available.");
 
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == userClaim.Value);
         if (elder == null || string.IsNullOrEmpty(address))
             return BadRequest("Couldnt find elder");
 
@@ -298,7 +298,7 @@ public class UserController : ControllerBase
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
             return BadRequest("User claim is not available.");
 
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == userClaim.Value);
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
             return BadRequest("Arduino address is already null.");
 
@@ -337,7 +337,7 @@ public class UserController : ControllerBase
 
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Invites)
-            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+            .FirstOrDefaultAsync(c => c.Id == userClaim.Value);
         if (caregiver?.Invites == null)
         {
             return BadRequest("Caregiver has no invites.");
@@ -358,7 +358,7 @@ public class UserController : ControllerBase
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Invites)
             .Include(c => c.Elders)
-            .FirstOrDefaultAsync(c => c.Email == userClaim.Value);
+            .FirstOrDefaultAsync(c => c.Id == userClaim.Value);
 
         if (caregiver?.Invites == null || caregiver.Invites.Count == 0)
             return BadRequest("No invites found.");
@@ -394,7 +394,7 @@ public class UserController : ControllerBase
 
         Elder? elder = await _elderRepository.Query()
             .Include(e => e.Caregiver)
-            .FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+            .FirstOrDefaultAsync(m => m.Id == userClaim.Value);
 
         if (elder?.Caregiver == null)
             return NotFound("Caregiver details are not available.");
@@ -434,13 +434,13 @@ public class UserController : ControllerBase
 
         Elder? elder = await _elderRepository.Query()
             .Include(e => e.Caregiver)
-            .FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+            .FirstOrDefaultAsync(m => m.Id == userClaim.Value);
 
         if (elder == null)
         {
             Caregiver? caregiver = await _caregiverRepository.Query()
                 .Include(c => c.Elders)
-                .FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+                .FirstOrDefaultAsync(m => m.Id == userClaim.Value);
 
             if (caregiver == null)
                 return NotFound("User not found.");
