@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Period = HealthDevice.DTO.Period;
 using StepsDTO = HealthDevice.DTO.StepsDTO;
+
 // ReSharper disable All
 
 namespace HealthDevice.Controllers
 {
-
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -40,48 +40,56 @@ namespace HealthDevice.Controllers
         }
 
         [HttpGet("Heartrate")]
-        public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderId, DateTime date, string timezone = "Europe/Copenhagen",
+        public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderId, DateTime date,
+            string timezone = "Europe/Copenhagen",
             string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
+
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
             return await _healthService.GetHeartrate(elderId, date, periodEnum, timeZoneInfo);
         }
 
         [HttpGet("Spo2")]
-        public async Task<ActionResult<List<PostSpO2>>> GetSpo2(string elderId, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+        public async Task<ActionResult<List<PostSpO2>>> GetSpo2(string elderId, DateTime date,
+            string timezone = "Europe/Copenhagen", string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
+
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
             return await _healthService.GetSpO2(
                 elderId, date.ToUniversalTime(), periodEnum, timeZoneInfo);
         }
 
         [HttpGet("Distance")]
-        public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderId, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+        public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderId, DateTime date,
+            string timezone = "Europe/Copenhagen", string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
+
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
             return await _healthService.GetDistance(
                 elderId, date.ToUniversalTime(), periodEnum, timeZoneInfo);
         }
 
         [HttpGet("Steps")]
-        public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderId, DateTime date, string timezone = "Europe/Copenhagen", string period = "Hour")
+        public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderId, DateTime date,
+            string timezone = "Europe/Copenhagen", string period = "Hour")
         {
             if (!Enum.TryParse<Period>(period, true, out var periodEnum) || !Enum.IsDefined(periodEnum))
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
+
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
             return await _healthService.GetSteps(
                 elderId, date.ToUniversalTime(), periodEnum, timeZoneInfo);
@@ -103,6 +111,7 @@ namespace HealthDevice.Controllers
                     Steps = 0
                 };
             }
+
             _logger.LogInformation("Fetching dashboard data for elder: {ElderEmail}", elderId);
             return await _healthService.GetDashboardData(elder.MacAddress);
         }
@@ -115,6 +124,7 @@ namespace HealthDevice.Controllers
             {
                 return BadRequest("Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
             }
+
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
             return await _healthService.GetFalls(elderId, date.ToUniversalTime(), periodEnum, timeZoneInfo);
         }
@@ -153,7 +163,9 @@ namespace HealthDevice.Controllers
                 _logger.LogError("Elder not found with: {ElderEmail} and Arduino: {mac}", elderId, elder?.MacAddress);
                 return BadRequest("Elder not found.");
             }
-            Location? location = await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+
+            Location? location =
+                await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
             if (location is null)
                 return BadRequest("Location not found.");
 

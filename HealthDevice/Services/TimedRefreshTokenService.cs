@@ -1,5 +1,3 @@
-
-
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,8 +26,8 @@ public class TimedRefreshTokenService : BackgroundService
             _dbContext.RefreshToken.RemoveRange(expiredTokens);
             await _dbContext.SaveChangesAsync(stoppingToken);
         }
+
         _logger.LogInformation("Timed Refresh Token Service is done.");
         await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
-
     }
 }

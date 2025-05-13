@@ -26,7 +26,6 @@ public class UserController : ControllerBase
     private readonly TokenService _tokenService;
 
 
-
     public UserController
     (
         UserManager<Elder> elderManager,
@@ -61,14 +60,16 @@ public class UserController : ControllerBase
             return BadRequest("Email and password are in wrong format.");
 
         _logger.LogInformation("Login attempt for Email: {Email}", userLoginDto.Email);
-        return await _userService.HandleLogin(userLoginDto, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown");
+        return await _userService.HandleLogin(userLoginDto,
+            HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown");
     }
 
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult> Register(UserRegisterDTO userRegisterDto)
     {
-        _logger.LogInformation("Registration attempt for Email: {Email} with Role: {Role}", userRegisterDto.Email, userRegisterDto.Role);
+        _logger.LogInformation("Registration attempt for Email: {Email} with Role: {Role}", userRegisterDto.Email,
+            userRegisterDto.Role);
 
         if (string.IsNullOrEmpty(userRegisterDto.Email) || string.IsNullOrEmpty(userRegisterDto.Password) ||
             !userRegisterDto.Email.Contains('@') || userRegisterDto.Password.Length < 6)
@@ -77,7 +78,8 @@ public class UserController : ControllerBase
         if (userRegisterDto.Role != Roles.Elder && userRegisterDto.Role != Roles.Caregiver)
             return BadRequest("Invalid Role.");
 
-        if (userRegisterDto.Role == Roles.Elder && (userRegisterDto.Latitude == null || userRegisterDto.Longitude == null))
+        if (userRegisterDto.Role == Roles.Elder &&
+            (userRegisterDto.Latitude == null || userRegisterDto.Longitude == null))
             return BadRequest("Elder registration requires Latitude and Longitude.");
 
         if (userRegisterDto is { Role: Roles.Caregiver, Latitude: not null, Longitude: not null })
@@ -85,23 +87,23 @@ public class UserController : ControllerBase
 
         return userRegisterDto.Role == Roles.Elder
             ? await _userService.HandleRegister(_elderManager, userRegisterDto,
-                                                new Elder
-                                                {
-                                                    Name = userRegisterDto.Name,
-                                                    Email = userRegisterDto.Email,
-                                                    UserName = userRegisterDto.Email,
-                                                    Latitude = (double)userRegisterDto.Latitude,
-                                                    Longitude = (double)userRegisterDto.Longitude,
-                                                    OutOfPerimeter = false
-                                                }, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown")
+                new Elder
+                {
+                    Name = userRegisterDto.Name,
+                    Email = userRegisterDto.Email,
+                    UserName = userRegisterDto.Email,
+                    Latitude = (double)userRegisterDto.Latitude,
+                    Longitude = (double)userRegisterDto.Longitude,
+                    OutOfPerimeter = false
+                }, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown")
             : await _userService.HandleRegister(_caregiverManager, userRegisterDto,
-                                                new Caregiver
-                                                {
-                                                    Name = userRegisterDto.Name,
-                                                    Email = userRegisterDto.Email.ToLowerInvariant(),
-                                                    UserName = userRegisterDto.Email.ToLowerInvariant(),
-                                                    Elders = new List<Elder>()
-                                                }, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown");
+                new Caregiver
+                {
+                    Name = userRegisterDto.Name,
+                    Email = userRegisterDto.Email.ToLowerInvariant(),
+                    UserName = userRegisterDto.Email.ToLowerInvariant(),
+                    Elders = new List<Elder>()
+                }, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown");
     }
 
     [HttpPost("users/elder")]
@@ -126,7 +128,8 @@ public class UserController : ControllerBase
 
         if (caregiver.Invites != null && caregiver.Invites.Any(e => e.Id == elder.Id))
         {
-            _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+            _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email,
+                caregiver.Name);
             return BadRequest("Elder is already invited by this caregiver.");
         }
 
@@ -137,12 +140,14 @@ public class UserController : ControllerBase
         {
             _dbContext.Update(caregiver);
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("Elder {elder.Email} sent an invite to Caregiver {caregiver.Name}.", elder.Email, caregiver.Name);
+            _logger.LogInformation("Elder {elder.Email} sent an invite to Caregiver {caregiver.Name}.", elder.Email,
+                caregiver.Name);
             return Ok("Caregiver invited successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to invite caregiver {caregiver} to elder {elder}.", caregiver.Name, elder.Name);
+            _logger.LogError(ex, "Failed to invite caregiver {caregiver} to elder {elder}.", caregiver.Name,
+                elder.Name);
             return BadRequest("Failed to invite caregiver.");
         }
     }
@@ -202,12 +207,14 @@ public class UserController : ControllerBase
         {
             elder.CaregiverId = null;
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elder.Email, caregiver.Email);
+            _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elder.Email,
+                caregiver.Email);
             return Ok("Elder removed successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to remove elder {elder} from caregiver {caregiver}.", elder.Name, caregiver.Name);
+            _logger.LogError(ex, "Failed to remove elder {elder} from caregiver {caregiver}.", elder.Name,
+                caregiver.Name);
             return BadRequest("Failed to remove elder from caregiver.");
         }
     }
@@ -235,7 +242,6 @@ public class UserController : ControllerBase
             userId = e.Id,
             Role = Roles.Elder
         }).ToList();
-
     }
 
     [HttpGet("users/arduino")]
@@ -336,7 +342,8 @@ public class UserController : ControllerBase
         }
 
         _logger.LogInformation("Caregiver has {Count} invites.", caregiver.Invites.Count);
-        return caregiver.Invites.Select(elder => new GetElderDTO { Name = elder.Name, Email = elder.Email, userId = elder.Id ,Role = Roles.Elder }).ToList();
+        return caregiver.Invites.Select(elder => new GetElderDTO
+            { Name = elder.Name, Email = elder.Email, userId = elder.Id, Role = Roles.Elder }).ToList();
     }
 
     [HttpPost("caregiver/invites/accept")]
@@ -365,7 +372,8 @@ public class UserController : ControllerBase
             elder.CaregiverId = caregiver.Id;
             elder.InvitedCaregiverId = null;
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.", caregiver.Name, elder.Email);
+            _logger.LogInformation("Caregiver {caregiver.Name} accepted invite from Elder {elder.Email}.",
+                caregiver.Name, elder.Email);
             return Ok("Invite accepted successfully.");
         }
         catch (Exception ex)

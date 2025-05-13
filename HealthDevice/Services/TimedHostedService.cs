@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services
@@ -25,9 +26,11 @@ namespace HealthDevice.Services
                 {
                     // Resolving scoped services within the scope
                     IRepository<Elder> elderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Elder>>();
-                    IRepository<Heartrate> hrRepository = scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
+                    IRepository<Heartrate> hrRepository =
+                        scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
                     IRepository<Spo2> spo2Repository = scope.ServiceProvider.GetRequiredService<IRepository<Spo2>>();
-                    IRepository<DistanceInfo> distanceRepository = scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
+                    IRepository<DistanceInfo> distanceRepository =
+                        scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
 
                     List<Elder> elders = await elderRepository.Query().ToListAsync(cancellationToken: stoppingToken);
@@ -37,7 +40,7 @@ namespace HealthDevice.Services
                         string? macAddress = elder.MacAddress;
                         if (macAddress == null) continue;
                         DateTime oldTime = DateTime.UtcNow.AddMonths(-3);
-                        
+
                         await healthService.DeleteData<Heartrate>(oldTime, macAddress);
                         await healthService.DeleteData<Spo2>(oldTime, macAddress);
                         await healthService.DeleteData<DistanceInfo>(oldTime, macAddress);
