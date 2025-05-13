@@ -19,7 +19,6 @@ public class UserController : ControllerBase
     private readonly UserManager<Caregiver> _caregiverManager;
     private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
-    private readonly IGeoService _geoService;
     private readonly IRepository<Elder> _elderRepository;
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly ApplicationDbContext _dbContext;
@@ -32,7 +31,6 @@ public class UserController : ControllerBase
         UserManager<Caregiver> caregiverManager,
         IUserService userService,
         ILogger<UserController> logger,
-        IGeoService geoService,
         IRepository<Elder> elderRepository,
         IRepository<Caregiver> caregiverRepository,
         ApplicationDbContext dbContext,
@@ -43,7 +41,6 @@ public class UserController : ControllerBase
         _caregiverManager = caregiverManager;
         _userService = userService;
         _logger = logger;
-        _geoService = geoService;
         _elderRepository = elderRepository;
         _caregiverRepository = caregiverRepository;
         _dbContext = dbContext;
@@ -405,7 +402,7 @@ public class UserController : ControllerBase
             {
                 Name = elder.Caregiver.Name,
                 Email = elder.Caregiver.Email,
-                Id = elder.Caregiver.Id,
+                UserId = elder.Caregiver.Id,
                 Role = Roles.Caregiver
             }
         };
