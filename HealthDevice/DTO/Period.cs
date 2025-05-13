@@ -1,4 +1,6 @@
-﻿namespace HealthDevice.DTO;
+﻿using HealthDevice.Services;
+
+namespace HealthDevice.DTO;
 
 public enum Period
 {
@@ -39,7 +41,7 @@ public static class PeriodUtil
             case Period.Day:
                 return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, DateTimeKind.Utc);
             case Period.Week:
-                return date.Date;
+                return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, DateTimeKind.Utc);
             default:
                 throw new ArgumentOutOfRangeException(nameof(period), period, null);
         }
@@ -56,23 +58,26 @@ public static class PeriodUtil
         };
     }
 
-    private static IEnumerable<DateTime> GetExpectedSlots(this Period period, DateTime referenceDate)
+    private static IEnumerable<DateTime> GetExpectedSlots(this Period period, DateTime referenceDate, TimeZoneInfo timezone, ITimeZoneService timezoneService)
     {
         int max = period.GetMaxDataSlots();
         switch (period)
         {
             case Period.Hour:
-                var hourStart = new DateTime(referenceDate.Year, referenceDate.Month, referenceDate.Day, referenceDate.Hour, 0, 0, DateTimeKind.Utc);
+                var hourStart = new DateTime(referenceDate.Year, referenceDate.Month, referenceDate.Day, referenceDate.Hour, 0, 0, DateTimeKind.Unspecified);
+                hourStart = timezoneService.LocalTimeToUTC(timezone, hourStart);
                 for (int i = 0; i < max; i++)
                     yield return hourStart.AddMinutes(i * 5);
                 break;
             case Period.Day:
-                var dayStart = new DateTime(referenceDate.Year, referenceDate.Month, referenceDate.Day, 0, 0, 0, DateTimeKind.Utc);
+                var dayStart = new DateTime(referenceDate.Year, referenceDate.Month, referenceDate.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                dayStart = timezoneService.LocalTimeToUTC(timezone, dayStart);
                 for (int i = 0; i < max; i++)
                     yield return dayStart.AddHours(i);
                 break;
             case Period.Week:
                 var weekStart = referenceDate.Date.AddDays(- (((int)referenceDate.DayOfWeek + (int)DayOfWeek.Saturday) % 7) );
+                weekStart = timezoneService.LocalTimeToUTC(timezone, weekStart);
                 for (int i = 0; i < max; i++)
                     yield return weekStart.AddDays(i);
                 break;
@@ -106,6 +111,8 @@ public static class PeriodUtil
         IEnumerable<TSource> data,
         Period period,
         DateTime referenceDate,
+        TimeZoneInfo timezone,
+        ITimeZoneService timezoneService,
         Func<TSource, DateTime> timestampSelector,
         Func<IEnumerable<TSource>, DateTime, TResult> aggregateFunc,
         Func<DateTime, TResult> defaultFactory)
@@ -114,7 +121,7 @@ public static class PeriodUtil
             .GroupBy(x => period.GetSlotStart(timestampSelector(x)))
             .ToDictionary(g => g.Key, g => g);
 
-        IEnumerable<DateTime> slots = period.GetExpectedSlots(referenceDate);
+        IEnumerable<DateTime> slots = period.GetExpectedSlots(referenceDate, timezone, timezoneService);
         return slots.Select(slot => grouped.TryGetValue(slot, out IGrouping<DateTime, TSource>? group)
                 ? aggregateFunc(group, slot)
                 : defaultFactory(slot))

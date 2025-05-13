@@ -397,159 +397,6 @@ public class HealthService : IHealthService
         return elderLocations;
     }
 
-    private List<PostHeartRate> GetHeartrateFallback(List<Heartrate> data,
-        List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
-    {
-        if (Max30102Data.Count == 0)
-        {
-            return [];
-        }
-
-        List<PostHeartRate> processedHeartrates = [];
-        switch (period)
-        {
-            case Period.Hour:
-                processedHeartrates.AddRange(Max30102Data.Select(g => new PostHeartRate
-                {
-                    Avgrate = g.AvgHeartrate,
-                    Maxrate = g.MaxHeartrate,
-                    Minrate = g.MinHeartrate,
-                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
-                }));
-                return processedHeartrates;
-            case Period.Day:
-                processedHeartrates.AddRange(Max30102Data
-                    .GroupBy(h => h.Timestamp.Hour)
-                    .Select(g => new PostHeartRate()
-                    {
-                        Avgrate = (int)g.Average(h => h.AvgHeartrate),
-                        Maxrate = g.Max(h => h.MaxHeartrate),
-                        Minrate = g.Min(h => h.MinHeartrate),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(g.Key)),
-                    }));
-                return processedHeartrates;
-            case Period.Week:
-                processedHeartrates.AddRange(Max30102Data
-                    .GroupBy(h => h.Timestamp.Date)
-                    .Select(g => new PostHeartRate()
-                    {
-                        Avgrate = (int)g.Average(h => h.AvgHeartrate),
-                        Maxrate = g.Max(h => h.MaxHeartrate),
-                        Minrate = g.Min(h => h.MinHeartrate),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                    }));
-                DateTime startDate = endTime.Date.AddDays(-6);
-                DateTime endDate = endTime.Date;
-
-                for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
-                {
-                    if (processedHeartrates.Any(hr => hr.Timestamp.Date == currentDate.Date)) continue;
-                    List<Heartrate> fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
-                    if (fallbackData.Count != 0)
-                    {
-                        processedHeartrates.Add(new PostHeartRate
-                        {
-                            Avgrate = (int)fallbackData.Average(h => h.Avgrate),
-                            Maxrate = fallbackData.Max(h => h.Maxrate),
-                            Minrate = fallbackData.Min(h => h.Minrate),
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                        });
-                    }
-                    else if (processedHeartrates.Count != 0)
-                    {
-                        processedHeartrates.Add(new PostHeartRate
-                        {
-                            Avgrate = 0,
-                            Maxrate = 0,
-                            Minrate = 0,
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                        });
-                    }
-                }
-
-                return processedHeartrates.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
-            default:
-                return [];
-        }
-    }
-
-    private List<PostSpO2> GetSpO2FallBack(List<Spo2> data,
-        List<Max30102> Max30102Data, Period period, TimeZoneInfo timezone, DateTime endTime)
-    {
-        if (Max30102Data.Count == 0)
-        {
-            return [];
-        }
-
-        List<PostSpO2> processedSpo2 = [];
-        switch (period)
-        {
-            case Period.Hour:
-                processedSpo2.AddRange(Max30102Data.Select(g => new PostSpO2
-                {
-                    AvgSpO2 = g.AvgSpO2,
-                    MaxSpO2 = g.MaxSpO2,
-                    MinSpO2 = g.MinSpO2,
-                    Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Timestamp),
-                }));
-                return processedSpo2;
-            case Period.Day:
-                processedSpo2.AddRange(Max30102Data
-                    .GroupBy(s => s.Timestamp.Hour)
-                    .Select(g => new PostSpO2
-                    {
-                        AvgSpO2 = g.Average(s => s.AvgSpO2),
-                        MaxSpO2 = g.Max(s => s.MaxSpO2),
-                        MinSpO2 = g.Min(s => s.MinSpO2),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, endTime.Date.AddHours(g.Key)),
-                    }));
-                return processedSpo2;
-            case Period.Week:
-                processedSpo2.AddRange(Max30102Data
-                    .GroupBy(s => s.Timestamp.Date)
-                    .Select(g => new PostSpO2
-                    {
-                        AvgSpO2 = g.Average(s => s.AvgSpO2),
-                        MaxSpO2 = g.Max(s => s.MaxSpO2),
-                        MinSpO2 = g.Min(s => s.MinSpO2),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, g.Key),
-                    }));
-
-                DateTime startDate = endTime.Date.AddDays(-6);
-                DateTime endDate = endTime.Date;
-
-                for (DateTime currentDate = startDate; currentDate <= endDate; currentDate = currentDate.AddDays(1))
-                {
-                    if (processedSpo2.Any(hr => hr.Timestamp.Date == currentDate.Date)) continue;
-                    List<Spo2> fallbackData = data.Where(d => d.Timestamp.Date == currentDate.Date).ToList();
-                    if (fallbackData.Count != 0)
-                    {
-                        processedSpo2.Add(new PostSpO2
-                        {
-                            AvgSpO2 = fallbackData.Average(h => h.AvgSpO2),
-                            MaxSpO2 = fallbackData.Max(h => h.MaxSpO2),
-                            MinSpO2 = fallbackData.Min(h => h.MinSpO2),
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                        });
-                    }
-                    else if (processedSpo2.Count != 0)
-                    {
-                        processedSpo2.Add(new PostSpO2
-                        {
-                            AvgSpO2 = 0,
-                            MaxSpO2 = 0,
-                            MinSpO2 = 0,
-                            Timestamp = _timeZoneService.UTCToLocalTime(timezone, currentDate),
-                        });
-                    }
-                }
-
-                return processedSpo2.Where(t => t.Timestamp.Date <= endDate.Date).ToList();
-            default:
-                return [];
-        }
-    }
-
     public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period,
         TimeZoneInfo timezone)
     {
@@ -561,6 +408,8 @@ public class HealthService : IHealthService
             data,
             period,
             date,
+            timezone,
+            _timeZoneService,
             x => x.Timestamp,
             (group, slot) => new FallDTO
             {
@@ -588,6 +437,8 @@ public class HealthService : IHealthService
             data,
             period,
             date,
+            timezone,
+            _timeZoneService,
             x => x.Timestamp,
             (group, slot) => new StepsDTO
             {
@@ -616,6 +467,8 @@ public class HealthService : IHealthService
             data,
             period,
             date,
+            timezone,
+            _timeZoneService,
             x => x.Timestamp,
             (group, slot) => new DistanceInfoDTO
             {
@@ -651,6 +504,8 @@ public class HealthService : IHealthService
                 data,
                 period,
                 date,
+                timezone,
+                _timeZoneService,
                 x => x.Timestamp,
                 (group, slot) =>
                 {
@@ -672,20 +527,16 @@ public class HealthService : IHealthService
                 }
             );
         }
-
-        List<PostHeartRate> processedHeartrates = GetHeartrateFallback(data, Max30102Data, period, timezone, endTime);
-
-        _logger.LogInformation("Fetched Heartrate data: {Count}, for Elder {elder}", processedHeartrates.Count,
-            elderEmail);
-        return PeriodUtil.AggregateByPeriod(processedHeartrates, period, date, t => t.Timestamp.DateTime,
+        return PeriodUtil.AggregateByPeriod(Max30102Data, period, date, timezone,
+            _timeZoneService, t => t.Timestamp,
             (group, slot) =>
             {
-                IEnumerable<PostHeartRate> heartrates = group.ToList();
+                IEnumerable<Max30102> heartrates = group.ToList();
                 return new PostHeartRate
                 {
-                    Avgrate = (int)heartrates.Average(h => h.Avgrate),
-                    Maxrate = heartrates.Max(h => h.Maxrate),
-                    Minrate = heartrates.Min(h => h.Minrate),
+                    Avgrate = (int)heartrates.Average(h => h.AvgHeartrate),
+                    Maxrate = heartrates.Max(h => h.MaxHeartrate),
+                    Minrate = heartrates.Min(h => h.MinHeartrate),
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
                 };
             },
@@ -717,6 +568,8 @@ public class HealthService : IHealthService
                 data,
                 period,
                 date,
+                timezone,
+                _timeZoneService,
                 x => x.Timestamp,
                 (group, slot) =>
                 {
@@ -738,13 +591,12 @@ public class HealthService : IHealthService
                 }
             );
         }
-
-        List<PostSpO2> processedSpo2 = GetSpO2FallBack(data, Max30102Data, period, timezone, endTime);
-        _logger.LogInformation("Fetched SpO2 data: {Count}, for Elder {elder}", processedSpo2.Count, elderEmail);
-        return PeriodUtil.AggregateByPeriod(processedSpo2, period, date, t => t.Timestamp.DateTime,
+        
+        return PeriodUtil.AggregateByPeriod(Max30102Data, period, date,             timezone,
+            _timeZoneService, t => t.Timestamp,
             (group, slot) =>
             {
-                IEnumerable<PostSpO2> spo2 = group.ToList();
+                IEnumerable<Max30102> spo2 = group.ToList();
                 return new PostSpO2
                 {
                     AvgSpO2 = spo2.Average(h => h.AvgSpO2),
