@@ -113,7 +113,7 @@ public class UserController : ControllerBase
 
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Invites)
-            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+            .FirstOrDefaultAsync(c => c.Email.ToLower() == caregiverEmail.ToLower());
 
         if (caregiver == null)
             return BadRequest("Caregiver not found.");
