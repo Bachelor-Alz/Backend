@@ -19,13 +19,12 @@ public class UserService : IUserService
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly IRepository<GPSData> _gpsRepository;
     private readonly GeoService _geoService;
-    private readonly TokenService _tokenService;
+    private readonly ITokenService _tokenService;
     private readonly IRepository<Arduino> _arduinoRepository;
-    
     public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager,
         UserManager<Caregiver> caregiverManager, IRepository<Elder> elderRepository,
         IRepository<Caregiver> caregiverRepository, IRepository<GPSData> gpsRepository,
-        GeoService geoService, TokenService tokenService, IRepository<Arduino> arduinoRepository)
+        GeoService geoService, ITokenService tokenService, IRepository<Arduino> arduinoRepository)
     {
         _logger = logger;
         _elderManager = elderManager;
