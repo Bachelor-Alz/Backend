@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +54,6 @@ builder.Services.AddScoped<HealthService>();
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GeoService>();
-
 builder.Services.AddControllers();
 
 // Register generic repository and factory
@@ -74,11 +74,25 @@ builder.Services.AddScoped<ITimeZoneService, TimeZoneService>();
 builder.Services.ConfigureApplicationCookie();
 
 builder.Services.AddOpenApi();
-builder.Services.AddJwtAuthentication(
-    "api.healthdevice.com",
-    "user.healthdevice.com",
-    "UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"
-);
+
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+if (jwtSettings == null)
+{
+    throw new InvalidOperationException("JwtSettings configuration is missing or invalid.");
+}
+builder.Services.AddJwtAuthentication(jwtSettings);
+
+builder.Services.AddScoped(provider =>
+{
+    var jwtSettings = provider.GetRequiredService<IOptions<JwtSettings>>().Value;
+    var dbContext = provider.GetRequiredService<ApplicationDbContext>();
+
+    return new TokenService(
+        jwtSettings,
+        dbContext
+    );
+});
 
 
 builder.Services.AddAuthorization(options =>
@@ -105,6 +119,7 @@ builder.Host.UseSerilog();
 
 builder.Services.AddHostedService<TimedHostedService>();
 builder.Services.AddScoped<TimedGPSService>();
+builder.Services.AddScoped<TimedRefreshTokenService>();
 
 builder.Services.AddHealthChecks()
     .AddCheck<EnvVarHealthCheck>("Environment Variables")

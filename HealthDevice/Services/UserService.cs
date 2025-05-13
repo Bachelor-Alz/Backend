@@ -19,11 +19,12 @@ public class UserService : IUserService
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly IRepository<GPSData> _gpsRepository;
     private readonly GeoService _geoService;
+    private readonly TokenService _tokenService;
 
     public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager,
         UserManager<Caregiver> caregiverManager, IRepository<Elder> elderRepository,
         IRepository<Caregiver> caregiverRepository, IRepository<GPSData> gpsRepository,
-        GeoService geoService)
+        GeoService geoService, TokenService tokenService)
     {
         _logger = logger;
         _elderManager = elderManager;
@@ -32,35 +33,40 @@ public class UserService : IUserService
         _caregiverRepository = caregiverRepository;
         _gpsRepository = gpsRepository;
         _geoService = geoService;
+        _tokenService = tokenService;
     }
 
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
     {
         DateTime timestamp = DateTime.UtcNow;
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email != null && m.Email.ToLower() == userLoginDto.Email.ToLower());
-        if (elder != null)
+        if (elder != null && elder.Email != null)
         {
+            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(elder.Email, ipAdress);
             if (!await _elderManager.CheckPasswordAsync(elder, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedObjectResult("Wrong password.");
             }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new LoginResponseDTO { Token = GenerateJwt(elder, "Elder"), Role = Roles.Elder };
+            return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(elder, "Elder"), Role = Roles.Elder, RefreshToken = refreshTokenResult.Token };
         }
 
         Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email != null && m.Email.ToLower() == userLoginDto.Email.ToLower());
-        if (caregiver != null)
+
+        if (caregiver != null && caregiver.Email != null)
         {
+
+            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(caregiver.Email, ipAdress);
             if (!await _caregiverManager.CheckPasswordAsync(caregiver, userLoginDto.Password))
             {
                 _logger.LogWarning("Login failed for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
                 return new UnauthorizedObjectResult("Wrong password.");
             }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new LoginResponseDTO { Token = GenerateJwt(caregiver, "Caregiver"), Role = Roles.Caregiver };
+            return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"), Role = Roles.Caregiver, RefreshToken = refreshTokenResult.Token };
         }
-        
+
         _logger.LogInformation("Couldnt find a user with the Email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
         return new UnauthorizedResult();
     }
@@ -80,31 +86,8 @@ public class UserService : IUserService
             return new BadRequestObjectResult(new { Message = "Registration failed.", result.Errors });
         _logger.LogInformation("{timestamp}: Registration successful for Email: {Email} from IP: {IpAddress}.", userRegisterDto.Email, ipAddress, timestamp);
         return new OkObjectResult("Registration successful.");
-
     }
 
-    public string GenerateJwt<T>(T user, string role) where T : IdentityUser
-    {
-        SymmetricSecurityKey securityKey = new SymmetricSecurityKey("UGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1BlbmlzUGVuaXNQZW5pc1Blbmlz"u8.ToArray());
-        SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        if (user.Email == null) return string.Empty;
-        Claim[] claims =
-        [
-            new(JwtRegisteredClaimNames.Sub, user.Email),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.Role, role)
-        ];
-
-        JwtSecurityToken token = new JwtSecurityToken(
-            issuer: "api.healthdevice.com",
-            audience: "user.healthdevice.com",
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(15),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
 
     public async Task<ActionResult<List<ArduinoInfoDTO>>> GetUnusedArduino(Elder elder)
     {
@@ -136,23 +119,5 @@ public class UserService : IUserService
         }
         _logger.LogInformation("Address not associated count: {addressNotAssociated}", addressNotAssociated.Count);
         return addressNotAssociated.Count != 0 ? addressNotAssociated : [];
-    }
-
-    public async Task<ActionResult<string>> RenewToken(Claim userClaim, Claim expiredClaim)
-    {
-        var elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-        var caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email == userClaim.Value);
-
-        DateTime expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiredClaim.Value)).DateTime;
-        if (expTime > DateTime.UtcNow)
-            return new BadRequestObjectResult("Token is not expired yet.");
-
-        if (DateTime.UtcNow > expTime && expTime > DateTime.UtcNow + TimeSpan.FromMinutes(5))
-            return new BadRequestObjectResult("Token is expired.");
-        if (caregiver != null)
-            return GenerateJwt(caregiver, "Caregiver");
-        if (elder != null)
-            return GenerateJwt(elder, "Elder");
-        return new BadRequestObjectResult("Token is not expired yet.");
     }
 }
