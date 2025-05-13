@@ -7,10 +7,8 @@ namespace HealthDevice.Services;
 
 public interface IHealthService
 {
-    Task<List<Heartrate>> CalculateHeartRate(DateTime currentDate, string address);
-    Task<List<Spo2>> CalculateSpo2(DateTime currentDate, string address);
     Task<DistanceInfo> CalculateDistanceWalked(DateTime currentDate, string arduino);
-    Task DeleteMax30102Data(DateTime currentDate, string arduino);
+    Task DeleteData<T>(DateTime currentDate, string arduino) where T : Sensor;
     Task DeleteGpsData(DateTime currentDate, string arduino);
     Task ComputeOutOfPerimeter(string arduino, Location location);
     Task<Location> GetLocation(DateTime currentTime, string arduino);

@@ -8,5 +8,5 @@ public class Heartrate : Sensor
     public int Maxrate { get; set; }
     public int Minrate { get; set; }
     public int Avgrate { get; set; }
-
+    public int Lastrate { get; set; }
 }

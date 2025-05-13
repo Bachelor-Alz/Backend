@@ -34,21 +34,15 @@ namespace HealthDevice.Services
 
                     foreach (Elder elder in elders)
                     {
-                        string? arduino = elder.MacAddress;
-                        if (arduino == null) continue;
-                        DateTime lastMonth = DateTime.UtcNow.AddDays(-30);
-
-                        List<Heartrate> heartRate = await healthService.CalculateHeartRate(lastMonth, arduino);
-                        await hrRepository.AddRange(heartRate);
-
-                        List<Spo2> spo2 = await healthService.CalculateSpo2(lastMonth, arduino);
-                        await spo2Repository.AddRange(spo2);
-
-                        DistanceInfo distance = await healthService.CalculateDistanceWalked(lastMonth, arduino);
-                        await distanceRepository.Add(distance);
-
-                        await healthService.DeleteMax30102Data(lastMonth, arduino);
-                        await healthService.DeleteGpsData(lastMonth, arduino);
+                        string? macAddress = elder.MacAddress;
+                        if (macAddress == null) continue;
+                        DateTime oldTime = DateTime.UtcNow.AddMonths(-3);
+                        
+                        await healthService.DeleteData<Heartrate>(oldTime, macAddress);
+                        await healthService.DeleteData<Spo2>(oldTime, macAddress);
+                        await healthService.DeleteData<DistanceInfo>(oldTime, macAddress);
+                        await healthService.DeleteData<Steps>(oldTime, macAddress);
+                        await healthService.DeleteData<FallInfo>(oldTime, macAddress);
 
                         await elderRepository.Update(elder);
                     }

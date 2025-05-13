@@ -9,8 +9,8 @@ public class TimeZoneService : ITimeZoneService
 
         TimeSpan utcOffset = userTimeZone.GetUtcOffset(utcInput);
         DateTimeOffset localDateTimeOffset = new DateTimeOffset(utcInput, TimeSpan.Zero).ToOffset(utcOffset);
-        
-        DateTime unspecifiedLocalTime = DateTime.SpecifyKind(utcInput, DateTimeKind.Unspecified);
+        DateTime localTime = utcInput.Add(utcOffset);
+        DateTime unspecifiedLocalTime = DateTime.SpecifyKind(localTime, DateTimeKind.Unspecified);
         return new DateTimeOffset(unspecifiedLocalTime, localDateTimeOffset.Offset);
     }
 
