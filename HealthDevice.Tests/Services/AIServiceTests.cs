@@ -2,7 +2,7 @@ using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
-using HealthDevice.UnitTests.Helpers;
+using HealthDevice.Tests.Helpers;
 
 public class AIServiceTests
 {

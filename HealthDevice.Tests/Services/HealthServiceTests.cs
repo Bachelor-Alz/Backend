@@ -3,7 +3,7 @@ using HealthDevice.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
-using HealthDevice.UnitTests.Helpers;
+using HealthDevice.Tests.Helpers;
 
 public class HealthServiceTests
 {

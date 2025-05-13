@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthDevice", "HealthDevice\HealthDevice.csproj", "{F7EC7D93-2F1A-7FB2-A291-B9F1DB87AA22}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthDevice.UnitTests", "HealthDevice.UnitTests\HealthDevice.UnitTests.csproj", "{232BF04C-D30F-41F0-8A9C-DE7563B65264}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthDevice.Tests", "HealthDevice.Tests\HealthDevice.Tests.csproj", "{232BF04C-D30F-41F0-8A9C-DE7563B65264}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

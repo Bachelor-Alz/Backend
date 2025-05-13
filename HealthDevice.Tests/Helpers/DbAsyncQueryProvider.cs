@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 
-namespace HealthDevice.UnitTests.Helpers
+namespace HealthDevice.Tests.Helpers
 {
     public class TestDbAsyncQueryProvider<TEntity> : IAsyncQueryProvider
     {

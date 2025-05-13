@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using HealthDevice.UnitTests.Helpers;
+using HealthDevice.Tests.Helpers;
 
 public class UserServiceTests
 {
