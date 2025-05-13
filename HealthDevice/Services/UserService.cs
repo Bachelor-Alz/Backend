@@ -50,7 +50,7 @@ public class UserService : IUserService
             }
             RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(elder.Email, ipAdress);
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
-            return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(elder, "Elder"), Role = Roles.Elder, RefreshToken = refreshTokenResult.Token };
+            return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(elder, "Elder"), Role = Roles.Elder, id = elder.Id, RefreshToken = refreshTokenResult.Token };
         }
 
         Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(m => m.Email != null && m.Email.ToLower() == userLoginDto.Email.ToLower());
@@ -66,7 +66,7 @@ public class UserService : IUserService
             }
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);
             RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(caregiver.Email, ipAdress);
-            return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"), Role = Roles.Caregiver, RefreshToken = refreshTokenResult.Token };
+            return new LoginResponseDTO { Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"), Role = Roles.Caregiver, id = caregiver.Id, RefreshToken = refreshTokenResult.Token };
         }
 
         _logger.LogInformation("Couldnt find a user with the Email {Email} from IP: {IpAddress} at {Timestamp}.", userLoginDto.Email, ipAdress, timestamp);

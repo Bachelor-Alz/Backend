@@ -104,23 +104,9 @@ public class UserController : ControllerBase
                                                 }, HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown");
     }
 
-    [HttpGet("elder")]
-    [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult<List<GetElderDTO>>> GetUsers()
-    {
-        _logger.LogInformation("Fetching all Elders");
-        return await _elderRepository.Query().Select(e => new GetElderDTO
-        {
-            Email = e.Email,
-            Name = e.Name,
-            userId = e.Id,
-            Role = Roles.Elder
-        }).ToListAsync();
-    }
-
     [HttpPost("users/elder")]
     [Authorize(Roles = "Elder")]
-    public async Task<ActionResult> InviteCareGiver(string caregiverEmail)
+    public async Task<ActionResult> InviteCareGiver(string caregiverId)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -128,7 +114,7 @@ public class UserController : ControllerBase
 
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Invites)
-            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
+            .FirstOrDefaultAsync(c => c.Id == caregiverId);
 
         if (caregiver == null)
             return BadRequest("Caregiver not found.");
@@ -321,9 +307,13 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("connected")]
-    public async Task<ActionResult<bool>> IsConnected(string elderId)
+    public async Task<ActionResult<bool>> IsConnected()
     {
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == elderId);
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+            return BadRequest("User claim is not available.");
+
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == userClaim.Value);
         if (!(elder == null || string.IsNullOrEmpty(elder.MacAddress))) return true;
         return NotFound("Elder not found.");
     }
@@ -406,7 +396,9 @@ public class UserController : ControllerBase
             new()
             {
                 Name = elder.Caregiver.Name,
-                Email = elder.Caregiver.Email
+                Email = elder.Caregiver.Email,
+                Id = elder.Caregiver.Id,
+                Role = Roles.Caregiver
             }
         };
     }
