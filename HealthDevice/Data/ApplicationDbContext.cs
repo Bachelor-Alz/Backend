@@ -13,7 +13,6 @@ namespace HealthDevice.Data
         public DbSet<Heartrate> Heartrate { get; set; }
         public DbSet<Location> Location { get; set; }
         public DbSet<FallInfo> FallInfo { get; set; }
-        public DbSet<Max30102> MAX30102 { get; set; }
         public DbSet<GPSData> GPSData { get; set; }
         public DbSet<Elder> Elder { get; set; }
         public DbSet<Caregiver> Caregiver { get; set; }
@@ -21,6 +20,7 @@ namespace HealthDevice.Data
         public DbSet<Steps> Steps { get; set; }
         public DbSet<DistanceInfo> Distance { get; set; }
         public DbSet<Perimeter> Perimeter { get; set; }
+        public DbSet<RefreshToken> RefreshToken { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

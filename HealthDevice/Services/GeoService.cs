@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using HealthDevice.Models;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
@@ -19,7 +20,8 @@ public class GeoService : IGeoService
 
     public async Task<string> GetAddressFromCoordinates(double latitude, double longitude)
     {
-        string url = $"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}&zoom=18&addressdetails=1";
+        string url =
+            $"https://nominatim.openstreetmap.org/reverse?format=json&lat={latitude}&lon={longitude}&zoom=18&addressdetails=1";
         HttpResponseMessage response = await _httpClient.GetAsync(url);
         string json = await response.Content.ReadAsStringAsync();
         var data = JsonSerializer.Deserialize<NominatimResponse>(json);
@@ -40,7 +42,7 @@ public class GeoService : IGeoService
 
         string url = $"https://nominatim.openstreetmap.org/search?format=json&{query}";
         string json = await (await _httpClient.GetAsync(url)).Content.ReadAsStringAsync();
-        
+
 
         List<NominatimSearchResponse>? data = JsonSerializer.Deserialize<List<NominatimSearchResponse>>(json);
         string[]? box = data?.FirstOrDefault()?.BoundingBox;
@@ -94,19 +96,16 @@ public class GeoService : IGeoService
                    Math.Cos(lat1) * Math.Cos(lat2) *
                    Math.Pow(Math.Sin(dLon / 2), 2);
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        return (float)(6371 * c); 
+        return (float)(6371 * c);
     }
 }
 
 public class NominatimResponse
 {
-    [JsonPropertyName("display_name")]
-    public string? DisplayName { get; init; }
+    [JsonPropertyName("display_name")] public string? DisplayName { get; init; }
 }
 
 public class NominatimSearchResponse
 {
-
-    [JsonPropertyName("boundingbox")]
-    public string[]? BoundingBox { get; set; }
+    [JsonPropertyName("boundingbox")] public string[]? BoundingBox { get; set; }
 }

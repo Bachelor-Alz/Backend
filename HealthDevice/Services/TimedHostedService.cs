@@ -1,5 +1,6 @@
 ﻿using HealthDevice.Models;
 using Microsoft.EntityFrameworkCore;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services
@@ -25,30 +26,26 @@ namespace HealthDevice.Services
                 {
                     // Resolving scoped services within the scope
                     IRepository<Elder> elderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Elder>>();
-                    IRepository<Heartrate> hrRepository = scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
+                    IRepository<Heartrate> hrRepository =
+                        scope.ServiceProvider.GetRequiredService<IRepository<Heartrate>>();
                     IRepository<Spo2> spo2Repository = scope.ServiceProvider.GetRequiredService<IRepository<Spo2>>();
-                    IRepository<DistanceInfo> distanceRepository = scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
+                    IRepository<DistanceInfo> distanceRepository =
+                        scope.ServiceProvider.GetRequiredService<IRepository<DistanceInfo>>();
                     var healthService = scope.ServiceProvider.GetRequiredService<IHealthService>();
 
                     List<Elder> elders = await elderRepository.Query().ToListAsync(cancellationToken: stoppingToken);
 
                     foreach (Elder elder in elders)
                     {
-                        string? arduino = elder.MacAddress;
-                        if (arduino == null) continue;
-                        DateTime lastMonth = DateTime.UtcNow.AddDays(-30);
+                        string? macAddress = elder.MacAddress;
+                        if (macAddress == null) continue;
+                        DateTime oldTime = DateTime.UtcNow.AddMonths(-3);
 
-                        List<Heartrate> heartRate = await healthService.CalculateHeartRate(lastMonth, arduino);
-                        await hrRepository.AddRange(heartRate);
-
-                        List<Spo2> spo2 = await healthService.CalculateSpo2(lastMonth, arduino);
-                        await spo2Repository.AddRange(spo2);
-
-                        DistanceInfo distance = await healthService.CalculateDistanceWalked(lastMonth, arduino);
-                        await distanceRepository.Add(distance);
-
-                        await healthService.DeleteMax30102Data(lastMonth, arduino);
-                        await healthService.DeleteGpsData(lastMonth, arduino);
+                        await healthService.DeleteData<Heartrate>(oldTime, macAddress);
+                        await healthService.DeleteData<Spo2>(oldTime, macAddress);
+                        await healthService.DeleteData<DistanceInfo>(oldTime, macAddress);
+                        await healthService.DeleteData<Steps>(oldTime, macAddress);
+                        await healthService.DeleteData<FallInfo>(oldTime, macAddress);
 
                         await elderRepository.Update(elder);
                     }

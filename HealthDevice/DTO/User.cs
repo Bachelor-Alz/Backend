@@ -10,6 +10,8 @@
     {
         public string? Token { get; set; }
         public Roles Role { get; set; }
+        public string userId { get; set; } = string.Empty;
+        public required string RefreshToken { get; set; }
     }
 
     public class UserRegisterDTO

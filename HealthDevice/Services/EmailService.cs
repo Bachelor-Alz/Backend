@@ -28,12 +28,12 @@ public class EmailService : IEmailService
 
     public async Task SendEmail(string subject, string body, Elder elder)
     {
-        if(_smtpHost == "" || _smtpPort == 0 || _smtpUser == "" || _smtpPassword == "")
+        if (_smtpHost == "" || _smtpPort == 0 || _smtpUser == "" || _smtpPassword == "")
         {
             _logger.LogWarning("SMTP configuration is not set. Email will not be sent.");
             return;
         }
-        
+
         List<Caregiver> caregivers = await _caregiverRepository.Query()
             .Where(c => c.Elders != null && c.Elders.Any(e => e.Id == elder.Id))
             .ToListAsync();
@@ -43,7 +43,7 @@ public class EmailService : IEmailService
             _logger.LogWarning("No caregivers found for elder: {ElderName}", elder.Name);
             return;
         }
-        
+
         foreach (Caregiver caregiver in caregivers)
         {
             var message = new MimeMessage();
@@ -56,7 +56,7 @@ public class EmailService : IEmailService
             };
 
             using var client = new SmtpClient();
-        
+
             try
             {
                 await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
@@ -68,9 +68,9 @@ public class EmailService : IEmailService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending Email to {Email} with subject {Subject}.", caregiver.Email, subject);
+                _logger.LogError(ex, "Error sending Email to {Email} with subject {Subject}.", caregiver.Email,
+                    subject);
             }
         }
-       
     }
 }

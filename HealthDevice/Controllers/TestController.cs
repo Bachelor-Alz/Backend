@@ -2,6 +2,7 @@ using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Controllers;
@@ -11,43 +12,54 @@ namespace HealthDevice.Controllers;
 public class TestController : ControllerBase
 {
     private readonly IRepository<Elder> _elderRepository;
-    private readonly IRepository<Max30102> _max30102Repository;
     private readonly IRepository<DistanceInfo> _kilometerRepository;
     private readonly IRepository<Steps> _stepsRepository;
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Location> _locationRepository;
     private readonly IRepository<GPSData> _gpsRepository;
+    private readonly IRepository<Heartrate> _heartrateRepository;
+    private readonly IRepository<Spo2> _spo2Repository;
 
     public TestController
     (
         IRepository<Elder> elderRepository,
-        IRepository<Max30102> max30102Repository,
         IRepository<DistanceInfo> kilometerRepository,
         IRepository<Steps> stepsRepository,
         IRepository<FallInfo> fallInfoRepository,
         IRepository<Location> locationRepository,
-        IRepository<GPSData> gpsRepository
+        IRepository<GPSData> gpsRepository,
+        IRepository<Heartrate> heartrateRepository,
+        IRepository<Spo2> spo2Repository
     )
     {
         _elderRepository = elderRepository;
-        _max30102Repository = max30102Repository;
         _kilometerRepository = kilometerRepository;
         _stepsRepository = stepsRepository;
         _fallInfoRepository = fallInfoRepository;
         _locationRepository = locationRepository;
         _gpsRepository = gpsRepository;
+        _heartrateRepository = heartrateRepository;
+        _spo2Repository = spo2Repository;
     }
-    
+
+
+    [HttpGet("TestUserId")]
+    public async Task<ActionResult<string>> TestUserId()
+    {
+        Elder? testElder = _elderRepository.Query().FirstOrDefault(m => m.Email == "Test@Test.dk");
+        return testElder != null ? testElder.Id : "No user found";
+    }
+
     [HttpPost("FakeData")]
-    public async Task<ActionResult> GenerateFakeData(string elderEmail)
+    public async Task<ActionResult> GenerateFakeData(string elderId)
     {
         Elder? elder = await _elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Email == elderEmail);
+            .FirstOrDefaultAsync(e => e.Id == elderId);
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
             return NotFound("Elder not found");
         }
-        
+
         DateTime currentDate = DateTime.UtcNow.Date;
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
@@ -70,16 +82,21 @@ public class TestController : ControllerBase
             float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
             float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);
 
-            await _max30102Repository.Add(new Max30102
+            await _spo2Repository.Add(new Spo2
             {
-                LastHeartrate = heartrate,
-                AvgHeartrate = heartrate,
-                MaxHeartrate = maxheartrate,
-                MinHeartrate = minheartrate,
                 LastSpO2 = spo2,
                 AvgSpO2 = spo2,
                 MaxSpO2 = maxSpo2,
                 MinSpO2 = minSpo2,
+                Timestamp = timestamp,
+                MacAddress = elder.MacAddress
+            });
+            await _heartrateRepository.Add(new Heartrate
+            {
+                Lastrate = heartrate,
+                Avgrate = heartrate,
+                Maxrate = maxheartrate,
+                Minrate = minheartrate,
                 Timestamp = timestamp,
                 MacAddress = elder.MacAddress
             });

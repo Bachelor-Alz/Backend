@@ -3,35 +3,34 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace HealthDevice.Utils
+namespace HealthDevice.Utils;
+
+public static class AuthenticationConfig
 {
-    public static class AuthenticationConfig
+    public static void AddJwtAuthentication(this IServiceCollection services, JwtSettings jwtSettings)
     {
-        public static void AddJwtAuthentication(this IServiceCollection services, string issuer, string audience, string secretKey)
-        {
-            Byte[] key = Encoding.UTF8.GetBytes(secretKey);
-            
-            services.AddAuthentication(options =>
+        var key = Encoding.UTF8.GetBytes(jwtSettings.Secret);
+
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
-                {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.Zero,
-                        ValidIssuer = issuer,
-                        ValidAudience = audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
-                        RoleClaimType = ClaimTypes.Role
-                    };
-                })
-                .AddJwtBearer("ExpiredTokenScheme", options =>
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    RoleClaimType = ClaimTypes.Role
+                };
+            }).AddJwtBearer("ExpiredTokenScheme", options =>
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
@@ -40,12 +39,12 @@ namespace HealthDevice.Utils
                         ValidateIssuerSigningKey = true,
                         ValidateLifetime = false, // Disable lifetime validation
                         ClockSkew = TimeSpan.Zero,
-                        ValidIssuer = issuer,
-                        ValidAudience = audience,
+                        ValidIssuer = jwtSettings.Issuer,
+                        ValidAudience = jwtSettings.Audience,
                         IssuerSigningKey = new SymmetricSecurityKey(key),
                         RoleClaimType = ClaimTypes.Role
                     };
                 });
-        }
     }
 }
+

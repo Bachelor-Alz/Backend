@@ -24,7 +24,6 @@ public class Repository<T> : IRepository<T> where T : class
 
     public async Task Update(T entity)
     {
-
         _dbContext.Update(entity);
         await _dbContext.SaveChangesAsync();
     }
@@ -40,5 +39,4 @@ public class Repository<T> : IRepository<T> where T : class
         _dbContext.Set<T>().Add(entity);
         await _dbContext.SaveChangesAsync();
     }
-    
 }

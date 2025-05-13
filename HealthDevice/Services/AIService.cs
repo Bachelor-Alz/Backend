@@ -1,13 +1,13 @@
 ﻿using HealthDevice.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Services;
 
 public class AiService : IAIService
 {
-
     private readonly ILogger<AiService> _logger;
     private readonly IEmailService _emailService;
     private readonly IGeoService _geoService;
@@ -44,8 +44,8 @@ public class AiService : IAIService
                 await HandleFall(address);
                 return;
             }
-            
         }
+
         _logger.LogInformation("No fall detected for elder {address}", address);
     }
 
@@ -53,7 +53,8 @@ public class AiService : IAIService
     {
         FallInfo fallInfo = new FallInfo()
         {
-            Timestamp = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime(),
+            Timestamp = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day,
+                DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime(),
             Location = new Location(),
             MacAddress = macAddress
         };
@@ -63,9 +64,11 @@ public class AiService : IAIService
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == macAddress);
             if (elder == null)
                 return;
-            
-            List<Caregiver> caregivers = await _caregiverRepository.Query().Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
-            Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress).OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
+
+            List<Caregiver> caregivers = await _caregiverRepository.Query()
+                .Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
+            Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress)
+                .OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
             if (location == null || caregivers.Count == 0)
                 return;
 
