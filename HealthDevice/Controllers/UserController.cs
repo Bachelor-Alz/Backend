@@ -108,7 +108,7 @@ public class UserController : ControllerBase
 
     [HttpPost("users/elder")]
     [Authorize(Roles = "Elder")]
-    public async Task<ActionResult> InviteCareGiver(string caregiverId)
+    public async Task<ActionResult> InviteCareGiver(string caregiverEmail)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -116,7 +116,7 @@ public class UserController : ControllerBase
 
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Invites)
-            .FirstOrDefaultAsync(c => c.Id == caregiverId);
+            .FirstOrDefaultAsync(c => c.Email == caregiverEmail);
 
         if (caregiver == null)
             return BadRequest("Caregiver not found.");
