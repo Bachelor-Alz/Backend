@@ -20,7 +20,7 @@ public class GetHealthDataService : IGetHealthData
         _elderRepository = elderRepository;
     }
     
-    public async Task<List<T>> GetHealthData<T>(string elderEmail, Period period, DateTime date, TimeZoneInfo timezone) where T : Sensor
+    public async Task<List<T>> GetHealthData<T>(string elderId, Period period, DateTime date, TimeZoneInfo timezone) where T : Sensor
     {
         DateTime earlierDate = PeriodUtil.GetEarlierDate(date, period);
         earlierDate = _timeZoneService.LocalTimeToUTC(timezone, earlierDate);
@@ -28,11 +28,11 @@ public class GetHealthDataService : IGetHealthData
         _logger.LogInformation("Fetching data for period: {Period}, Date Range: {EarlierDate} to {Date}", period, earlierDate, date);
 
         Elder? elder = await _elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Email == elderEmail);
+            .FirstOrDefaultAsync(e => e.Id == elderId);
 
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
-            _logger.LogError("No elder found with Email {Email} or Arduino is not set", elderEmail);
+            _logger.LogError("No elder found or Arduino is not set");
             return [];
         }
         IRepository<T> repository = _repositoryFactory.GetRepository<T>();

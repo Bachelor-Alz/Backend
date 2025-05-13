@@ -42,10 +42,10 @@ public class TestController : ControllerBase
     }
     
     [HttpPost("FakeData")]
-    public async Task<ActionResult> GenerateFakeData(string elderEmail)
+    public async Task<ActionResult> GenerateFakeData(string elderId)
     {
         Elder? elder = await _elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Email == elderEmail);
+            .FirstOrDefaultAsync(e => e.Id == elderId);
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
             return NotFound("Elder not found");

@@ -12,13 +12,13 @@ public interface IHealthService
     Task DeleteGpsData(DateTime currentDate, string arduino);
     Task ComputeOutOfPerimeter(string arduino, Location location);
     Task<Location> GetLocation(DateTime currentTime, string arduino);
-    Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email);
-    Task<ActionResult<PerimeterDTO>> GetElderPerimeter(string elderEmail);
-    Task<ActionResult> SetPerimeter(int radius, string elderEmail);
-    Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period, TimeZoneInfo timezone);
-    Task<ActionResult<DashBoard>> GetDashboardData(string macAddress, Elder elder);
+    Task<ActionResult<List<FallDTO>>> GetFalls(string elderId, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string caregiverId);
+    Task<ActionResult<PerimeterDTO>> GetElderPerimeter(string elderId);
+    Task<ActionResult> SetPerimeter(int radius, string elderId);
+    Task<ActionResult<List<StepsDTO>>> GetSteps(string elderId, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderId, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderId, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderId, DateTime date, Period period, TimeZoneInfo timezone);
+    Task<ActionResult<DashBoard>> GetDashboardData(string macAddress);
 }

@@ -193,7 +193,7 @@ public class UserController : ControllerBase
 
     [HttpDelete("users/caregiver/removeFromElder")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> RemoveFromElder(string elderEmail)
+    public async Task<ActionResult> RemoveFromElder(string elderId)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -206,7 +206,7 @@ public class UserController : ControllerBase
         if (caregiver == null || caregiver.Elders == null)
             return BadRequest("Caregiver not found.");
 
-        Elder? elder = caregiver.Elders.FirstOrDefault(e => e.Email == elderEmail);
+        Elder? elder = caregiver.Elders.FirstOrDefault(e => e.Email == elderId);
 
         if (elder == null)
             return NotFound("Elder not found.");
@@ -215,7 +215,7 @@ public class UserController : ControllerBase
         {
             elder.CaregiverId = null;
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elderEmail, caregiver.Email);
+            _logger.LogInformation("{ElderEmail} removed from Caregiver {CaregiverEmail}.", elder.Email, caregiver.Email);
             return Ok("Elder removed successfully.");
         }
         catch (Exception ex)
@@ -319,12 +319,10 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("connected")]
-    public async Task<ActionResult<bool>> IsConnected(string elderEmail)
+    public async Task<ActionResult<bool>> IsConnected(string elderId)
     {
-        _logger.LogInformation("Connected to elder {elder.Email}.", elderEmail);
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == elderId);
         if (!(elder == null || string.IsNullOrEmpty(elder.MacAddress))) return true;
-
         return NotFound("Elder not found.");
     }
 
@@ -351,7 +349,7 @@ public class UserController : ControllerBase
 
     [HttpPost("caregiver/invites/accept")]
     [Authorize(Roles = "Caregiver")]
-    public async Task<ActionResult> AcceptInvite(string elderEmail)
+    public async Task<ActionResult> AcceptInvite(string elderId)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
@@ -365,7 +363,7 @@ public class UserController : ControllerBase
         if (caregiver?.Invites == null || caregiver.Invites.Count == 0)
             return BadRequest("No invites found.");
 
-        Elder? elder = caregiver.Invites.FirstOrDefault(m => m.Email == elderEmail);
+        Elder? elder = caregiver.Invites.FirstOrDefault(m => m.Id == elderId);
 
         if (elder == null)
             return NotFound("Elder not found.");
