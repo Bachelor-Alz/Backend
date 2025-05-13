@@ -16,6 +16,7 @@ public class ArduinoService : IArduinoService
     private readonly IRepository<Steps> _stepsRepository;
     private readonly IRepository<Heartrate> _heartrateRepository;
     private readonly IRepository<Spo2> _spo2Repository;
+    private readonly IRepository<Arduino> _arduinoRepository;
 
     public ArduinoService
     (
@@ -25,8 +26,8 @@ public class ArduinoService : IArduinoService
         IRepository<GPSData> gpsRepository,
         IRepository<Steps> stepsRepository,
         IRepository<Heartrate> heartrateRepository,
-        IRepository<Spo2> spo2Repository
-    )
+        IRepository<Spo2> spo2Repository,
+        IRepository<Arduino> arduinoRepository)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
@@ -35,6 +36,7 @@ public class ArduinoService : IArduinoService
         _stepsRepository = stepsRepository;
         _heartrateRepository = heartrateRepository;
         _spo2Repository = spo2Repository;
+        _arduinoRepository = arduinoRepository;
     }
 
     public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
@@ -57,6 +59,14 @@ public class ArduinoService : IArduinoService
 
         _logger.LogInformation("{Timestamp}: Data found with MacAddress {MacAddress} from IP: {IP}.", receivedAt,
             data.First().MacAddress, ip);
+        
+        if (_arduinoRepository.Query().Any(m => m.MacAddress != data.First().MacAddress))
+        {
+            Arduino arduino = new Arduino
+                { MacAddress = data.First().MacAddress, isClaim = false};
+            await _arduinoRepository.Add(arduino);
+        }
+        
         await sensorRepository.AddRange(data);
         await _dbContext.SaveChangesAsync();
         return new OkResult();
@@ -68,6 +78,12 @@ public class ArduinoService : IArduinoService
         DateTime receivedAt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day,
             DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0).ToUniversalTime();
         _logger.LogInformation("{Timestamp}: Received Arduino data from IP: {IP}.", receivedAt, ip);
+        if (_arduinoRepository.Query().Any(m => m.MacAddress != data.MacAddress))
+        {
+            Arduino arduino = new Arduino
+                { MacAddress = data.MacAddress, isClaim = false};
+            await _arduinoRepository.Add(arduino);
+        }
 
         await _gpsRepository.Add(new GPSData
         {

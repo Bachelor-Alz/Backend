@@ -3,6 +3,7 @@ using System;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250513144611_ArduinoMigration")]
+    partial class ArduinoMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,6 +33,11 @@ namespace HealthDevice.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)");
+
                     b.Property<string>("MacAddress")
                         .HasColumnType("text");
 
@@ -40,9 +48,11 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("MacAddress");
 
-                    b.ToTable("Sensors", (string)null);
+                    b.ToTable("Sensor");
 
-                    b.UseTptMappingStrategy();
+                    b.HasDiscriminator().HasValue("Sensor");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Arduino", b =>
@@ -298,7 +308,7 @@ namespace HealthDevice.Migrations
                     b.Property<float>("Distance")
                         .HasColumnType("real");
 
-                    b.ToTable("DistanceInfo", (string)null);
+                    b.HasDiscriminator().HasValue("DistanceInfo");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
@@ -310,7 +320,7 @@ namespace HealthDevice.Migrations
 
                     b.HasIndex("LocationId");
 
-                    b.ToTable("FallInfo", (string)null);
+                    b.HasDiscriminator().HasValue("FallInfo");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.GPSData", b =>
@@ -323,7 +333,7 @@ namespace HealthDevice.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
-                    b.ToTable("GPSData", (string)null);
+                    b.HasDiscriminator().HasValue("GPSData");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
@@ -342,7 +352,7 @@ namespace HealthDevice.Migrations
                     b.Property<int>("Minrate")
                         .HasColumnType("integer");
 
-                    b.ToTable("Heartrates", (string)null);
+                    b.HasDiscriminator().HasValue("Heartrate");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Spo2", b =>
@@ -361,7 +371,7 @@ namespace HealthDevice.Migrations
                     b.Property<float>("MinSpO2")
                         .HasColumnType("real");
 
-                    b.ToTable("SpO2", (string)null);
+                    b.HasDiscriminator().HasValue("Spo2");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Steps", b =>
@@ -371,7 +381,7 @@ namespace HealthDevice.Migrations
                     b.Property<int>("StepsCount")
                         .HasColumnType("integer");
 
-                    b.ToTable("Steps", (string)null);
+                    b.HasDiscriminator().HasValue("Steps");
                 });
 
             modelBuilder.Entity("HealthDevice.DTO.Sensor", b =>
@@ -407,64 +417,13 @@ namespace HealthDevice.Migrations
                     b.Navigation("InvitedCaregiver");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.DistanceInfo", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.DistanceInfo", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
                 {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.FallInfo", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("HealthDevice.Models.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
 
                     b.Navigation("Location");
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.GPSData", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.GPSData", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Heartrate", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Spo2", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Spo2", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Steps", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Steps", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Arduino", b =>

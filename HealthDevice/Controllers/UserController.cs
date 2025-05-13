@@ -23,6 +23,7 @@ public class UserController : ControllerBase
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly ApplicationDbContext _dbContext;
     private readonly TokenService _tokenService;
+    private readonly IRepository<Arduino> _arduinoRepository;
 
 
     public UserController
@@ -35,6 +36,7 @@ public class UserController : ControllerBase
         IRepository<Caregiver> caregiverRepository,
         ApplicationDbContext dbContext,
         TokenService tokenService
+        , IRepository<Arduino> arduinoRepository
     )
     {
         _elderManager = elderManager;
@@ -45,6 +47,7 @@ public class UserController : ControllerBase
         _caregiverRepository = caregiverRepository;
         _dbContext = dbContext;
         _tokenService = tokenService;
+        _arduinoRepository = arduinoRepository;
     }
 
 
@@ -267,11 +270,21 @@ public class UserController : ControllerBase
             return BadRequest("Couldnt find elder");
 
         _logger.LogInformation("Setting Arduino address for elder {elder.Email} to {address}.", elder.Email, address);
-
+        
+        Arduino? arduino = await _arduinoRepository.Query()
+            .FirstOrDefaultAsync(a => a.MacAddress == address);
+        
+        if (arduino == null)
+        {
+            _logger.LogError("Arduino with address {address} not found.", address);
+            return NotFound("Arduino not found.");
+        }
+        
         try
         {
-            elder.MacAddress = address;
-            await _elderRepository.Update(elder);
+            arduino.isClaim = true;
+            arduino.elder = elder;
+            await _dbContext.SaveChangesAsync();
             _logger.LogInformation("Arduino address set for {elder.Email}.", elder.Email);
             return Ok("Arduino address set successfully.");
         }
@@ -294,11 +307,21 @@ public class UserController : ControllerBase
             return BadRequest("Arduino address is already null.");
 
         _logger.LogInformation("Removing Arduino address for elder {elder.Email}.", elder.Email);
+        
+        Arduino? arduino = await _arduinoRepository.Query()
+            .FirstOrDefaultAsync(a => a.MacAddress == elder.MacAddress);
+        
+        if (arduino == null)
+        {
+            _logger.LogError("Arduino with address {address} not found.", elder.MacAddress);
+            return NotFound("Arduino not found.");
+        }
 
         try
         {
-            elder.MacAddress = null;
-            await _elderRepository.Update(elder);
+            arduino.isClaim = false;
+            arduino.elder = null;
+            await _dbContext.SaveChangesAsync();
             _logger.LogInformation("Arduino address removed for {elder.Email}.", elder.Email);
             return Ok("Arduino address removed successfully.");
         }
