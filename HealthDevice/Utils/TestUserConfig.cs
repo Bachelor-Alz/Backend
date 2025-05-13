@@ -39,6 +39,6 @@ public static class TestUserConfig
         await elderRepository.Update(elderEntity);
 
         var testController = scopedServices.GetRequiredService<TestController>();
-        await testController.GenerateFakeData(elder.Email);
+        await testController.GenerateFakeData(elderEntity.Id);
     }
 }

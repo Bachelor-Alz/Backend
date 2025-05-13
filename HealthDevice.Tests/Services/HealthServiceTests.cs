@@ -16,10 +16,12 @@ public class HealthServiceTests
     private readonly Mock<IRepository<GPSData>> _mockGpsRepository;
     private readonly Mock<IRepository<Perimeter>> _mockPerimeterRepository;
     private readonly Mock<IRepository<Location>> _mockLocationRepository;
-    private readonly Mock<IRepository<Max30102>> _mockMax30102Repository;
+    private readonly Mock<IRepository<Heartrate>> _mockHeartrateRepository;
+    private readonly Mock<IRepository<Spo2>> _mockSpo2Repository;
     private readonly Mock<IRepository<Steps>> _mockStepsRepository;
     private readonly Mock<IRepository<DistanceInfo>> _mockDistanceInfoRepository;
     private readonly Mock<IRepository<FallInfo>> _mockFallInfoRepository;
+    private readonly Mock<IRepository<Caregiver>> _mockCaregiverRepository;
     private readonly HealthService _healthService;
 
     public HealthServiceTests()
@@ -33,11 +35,12 @@ public class HealthServiceTests
         _mockGpsRepository = new Mock<IRepository<GPSData>>();
         _mockPerimeterRepository = new Mock<IRepository<Perimeter>>();
         _mockLocationRepository = new Mock<IRepository<Location>>();
-        _mockMax30102Repository = new Mock<IRepository<Max30102>>();
+        _mockHeartrateRepository = new Mock<IRepository<Heartrate>>();
+        _mockSpo2Repository = new Mock<IRepository<Spo2>>();
         _mockStepsRepository = new Mock<IRepository<Steps>>();
         _mockDistanceInfoRepository = new Mock<IRepository<DistanceInfo>>();
         _mockFallInfoRepository = new Mock<IRepository<FallInfo>>();
-
+        _mockCaregiverRepository = new Mock<IRepository<Caregiver>>();
 
         _healthService = new HealthService(
             _mockLogger.Object,
@@ -46,13 +49,14 @@ public class HealthServiceTests
             _mockGetHealthDataService.Object,
             _mockTimeZoneService.Object,
             _mockElderRepository.Object,
-            Mock.Of<IRepository<Caregiver>>(), // Caregiver repository is not used in the methods being tested
+            _mockCaregiverRepository.Object,
             _mockPerimeterRepository.Object,
             _mockLocationRepository.Object,
-            _mockMax30102Repository.Object,
             _mockStepsRepository.Object,
             _mockDistanceInfoRepository.Object,
-            _mockFallInfoRepository.Object
+            _mockFallInfoRepository.Object,
+            _mockHeartrateRepository.Object,
+            _mockSpo2Repository.Object
         );
     }
 

@@ -54,7 +54,7 @@ public class GetHealthDataTests
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder>()));
 
         // Act
-        var result = await _getHealthDataService.GetHealthData<Max30102>("test@elder.com", Period.Day, DateTime.UtcNow, TimeZoneInfo.Utc);
+        var result = await _getHealthDataService.GetHealthData<Spo2>("test@elder.com", Period.Day, DateTime.UtcNow, TimeZoneInfo.Utc);
 
         // Assert
         Assert.Empty(result);
@@ -62,7 +62,7 @@ public class GetHealthDataTests
             logger => logger.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No elder found with Email test@elder.com or Arduino is not set")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No elder found or Arduino is not set")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once
@@ -73,11 +73,11 @@ public class GetHealthDataTests
     public async Task GetHealthData_ElderWithoutArduino_ReturnsEmptyList()
     {
         // Arrange
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = null };
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = null, Id = "elderId" };
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
 
         // Act
-        var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Day, DateTime.UtcNow, TimeZoneInfo.Utc);
+        var result = await _getHealthDataService.GetHealthData<Spo2>("elderId", Period.Day, DateTime.UtcNow, TimeZoneInfo.Utc);
 
         // Assert
         Assert.Empty(result);
@@ -85,7 +85,7 @@ public class GetHealthDataTests
             logger => logger.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No elder found with Email elder@test.com or Arduino is not set")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No elder found or Arduino is not set")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once
@@ -97,26 +97,26 @@ public class GetHealthDataTests
     {
         // Arrange
         var macAddress = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress };
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false, Id = "elderId" };
         var testTime = new DateTime(2025, 5, 14, 12, 0, 0, DateTimeKind.Utc);
 
-        var sensorData = new List<Max30102>
+        var sensorData = new List<Heartrate>
         {
-            new() { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1).AddSeconds(1), MacAddress = macAddress },
-            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddMinutes(-1).AddSeconds(-1), MacAddress = macAddress }
+            new() { Maxrate = 80, Minrate = 60, Avgrate = 70, Timestamp = testTime.AddHours(-1).AddSeconds(1), MacAddress = macAddress },
+            new() { Maxrate = 82, Minrate = 62, Avgrate = 72, Timestamp = testTime.AddMinutes(-1).AddSeconds(-1), MacAddress = macAddress }
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
 
-        var mockSensorRepository = new Mock<IRepository<Max30102>>();
+        var mockSensorRepository = new Mock<IRepository<Heartrate>>();
         mockSensorRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(sensorData));
-        _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(mockSensorRepository.Object);
+        _mockRepositoryFactory.Setup(f => f.GetRepository<Heartrate>()).Returns(mockSensorRepository.Object);
 
         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
                             .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
-        var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Hour, testTime, TimeZoneInfo.Utc);
+        var result = await _getHealthDataService.GetHealthData<Heartrate>("elderId", Period.Hour, testTime, TimeZoneInfo.Utc);
 
         // Assert
         Assert.NotEmpty(result);
@@ -129,7 +129,7 @@ public class GetHealthDataTests
             logger => logger.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Retrieved {sensorData.Count} records for type {typeof(Max30102).Name}")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Retrieved {sensorData.Count} records for type {typeof(Heartrate).Name}")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once
@@ -150,7 +150,7 @@ public class GetHealthDataTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _getHealthDataService.GetHealthData<Max30102>("elder@test.com", (Period)42, DateTime.UtcNow, TimeZoneInfo.Utc)
+            _getHealthDataService.GetHealthData<Heartrate>("elder@test.com", (Period)42, DateTime.UtcNow, TimeZoneInfo.Utc)
         );
     }
     [Fact]
@@ -158,28 +158,28 @@ public class GetHealthDataTests
     {
         // Arrange
         var macAddress = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false };
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false, Id = "elderId" };
         var testTime = new DateTime(2025, 5, 14, 12, 0, 0, DateTimeKind.Utc);
 
-        var sensorData = new List<Max30102>
+        var sensorData = new List<Heartrate>
         {
-            new() { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
-            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
-            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
+            new() { Avgrate = 70, Maxrate = 80, Minrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
+            new() { Avgrate = 72, Maxrate = 82, Minrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
+            new() { Avgrate = 72, Maxrate = 82, Minrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
 
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
 
-        var mockSensorRepository = new Mock<IRepository<Max30102>>();
+        var mockSensorRepository = new Mock<IRepository<Heartrate>>();
         mockSensorRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(sensorData));
-        _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(mockSensorRepository.Object);
+        _mockRepositoryFactory.Setup(f => f.GetRepository<Heartrate>()).Returns(mockSensorRepository.Object);
 
         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
                             .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
-        var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Day, testTime, TimeZoneInfo.Utc);
+        var result = await _getHealthDataService.GetHealthData<Heartrate>("elderId", Period.Day, testTime, TimeZoneInfo.Utc);
 
         // Assert
         Assert.NotEmpty(result);
@@ -191,27 +191,27 @@ public class GetHealthDataTests
     {
         // Arrange
         var macAddress = "test-mac-address";
-        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false };
+        var elder = new Elder { Name = "Test Elder", Email = "elder@test.com", MacAddress = macAddress, OutOfPerimeter = false, Id = "elderId" };
         var testTime = new DateTime(2025, 5, 14, 12, 0, 0, DateTimeKind.Utc);
 
-        var sensorData = new List<Max30102>
+        var sensorData = new List<Heartrate>
         {
-            new() { AvgHeartrate = 70, MaxHeartrate = 80, MinHeartrate = 60, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
-            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
-            new() { AvgHeartrate = 72, MaxHeartrate = 82, MinHeartrate = 62, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
+            new() { Maxrate = 80, Minrate = 60, Avgrate = 70, Timestamp = testTime.AddHours(-1), MacAddress = macAddress },
+            new() { Maxrate = 82, Minrate = 62, Avgrate = 72, Timestamp = testTime.AddHours(-2), MacAddress = macAddress },
+            new() { Maxrate = 82, Minrate = 62, Avgrate = 72, Timestamp = testTime.AddDays(2), MacAddress = macAddress }
         };
 
         _mockElderRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(new List<Elder> { elder }));
 
-        var mockSensorRepository = new Mock<IRepository<Max30102>>();
+        var mockSensorRepository = new Mock<IRepository<Heartrate>>();
         mockSensorRepository.Setup(r => r.Query()).Returns(CreateMockQueryable(sensorData));
-        _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(mockSensorRepository.Object);
+        _mockRepositoryFactory.Setup(f => f.GetRepository<Heartrate>()).Returns(mockSensorRepository.Object);
 
         _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
                             .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
-        var result = await _getHealthDataService.GetHealthData<Max30102>("elder@test.com", Period.Day, testTime, TimeZoneInfo.Utc);
+        var result = await _getHealthDataService.GetHealthData<Heartrate>("elderId", Period.Day, testTime, TimeZoneInfo.Utc);
 
         // Assert
         Assert.NotEmpty(result);

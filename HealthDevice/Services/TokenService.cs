@@ -9,8 +9,9 @@ using HealthDevice.Models;
 using HealthDevice.Data;
 using HealthDevice.DTO;
 using HealthDevice.Utils;
+using HealthDevice.Services;
 
-public class TokenService
+public class TokenService : ITokenService
 {
     private readonly string _jwtSecret;
     private readonly string _issuer;

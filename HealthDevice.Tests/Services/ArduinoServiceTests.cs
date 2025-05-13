@@ -10,7 +10,8 @@ public class ArduinoServiceTests
     private readonly Mock<ILogger<ArduinoService>> _mockLogger;
     private readonly Mock<IRepositoryFactory> _mockRepositoryFactory;
     private readonly Mock<IRepository<GPSData>> _mockGpsRepository;
-    private readonly Mock<IRepository<Max30102>> _mockMax30102Repository;
+    private readonly Mock<IRepository<Heartrate>> _mockHeartrateRepository;
+    private readonly Mock<IRepository<Spo2>> _mockspo2Repository;
     private readonly Mock<IRepository<Steps>> _mockStepsRepository;
     private readonly Mock<HttpContext> _mockHttpContext;
     private readonly ArduinoService _arduinoService;
@@ -20,12 +21,14 @@ public class ArduinoServiceTests
         _mockLogger = new Mock<ILogger<ArduinoService>>();
         _mockRepositoryFactory = new Mock<IRepositoryFactory>();
         _mockGpsRepository = new Mock<IRepository<GPSData>>();
-        _mockMax30102Repository = new Mock<IRepository<Max30102>>();
+        _mockHeartrateRepository = new Mock<IRepository<Heartrate>>();
+        _mockspo2Repository = new Mock<IRepository<Spo2>>();
         _mockStepsRepository = new Mock<IRepository<Steps>>();
         _mockHttpContext = new Mock<HttpContext>();
 
         _mockRepositoryFactory.Setup(f => f.GetRepository<GPSData>()).Returns(_mockGpsRepository.Object);
-        _mockRepositoryFactory.Setup(f => f.GetRepository<Max30102>()).Returns(_mockMax30102Repository.Object);
+        _mockRepositoryFactory.Setup(f => f.GetRepository<Heartrate>()).Returns(_mockHeartrateRepository.Object);
+        _mockRepositoryFactory.Setup(f => f.GetRepository<Spo2>()).Returns(_mockspo2Repository.Object);
         _mockRepositoryFactory.Setup(f => f.GetRepository<Steps>()).Returns(_mockStepsRepository.Object);
 
 #pragma warning disable CS8625
@@ -34,8 +37,9 @@ public class ArduinoServiceTests
             _mockRepositoryFactory.Object,
             null, // ApplicationDbContext is not used in this test, null is fine here
             _mockGpsRepository.Object,
-            _mockMax30102Repository.Object,
-            _mockStepsRepository.Object);
+            _mockStepsRepository.Object,
+            _mockHeartrateRepository.Object,
+            _mockspo2Repository.Object);
 #pragma warning restore CS8625
     }
 
