@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using HealthDevice.UnitTests.Helpers;
+using HealthDevice.Tests.Helpers;
 
 public class UserServiceTests
 {
@@ -17,11 +17,11 @@ public class UserServiceTests
     private readonly Mock<IRepository<Caregiver>> _mockCaregiverRepository;
     private readonly Mock<IRepository<GPSData>> _mockGpsRepository;
 
-    // Mock dependencies for GeoService
     private readonly Mock<HttpClient> _mockHttpClient;
     private readonly Mock<ILogger<GeoService>> _mockGeoServiceLogger;
-    private readonly Mock<GeoService> _mockGeoService; // Mock GeoService
+    private readonly Mock<GeoService> _mockGeoService;
 
+    private readonly Mock<ITokenService> _mockTokenService;
     private readonly UserService _userService;
 
     public UserServiceTests()
@@ -30,11 +30,8 @@ public class UserServiceTests
 
         _mockHttpClient = new Mock<HttpClient>();
         _mockGeoServiceLogger = new Mock<ILogger<GeoService>>();
-
-        // Provide the mocked dependencies to the GeoService mock constructor
         _mockGeoService = new Mock<GeoService>(_mockHttpClient.Object, _mockGeoServiceLogger.Object);
 
-        // Mock UserManager with necessary dependencies
         _mockElderManager = new Mock<UserManager<Elder>>(
             Mock.Of<IUserStore<Elder>>(),
             Mock.Of<IOptions<IdentityOptions>>(),
@@ -62,6 +59,16 @@ public class UserServiceTests
         _mockElderRepository = new Mock<IRepository<Elder>>();
         _mockCaregiverRepository = new Mock<IRepository<Caregiver>>();
         _mockGpsRepository = new Mock<IRepository<GPSData>>();
+        _mockTokenService = new Mock<ITokenService>();
+
+        _mockTokenService.Setup(ts => ts.GenerateAccessToken(It.IsAny<IdentityUser>(), It.IsAny<string>()))
+            .Returns("mock-access-token");
+
+        _mockTokenService.Setup(ts => ts.IssueRefreshTokenAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new RefreshTokenResult { Token = "mock-refresh-token" });
+
+        _mockTokenService.Setup(ts => ts.ValidateRefreshTokenAsync(It.IsAny<string>()))
+            .ReturnsAsync(true);
 
         _userService = new UserService(
             _mockLogger.Object,
@@ -70,11 +77,11 @@ public class UserServiceTests
             _mockElderRepository.Object,
             _mockCaregiverRepository.Object,
             _mockGpsRepository.Object,
-            _mockGeoService.Object
+            _mockGeoService.Object,
+            _mockTokenService.Object
         );
     }
 
-    // Helper method to create an IQueryable mock using helpers
     private static IQueryable<T> CreateMockQueryable<T>(IEnumerable<T> data) where T : class
     {
         var queryable = data.AsQueryable();
@@ -86,7 +93,7 @@ public class UserServiceTests
         mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
         mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
         mock.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
-           .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
+            .Returns(new TestDbAsyncEnumerable<T>(data).GetAsyncEnumerator());
 
         return mock.Object;
     }
@@ -99,7 +106,6 @@ public class UserServiceTests
         var ipAddress = "127.0.0.1";
         var elder = new Elder { Email = userLoginDto.Email, Name = "Test Elder" };
 
-        // Mock the repository to return an async queryable
         _mockElderRepository.Setup(repo => repo.Query())
             .Returns(CreateMockQueryable(new List<Elder> { elder }));
 
@@ -116,6 +122,8 @@ public class UserServiceTests
         var actionResult = Assert.IsType<ActionResult<LoginResponseDTO>>(result);
         var loginResponse = Assert.IsType<LoginResponseDTO>(actionResult.Value);
         Assert.NotNull(loginResponse.Token);
+        Assert.Equal("mock-access-token", loginResponse.Token);
+        Assert.Equal("mock-refresh-token", loginResponse.RefreshToken);
         Assert.Equal(Roles.Elder, loginResponse.Role);
     }
 
@@ -128,7 +136,7 @@ public class UserServiceTests
         var elder = new Elder { Email = userLoginDto.Email, Name = "Test Elder" };
 
         _mockElderRepository.Setup(repo => repo.Query())
-            .Returns(CreateMockQueryable([elder]));
+            .Returns(CreateMockQueryable(new List<Elder> { elder }));
 
         _mockElderManager.Setup(manager => manager.CheckPasswordAsync(elder, userLoginDto.Password))
             .ReturnsAsync(false);
@@ -139,7 +147,6 @@ public class UserServiceTests
         // Assert
         Assert.IsType<UnauthorizedObjectResult>(result.Result);
     }
-
 
     [Fact]
     public async Task HandleLogin_UserNotFound_ReturnsUnauthorized()
@@ -165,7 +172,7 @@ public class UserServiceTests
     public async Task HandleRegister_SuccessfulRegistration_ReturnsOk()
     {
         // Arrange
-        var userManager = _mockElderManager.Object; // Or _mockCaregiverManager.Object
+        var userManager = _mockElderManager.Object;
         var userRegisterDto = new UserRegisterDTO { Email = "elder@test.com", Password = "Password123!", Name = "Test Elder", Role = Roles.Elder };
         var newUser = new Elder { Email = userRegisterDto.Email, Name = userRegisterDto.Name };
         var ipAddress = "127.0.0.1";
@@ -179,9 +186,9 @@ public class UserServiceTests
         // Act
         var result = await _userService.HandleRegister(userManager, userRegisterDto, newUser, ipAddress);
 
+
         // Assert
         Assert.IsType<OkObjectResult>(result);
-
         _mockElderManager.Verify(manager => manager.CreateAsync(newUser, userRegisterDto.Password), Times.Once);
     }
 
@@ -196,7 +203,7 @@ public class UserServiceTests
         var ipAddress = "127.0.0.1";
 
         _mockElderManager.Setup(manager => manager.Users)
-            .Returns(CreateMockQueryable([existingUser]));
+            .Returns(CreateMockQueryable(new List<Elder> { existingUser }));
 
         // Act
         var result = await _userService.HandleRegister(userManager, userRegisterDto, newUser, ipAddress);
@@ -208,3 +215,4 @@ public class UserServiceTests
         _mockElderManager.Verify(manager => manager.CreateAsync(It.IsAny<Elder>(), It.IsAny<string>()), Times.Never);
     }
 }
+

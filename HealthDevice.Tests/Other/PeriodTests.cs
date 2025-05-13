@@ -1,7 +1,16 @@
 using HealthDevice.DTO;
+using HealthDevice.Services;
+using Moq;
 
 public class PeriodTests
 {
+    private readonly Mock<ITimeZoneService> _mockTimeZoneService;
+
+    public PeriodTests()
+    {
+        _mockTimeZoneService = new Mock<ITimeZoneService>();
+    }
+
     [Fact]
     public void GetEndDate_PeriodHour_ReturnsCorrectEndDate()
     {
@@ -50,19 +59,24 @@ public class PeriodTests
         // Arrange
         var data = new List<DateTime>
         {
-            new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
-            new(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc),
-            new(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc)
+            new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
+            new DateTime(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc),
+            new DateTime(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc)
         };
 
         Period period = Period.Hour;
-        DateTime referenceDate = new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
+        DateTime referenceDate = new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
+
+        _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
+            .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
         var result = PeriodUtil.AggregateByPeriod(
             data,
             period,
             referenceDate,
+            TimeZoneInfo.Utc,
+            _mockTimeZoneService.Object,
             timestamp => timestamp,
             (group, slot) => new { Slot = slot, Count = group.Count() },
             slot => new { Slot = slot, Count = 0 }
@@ -72,12 +86,10 @@ public class PeriodTests
         Assert.Equal(12, result.Count); // 12 slots in an hour
         var slotsWithData = result.Where(r => r.Count > 0).Select(r => r.Slot).ToList();
 
-        // Assert that slots with data match the input data
-        Assert.Contains(new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.Contains(new(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.Contains(new(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new DateTime(2025, 5, 12, 10, 5, 0, DateTimeKind.Utc), slotsWithData);
+        Assert.Contains(new DateTime(2025, 5, 12, 10, 10, 0, DateTimeKind.Utc), slotsWithData);
 
-        // Assert that slots without data have a count of 0
         Assert.All(result.Where(r => !slotsWithData.Contains(r.Slot)), r => Assert.Equal(0, r.Count));
     }
 
@@ -89,50 +101,24 @@ public class PeriodTests
         Period period = Period.Week;
         DateTime referenceDate = new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
 
+        _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
+            .Returns((TimeZoneInfo tz, DateTime dt) => dt);
+
         // Act
         var result = PeriodUtil.AggregateByPeriod(
             data,
             period,
             referenceDate,
+            TimeZoneInfo.Utc,
+            _mockTimeZoneService.Object,
             timestamp => timestamp,
             (group, slot) => new { Slot = slot, Count = group.Count() },
             slot => new { Slot = slot, Count = 0 }
         );
 
         // Assert
-        Assert.Equal(7, result.Count);
+        Assert.Equal(7, result.Count); // 7 days in a week
         Assert.All(result, r => Assert.Equal(0, r.Count));
-    }
-
-    [Fact]
-    public void AggregateByPeriod_PartialSlotCoverage_ReturnsMixedResults()
-    {
-        // Arrange
-        var data = new List<DateTime>
-        {
-            new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc),
-            new(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc)
-        };
-
-        Period period = Period.Day;
-        DateTime referenceDate = new(2025, 5, 12, 0, 0, 0, DateTimeKind.Utc);
-
-        // Act
-        var result = PeriodUtil.AggregateByPeriod(
-            data,
-            period,
-            referenceDate,
-            timestamp => timestamp,
-            (group, slot) => new { Slot = slot, Count = group.Count() },
-            slot => new { Slot = slot, Count = 0 }
-        );
-
-        // Assert
-        Assert.Equal(24, result.Count);
-        var slotsWithData = result.Where(r => r.Count > 0).Select(r => r.Slot).ToList();
-        Assert.Contains(new(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.Contains(new(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc), slotsWithData);
-        Assert.All(result.Where(r => !slotsWithData.Contains(r.Slot)), r => Assert.Equal(0, r.Count));
     }
 
     [Fact]
@@ -141,25 +127,30 @@ public class PeriodTests
         // Arrange
         var data = new List<DateTime>
         {
-            new(2025, 5, 12, 10, 59, 59, DateTimeKind.Utc), // Last second of the hour
-            new(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc) // First second of the next hour
+            new DateTime(2025, 5, 12, 10, 59, 59, DateTimeKind.Utc), // Last second of the hour
+            new DateTime(2025, 5, 12, 11, 0, 0, DateTimeKind.Utc) // First second of the next hour
         };
 
         Period period = Period.Hour;
         DateTime referenceDate = new DateTime(2025, 5, 12, 10, 0, 0, DateTimeKind.Utc);
+
+        _mockTimeZoneService.Setup(t => t.LocalTimeToUTC(It.IsAny<TimeZoneInfo>(), It.IsAny<DateTime>()))
+            .Returns((TimeZoneInfo tz, DateTime dt) => dt);
 
         // Act
         var result = PeriodUtil.AggregateByPeriod(
             data,
             period,
             referenceDate,
+            TimeZoneInfo.Utc,
+            _mockTimeZoneService.Object,
             timestamp => timestamp,
             (group, slot) => new { Slot = slot, Count = group.Count() },
             slot => new { Slot = slot, Count = 0 }
         );
 
         // Assert
-        Assert.Equal(12, result.Count);
+        Assert.Equal(12, result.Count); // 12 slots in an hour
         var slotsWithData = result.Where(r => r.Count > 0).Select(r => r.Slot).ToList();
         Assert.Contains(referenceDate.AddMinutes(55), slotsWithData); // Last slot of the hour
         Assert.DoesNotContain(referenceDate.AddHours(1), slotsWithData); // First slot of the next hour

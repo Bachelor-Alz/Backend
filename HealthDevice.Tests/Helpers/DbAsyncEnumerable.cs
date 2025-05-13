@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace HealthDevice.UnitTests.Helpers;
+namespace HealthDevice.Tests.Helpers;
 
 public class TestDbAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
 {

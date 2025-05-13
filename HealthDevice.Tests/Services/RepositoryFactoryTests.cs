@@ -25,11 +25,11 @@ public class RepositoryFactoryTest
     [Fact]
     public void GetRepositoryReturnsValidServices()
     {
-        var mockRepo = new Mock<IRepository<Max30102>>();
-        mockServiceProvider.Setup(sp => sp.GetService(typeof(IRepository<Max30102>)))
+        var mockRepo = new Mock<IRepository<Heartrate>>();
+        mockServiceProvider.Setup(sp => sp.GetService(typeof(IRepository<Heartrate>)))
             .Returns(mockRepo.Object);
 
-        var repo = repositoryFactory.GetRepository<Max30102>();
+        var repo = repositoryFactory.GetRepository<Heartrate>();
         Assert.NotNull(repo);
         Assert.Equal(mockRepo.Object, repo);
     }
