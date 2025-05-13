@@ -55,14 +55,14 @@ public class TokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public async Task<RefreshTokenResult> IssueRefreshTokenAsync(string userEmail, string? createdByIp = null)
+    public async Task<RefreshTokenResult> IssueRefreshTokenAsync(string userId, string? createdByIp = null)
     {
         var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         var tokenHash = HashToken(rawToken);
 
         var refreshToken = new RefreshToken
         {
-            Email = userEmail,
+            userId = userId,
             TokenHash = tokenHash,
             Expiration = DateTime.UtcNow.AddDays(_refreshTokenLifespanDays),
             CreatedAt = DateTime.UtcNow,
@@ -71,7 +71,7 @@ public class TokenService
 
         // Revoke all previous active tokens for this user
         var tokensToRevoke = await _dbContext.RefreshToken
-            .Where(rt => rt.Email == userEmail && !rt.IsRevoked && rt.Expiration > DateTime.UtcNow)
+            .Where(rt => rt.userId == userId && !rt.IsRevoked && rt.Expiration > DateTime.UtcNow)
             .ToListAsync();
 
         foreach (var rt in tokensToRevoke)
@@ -105,7 +105,7 @@ public class TokenService
 
         var newToken = new RefreshToken
         {
-            Email = oldToken.Email,
+            userId = oldToken.userId,
             TokenHash = newTokenHash,
             Expiration = DateTime.UtcNow.AddDays(_refreshTokenLifespanDays),
             CreatedAt = DateTime.UtcNow,

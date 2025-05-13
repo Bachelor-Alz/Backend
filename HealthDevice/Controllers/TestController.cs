@@ -40,6 +40,14 @@ public class TestController : ControllerBase
         _heartrateRepository = heartrateRepository;
         _spo2Repository = spo2Repository;
     }
+
+
+    [HttpGet("TestUserId")]
+    public async Task<ActionResult<string>> TestUserId()
+    {
+        Elder? testElder = _elderRepository.Query().FirstOrDefault(m => m.Email == "Test@Test.dk");
+        return testElder != null ? testElder.Id : "No user found";
+    }
     
     [HttpPost("FakeData")]
     public async Task<ActionResult> GenerateFakeData(string elderId)

@@ -113,6 +113,7 @@ public class UserController : ControllerBase
         {
             Email = e.Email,
             Name = e.Name,
+            userId = e.Id,
             Role = Roles.Elder
         }).ToListAsync();
     }
@@ -245,6 +246,7 @@ public class UserController : ControllerBase
         {
             Name = e.Name,
             Email = e.Email,
+            userId = e.Id,
             Role = Roles.Elder
         }).ToList();
 
@@ -344,7 +346,7 @@ public class UserController : ControllerBase
         }
 
         _logger.LogInformation("Caregiver has {Count} invites.", caregiver.Invites.Count);
-        return caregiver.Invites.Select(elder => new GetElderDTO { Name = elder.Name, Email = elder.Email, Role = Roles.Elder }).ToList();
+        return caregiver.Invites.Select(elder => new GetElderDTO { Name = elder.Name, Email = elder.Email, userId = elder.Id ,Role = Roles.Elder }).ToList();
     }
 
     [HttpPost("caregiver/invites/accept")]

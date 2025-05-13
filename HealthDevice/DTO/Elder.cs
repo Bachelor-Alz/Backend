@@ -21,5 +21,6 @@ public class GetElderDTO
 {
     public string? Name { get; set; }
     public string? Email { get; set; }
+    public string userId { get; set; }
     public Roles Role { get; set; }
 }
