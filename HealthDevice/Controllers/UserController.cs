@@ -23,6 +23,7 @@ public class UserController : ControllerBase
     private readonly IRepository<Elder> _elderRepository;
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly ApplicationDbContext _dbContext;
+    private readonly TokenService _tokenService;
 
 
 
@@ -35,7 +36,8 @@ public class UserController : ControllerBase
         IGeoService geoService,
         IRepository<Elder> elderRepository,
         IRepository<Caregiver> caregiverRepository,
-        ApplicationDbContext dbContext
+        ApplicationDbContext dbContext,
+        TokenService tokenService
     )
     {
         _elderManager = elderManager;
@@ -46,6 +48,7 @@ public class UserController : ControllerBase
         _elderRepository = elderRepository;
         _caregiverRepository = caregiverRepository;
         _dbContext = dbContext;
+        _tokenService = tokenService;
     }
 
 
@@ -408,19 +411,59 @@ public class UserController : ControllerBase
         };
     }
 
-    [HttpGet("renew/token")]
+    [HttpPost("revoke/token")]
+    public async Task<ActionResult> RevokeToken(string token)
+    {
+        if (!await _tokenService.ValidateRefreshTokenAsync(token))
+            return BadRequest("Invalid refresh token.");
+
+        var ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+        await _tokenService.RevokeRefreshTokenAsync(token, ipAddress);
+        return Ok("Token revoked successfully.");
+    }
+
+    [HttpPost("renew/token")]
     [Authorize(AuthenticationSchemes = "ExpiredTokenScheme")]
-    public async Task<ActionResult<string>> RenewToken()
+    public async Task<ActionResult<RefreshAndAccessTokenResult>> RenewToken(string token)
     {
         Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
             return BadRequest("User claim is not available.");
 
-        var expiredClaim = User.Claims.FirstOrDefault(c => c.Type == "exp");
+        var ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
 
-        if (expiredClaim == null)
-            return BadRequest("Expiration claim not found.");
+        _logger.LogInformation("Attempting token renewal for user {Email}", userClaim.Value);
 
-        return await _userService.RenewToken(userClaim, expiredClaim);
+        Elder? elder = await _elderRepository.Query()
+            .Include(e => e.Caregiver)
+            .FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+
+        if (elder == null)
+        {
+            Caregiver? caregiver = await _caregiverRepository.Query()
+                .Include(c => c.Elders)
+                .FirstOrDefaultAsync(m => m.Email == userClaim.Value);
+
+            if (caregiver == null)
+                return NotFound("User not found.");
+
+            var refreshToken = await _tokenService.RotateRefreshTokenAsync(token, ipAddress);
+
+            if (refreshToken == null)
+                return BadRequest("Invalid refresh token.");
+
+            var accessToken = _tokenService.GenerateAccessToken(caregiver, "Caregiver");
+            return Ok(new RefreshAndAccessTokenResult { AccessToken = accessToken, RefreshToken = refreshToken.Token });
+        }
+        else
+        {
+            var refreshToken = await _tokenService.RotateRefreshTokenAsync(token, ipAddress);
+
+            if (refreshToken == null)
+                return BadRequest("Invalid refresh token.");
+
+            var accessToken = _tokenService.GenerateAccessToken(elder, "Elder");
+            return Ok(new RefreshAndAccessTokenResult { AccessToken = accessToken, RefreshToken = refreshToken.Token });
+        }
     }
 }

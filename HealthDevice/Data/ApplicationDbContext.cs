@@ -21,6 +21,7 @@ namespace HealthDevice.Data
         public DbSet<Steps> Steps { get; set; }
         public DbSet<DistanceInfo> Distance { get; set; }
         public DbSet<Perimeter> Perimeter { get; set; }
+        public DbSet<RefreshToken> RefreshToken { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

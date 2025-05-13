@@ -10,6 +10,7 @@
     {
         public string? Token { get; set; }
         public Roles Role { get; set; }
+        public required string RefreshToken { get; set; }
     }
 
     public class UserRegisterDTO
