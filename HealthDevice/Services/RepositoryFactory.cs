@@ -24,6 +24,7 @@ public class RepositoryFactory : IRepositoryFactory
         {
             throw new InvalidOperationException($"No repository found for type {typeof(T).Name}");
         }
+
         return repository;
     }
 }

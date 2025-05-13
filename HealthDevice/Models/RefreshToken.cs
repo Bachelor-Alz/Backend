@@ -8,7 +8,7 @@ namespace HealthDevice.Models
         [Key]
         public int Id { get; set; }
 
-        public required string Email { get; set; }
+        public required string userId { get; set; }
         public required string TokenHash { get; set; }
         public DateTime Expiration { get; set; }
         public bool IsRevoked { get; set; }

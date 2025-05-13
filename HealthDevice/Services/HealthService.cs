@@ -24,7 +24,7 @@ public class HealthService : IHealthService
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Heartrate> _heartrateRepository;
     private readonly IRepository<Spo2> _spo2Repository;
-    
+
     public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory,
         IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService,
         IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
@@ -48,6 +48,7 @@ public class HealthService : IHealthService
         _heartrateRepository = heartrateRepository;
         _spo2Repository = spo2Repository;
     }
+
     public async Task<DistanceInfo> CalculateDistanceWalked(DateTime currentDate, string arduino)
     {
         IRepository<GPSData> repository = _repositoryFactory.GetRepository<GPSData>();
@@ -206,12 +207,12 @@ public class HealthService : IHealthService
         return new Location();
     }
 
-    public async Task<ActionResult> SetPerimeter(int radius, string elderEmail)
+    public async Task<ActionResult> SetPerimeter(int radius, string elderId)
     {
         if (radius < 0)
             return new BadRequestObjectResult("Invalid radius value.");
-            
-        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderEmail);
+
+        Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == elderId);
         if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             return new BadRequestObjectResult("Elder Arduino not set.");
 
@@ -239,7 +240,7 @@ public class HealthService : IHealthService
             await _perimeterRepository.Update(oldPerimeter);
         }
 
-        _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elderEmail);
+        _logger.LogInformation("Setting perimeter for elder: {ElderEmail}", elder.Name);
 
         await _emailService.SendEmail(
             "Perimeter set",
@@ -248,11 +249,11 @@ public class HealthService : IHealthService
         return new OkObjectResult("Perimeter set successfully");
     }
 
-    public async Task<ActionResult<PerimeterDTO>> GetElderPerimeter(string elderEmail)
+    public async Task<ActionResult<PerimeterDTO>> GetElderPerimeter(string elderId)
     {
         Elder? elder = await _elderRepository.Query()
             .Include(e => e.Caregiver)
-            .FirstOrDefaultAsync(m => m.Email == elderEmail);
+            .FirstOrDefaultAsync(m => m.Id == elderId);
         if (elder == null)
             return new BadRequestObjectResult("Elder not found.");
 
@@ -276,11 +277,11 @@ public class HealthService : IHealthService
         };
     }
 
-    public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string email)
+    public async Task<ActionResult<List<ElderLocationDTO>>> GetEldersLocation(string caregiverId)
     {
         Caregiver? caregiver = await _caregiverRepository.Query()
             .Include(c => c.Elders)
-            .FirstOrDefaultAsync(c => c.Email == email);
+            .FirstOrDefaultAsync(c => c.Id == caregiverId);
         if (caregiver == null)
             return new BadRequestObjectResult("Caregiver not found.");
 
@@ -288,7 +289,8 @@ public class HealthService : IHealthService
         if (elders == null || elders.Count == 0)
             return new BadRequestObjectResult("No elders found for the caregiver.");
 
-        _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count, email);
+        _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count,
+            caregiver.Email);
         List<ElderLocationDTO> elderLocations = [];
         foreach (Elder elder in elders)
         {
@@ -323,12 +325,12 @@ public class HealthService : IHealthService
         return elderLocations;
     }
 
-    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderEmail, DateTime date, Period period,
+    public async Task<ActionResult<List<FallDTO>>> GetFalls(string elderId, DateTime date, Period period,
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
         List<FallInfo> data = await _getHealthDataService.GetHealthData<FallInfo>(
-            elderEmail, period, endTime, timezone);
+            elderId, period, endTime, timezone);
 
         List<FallDTO> result = PeriodUtil.AggregateByPeriod(
             data,
@@ -348,16 +350,16 @@ public class HealthService : IHealthService
                 FallCount = 0
             }
         );
-        _logger.LogInformation("Fetched fall data: {Count}, for Elder {elder}", result.Count, elderEmail);
+        _logger.LogInformation("Fetched fall data: {Count}", result.Count);
         return result;
     }
 
 
-    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderEmail, DateTime date, Period period,
+    public async Task<ActionResult<List<StepsDTO>>> GetSteps(string elderId, DateTime date, Period period,
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
-        List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(elderEmail, period, endTime, timezone);
+        List<Steps> data = await _getHealthDataService.GetHealthData<Steps>(elderId, period, endTime, timezone);
 
         List<StepsDTO> result = PeriodUtil.AggregateByPeriod(
             data,
@@ -377,17 +379,17 @@ public class HealthService : IHealthService
                 StepsCount = 0
             }
         );
-        _logger.LogInformation("Fetched step data: {Count}, for Elder {elder}", result.Count, elderEmail);
+        _logger.LogInformation("Fetched step data: {Count}", result.Count);
         return result;
     }
 
 
-    public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderEmail, DateTime date, Period period,
+    public async Task<ActionResult<List<DistanceInfoDTO>>> GetDistance(string elderId, DateTime date, Period period,
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
         List<DistanceInfo> data = await _getHealthDataService.GetHealthData<DistanceInfo>(
-            elderEmail, period, endTime, timezone);
+            elderId, period, endTime, timezone);
 
         List<DistanceInfoDTO> result = PeriodUtil.AggregateByPeriod(
             data,
@@ -407,94 +409,94 @@ public class HealthService : IHealthService
                 Distance = 0
             }
         );
-        _logger.LogInformation("Fetched distance data: {Count}, for Elder {elder}", result.Count, elderEmail);
+        _logger.LogInformation("Fetched distance data: {Count}", result.Count);
         return result;
     }
 
 
-    public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderEmail, DateTime date, Period period,
+    public async Task<ActionResult<List<PostHeartRate>>> GetHeartrate(string elderId, DateTime date, Period period,
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
 
         List<Heartrate> data = await _getHealthDataService.GetHealthData<Heartrate>(
-            elderEmail, period, endTime, timezone);
+            elderId, period, endTime, timezone);
 
-        _logger.LogInformation("Processing historical heart rate data for elder: {ElderEmail}", elderEmail);
-            return PeriodUtil.AggregateByPeriod(
-                data,
-                period,
-                date,
-                timezone,
-                _timeZoneService,
-                x => x.Timestamp,
-                (group, slot) =>
+        return PeriodUtil.AggregateByPeriod(
+            data,
+            period,
+            date,
+            timezone,
+            _timeZoneService,
+            x => x.Timestamp,
+            (group, slot) =>
+            {
+                IEnumerable<Heartrate> heartrates = group.ToList();
+                return new PostHeartRate
                 {
-                    IEnumerable<Heartrate> heartrates = group.ToList();
-                    return new PostHeartRate
-                    {
-                        Avgrate = (int)heartrates.Average(h => h.Avgrate),
-                        Maxrate = heartrates.Max(h => h.Maxrate),
-                        Minrate = heartrates.Min(h => h.Minrate),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                    };
-                },
-                slot => new PostHeartRate
-                {
-                    Avgrate = 0,
-                    Maxrate = 0,
-                    Minrate = 0,
+                    Avgrate = (int)heartrates.Average(h => h.Avgrate),
+                    Maxrate = heartrates.Max(h => h.Maxrate),
+                    Minrate = heartrates.Min(h => h.Minrate),
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                }
-            );
+                };
+            },
+            slot => new PostHeartRate
+            {
+                Avgrate = 0,
+                Maxrate = 0,
+                Minrate = 0,
+                Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
+            }
+        );
     }
 
-    public async Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderEmail, DateTime date, Period period,
+    public async Task<ActionResult<List<PostSpO2>>> GetSpO2(string elderId, DateTime date, Period period,
         TimeZoneInfo timezone)
     {
         DateTime endTime = period.GetEndDate(date);
 
         List<Spo2> data = await _getHealthDataService.GetHealthData<Spo2>(
-            elderEmail, period, endTime, timezone);
-        
-            _logger.LogInformation("Processing historical SpO2 data for elder: {ElderEmail}", elderEmail);
-            return PeriodUtil.AggregateByPeriod(
-                data,
-                period,
-                date,
-                timezone,
-                _timeZoneService,
-                x => x.Timestamp,
-                (group, slot) =>
+            elderId, period, endTime, timezone);
+
+        return PeriodUtil.AggregateByPeriod(
+            data,
+            period,
+            date,
+            timezone,
+            _timeZoneService,
+            x => x.Timestamp,
+            (group, slot) =>
+            {
+                IEnumerable<Spo2> enumerable = group.ToList();
+                return new PostSpO2
                 {
-                    IEnumerable<Spo2> enumerable = group.ToList();
-                    return new PostSpO2
-                    {
-                        AvgSpO2 = enumerable.Average(h => h.AvgSpO2),
-                        MaxSpO2 = enumerable.Max(h => h.MaxSpO2),
-                        MinSpO2 = enumerable.Min(h => h.MinSpO2),
-                        Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                    };
-                },
-                slot => new PostSpO2
-                {
-                    AvgSpO2 = 0,
-                    MaxSpO2 = 0,
-                    MinSpO2 = 0,
+                    AvgSpO2 = enumerable.Average(h => h.AvgSpO2),
+                    MaxSpO2 = enumerable.Max(h => h.MaxSpO2),
+                    MinSpO2 = enumerable.Min(h => h.MinSpO2),
                     Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
-                }
-            );
+                };
+            },
+            slot => new PostSpO2
+            {
+                AvgSpO2 = 0,
+                MaxSpO2 = 0,
+                MinSpO2 = 0,
+                Timestamp = _timeZoneService.UTCToLocalTime(timezone, slot),
+            }
+        );
     }
 
-    public async Task<ActionResult<DashBoard>> GetDashboardData(string macAddress, Elder elder)
+    public async Task<ActionResult<DashBoard>> GetDashboardData(string macAddress)
     {
         DateTime currentDate = DateTime.UtcNow;
 
-        Heartrate? heartrate = await _heartrateRepository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+        Heartrate? heartrate = await _heartrateRepository.Query()
+            .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
             .OrderByDescending(s => s.Timestamp)
             .FirstOrDefaultAsync();
-        
-        Spo2? spo2 = await _spo2Repository.Query().Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
+
+        Spo2? spo2 = await _spo2Repository.Query()
+            .Where(s => s.MacAddress == macAddress && s.Timestamp.Date == currentDate.Date)
             .OrderByDescending(s => s.Timestamp)
             .FirstOrDefaultAsync();
 
@@ -517,8 +519,6 @@ public class HealthService : IHealthService
                 Timestamp = g.Key,
                 MacAddress = macAddress
             }).FirstOrDefaultAsync();
-
-        _logger.LogInformation("Fetched DashBoard for elder: {ElderEmail}", elder.Email);
 
         return new DashBoard
         {

@@ -2,6 +2,7 @@ using HealthDevice.Models;
 using HealthDevice.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 // ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace HealthDevice.Controllers;
@@ -40,17 +41,25 @@ public class TestController : ControllerBase
         _heartrateRepository = heartrateRepository;
         _spo2Repository = spo2Repository;
     }
-    
+
+
+    [HttpGet("TestUserId")]
+    public async Task<ActionResult<string>> TestUserId()
+    {
+        Elder? testElder = _elderRepository.Query().FirstOrDefault(m => m.Email == "Test@Test.dk");
+        return testElder != null ? testElder.Id : "No user found";
+    }
+
     [HttpPost("FakeData")]
-    public async Task<ActionResult> GenerateFakeData(string elderEmail)
+    public async Task<ActionResult> GenerateFakeData(string elderId)
     {
         Elder? elder = await _elderRepository.Query()
-            .FirstOrDefaultAsync(e => e.Email == elderEmail);
+            .FirstOrDefaultAsync(e => e.Id == elderId);
         if (elder == null || string.IsNullOrEmpty(elder.MacAddress))
         {
             return NotFound("Elder not found");
         }
-        
+
         DateTime currentDate = DateTime.UtcNow.Date;
         const double spo2Min = 0.7;
         const double spo2Max = 1.0;
@@ -72,7 +81,7 @@ public class TestController : ControllerBase
             float spo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2Min) + spo2Min);
             float minSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2 - spo2Max) + spo2);
             float maxSpo2 = Convert.ToSingle(Random.Shared.NextDouble() * (spo2Max - spo2) + spo2);
-            
+
             await _spo2Repository.Add(new Spo2
             {
                 LastSpO2 = spo2,

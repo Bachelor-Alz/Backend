@@ -1,4 +1,5 @@
 ﻿// ReSharper disable SuggestVarOrType_SimpleTypes
+
 namespace HealthDevice.Services;
 
 public class TimeZoneService : ITimeZoneService
@@ -16,7 +17,8 @@ public class TimeZoneService : ITimeZoneService
 
     public DateTime LocalTimeToUTC(TimeZoneInfo userTimeZone, DateTime utcNow)
     {
-        var localTime = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(utcNow, DateTimeKind.Unspecified), userTimeZone);
-        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc); 
+        var localTime =
+            TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(utcNow, DateTimeKind.Unspecified), userTimeZone);
+        return DateTime.SpecifyKind(localTime, DateTimeKind.Utc);
     }
 }
