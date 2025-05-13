@@ -12,8 +12,9 @@ public class ArduinoService : IArduinoService
     private readonly IRepositoryFactory _repositoryFactory;
     private readonly ApplicationDbContext _dbContext;
     private readonly IRepository<GPSData> _gpsRepository;
-    private readonly IRepository<Max30102> _max30102Repository;
     private readonly IRepository<Steps> _stepsRepository;
+    private readonly IRepository<Heartrate> _heartrateRepository;
+    private readonly IRepository<Spo2> _spo2Repository;
 
     public ArduinoService
     (
@@ -21,16 +22,18 @@ public class ArduinoService : IArduinoService
         IRepositoryFactory repositoryFactory,
         ApplicationDbContext dbContext,
         IRepository<GPSData> gpsRepository,
-        IRepository<Max30102> max30102Repository,
-        IRepository<Steps> stepsRepository
+        IRepository<Steps> stepsRepository,
+        IRepository<Heartrate> heartrateRepository,
+        IRepository<Spo2> spo2Repository
     )
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
         _dbContext = dbContext;
         _gpsRepository = gpsRepository;
-        _max30102Repository = max30102Repository;
         _stepsRepository = stepsRepository;
+        _heartrateRepository = heartrateRepository;
+        _spo2Repository = spo2Repository;
     }
 
     public async Task<ActionResult> HandleSensorData<T>(List<T> data, HttpContext httpContext) where T : Sensor
@@ -86,19 +89,26 @@ public class ArduinoService : IArduinoService
             _logger.LogWarning("{Timestamp}: No Max30102 data found for MacAddress {MacAddress} from IP: {IP}.", receivedAt, data.MacAddress, ip);
             return;
         }
-        await _max30102Repository.Add(new Max30102
+        
+        await _heartrateRepository.AddRange(data.Max30102.Select(x => new Heartrate
         {
-            LastHeartrate = data.Max30102.Last().HeartRate,
-            AvgHeartrate = totalHr / data.Max30102.Count,
-            MaxHeartrate = data.Max30102.Max(x => x.HeartRate),
-            MinHeartrate = data.Max30102.Min(x => x.HeartRate),
-            LastSpO2 = data.Max30102.Last().SpO2,
-            AvgSpO2 = totalSpO2 / data.Max30102.Count,
-            MaxSpO2 = data.Max30102.Max(x => x.SpO2),
-            MinSpO2 = data.Max30102.Min(x => x.SpO2),
+            Lastrate = x.HeartRate,
+            Avgrate = totalHr / data.Max30102.Count,
+            Maxrate = data.Max30102.Max(hr => hr.HeartRate),
+            Minrate = data.Max30102.Min(hr => hr.HeartRate),
             Timestamp = receivedAt,
             MacAddress = data.MacAddress
-        });
+        }));
+        
+        await _spo2Repository.AddRange(data.Max30102.Select(x => new Spo2
+        {
+            LastSpO2 = x.SpO2,
+            AvgSpO2 = totalSpO2 / data.Max30102.Count,
+            MaxSpO2 = data.Max30102.Max(sp => sp.SpO2),
+            MinSpO2 = data.Max30102.Min(sp => sp.SpO2),
+            Timestamp = receivedAt,
+            MacAddress = data.MacAddress
+        }));
         await _dbContext.SaveChangesAsync();
     }
 }

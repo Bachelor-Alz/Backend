@@ -8,4 +8,5 @@ public class Spo2 : Sensor
     public float AvgSpO2 { get; set; }
     public float MaxSpO2 { get; set; }
     public float MinSpO2 { get; set; }
+    public float LastSpO2 { get; set; }
 }

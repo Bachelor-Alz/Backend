@@ -9,12 +9,14 @@ namespace HealthDevice.Services
         private readonly ILogger<TimedGPSService> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IRepository<Elder> _elderRepository;
+        private readonly IRepository<DistanceInfo> distanceRepository;
 
-        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider, IRepository<Elder> elderRepository)
+        public TimedGPSService(ILogger<TimedGPSService> logger, IServiceProvider serviceProvider, IRepository<Elder> elderRepository, IRepository<DistanceInfo> distanceRepository)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
             _elderRepository = elderRepository;
+            this.distanceRepository = distanceRepository;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -28,12 +30,17 @@ namespace HealthDevice.Services
 
                     foreach (string arduino in elders.Select(elder => elder.MacAddress).OfType<string>())
                     {
+                        DistanceInfo distance = await healthService.CalculateDistanceWalked(DateTime.UtcNow, arduino);
+                        await distanceRepository.Add(distance);
+                        
                         Location location = await healthService.GetLocation(DateTime.UtcNow, arduino);
                         if (location.Latitude != 0 && location.Longitude != 0)
                         {
                             await healthService.ComputeOutOfPerimeter(arduino, location);
                         }
+                        await healthService.DeleteGpsData(DateTime.UtcNow, arduino);
                     }
+                    
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
