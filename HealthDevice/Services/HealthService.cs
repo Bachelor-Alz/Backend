@@ -258,12 +258,12 @@ public class HealthService : IHealthService
             return new BadRequestObjectResult("Elder not found.");
 
         if (string.IsNullOrEmpty(elder.MacAddress))
-            return new BadRequestObjectResult("Elder Arduino not set.");
+            return new PerimeterDTO();
 
         Location? location = await _locationRepository.Query()
             .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
         if (location == null)
-            return new BadRequestObjectResult("Location not found.");
+            return new PerimeterDTO();
 
         Perimeter? perimeter = await _perimeterRepository.Query()
             .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);

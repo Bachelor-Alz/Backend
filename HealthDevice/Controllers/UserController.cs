@@ -124,8 +124,15 @@ public class UserController : ControllerBase
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(e => e.Id == userClaim.Value);
         if (elder == null)
             return NotFound("Elder not found.");
-
-
+        if (caregiver.Elders != null)
+        {
+            if(caregiver.Elders.Any(e => e.Id == elder.Id))
+            {
+                _logger.LogInformation("Elder {elder.Email} is already assigned to Caregiver {caregiver.Name}.", elder.Email,
+                    caregiver.Name);
+                return BadRequest("Elder is already assigned to this caregiver.");
+            }
+        }
         if (caregiver.Invites != null && caregiver.Invites.Any(e => e.Id == elder.Id))
         {
             _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email,
