@@ -83,7 +83,7 @@ if (jwtSettings == null)
 }
 builder.Services.AddJwtAuthentication(jwtSettings);
 
-builder.Services.AddScoped(provider =>
+builder.Services.AddScoped<ITokenService>(provider =>
 {
     var jwtSettings = provider.GetRequiredService<IOptions<JwtSettings>>().Value;
     var dbContext = provider.GetRequiredService<ApplicationDbContext>();
