@@ -22,7 +22,7 @@ public class UserController : ControllerBase
     private readonly IRepository<Elder> _elderRepository;
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly ApplicationDbContext _dbContext;
-    private readonly TokenService _tokenService;
+    private readonly ITokenService _tokenService;
     private readonly IRepository<Arduino> _arduinoRepository;
 
 
@@ -35,7 +35,7 @@ public class UserController : ControllerBase
         IRepository<Elder> elderRepository,
         IRepository<Caregiver> caregiverRepository,
         ApplicationDbContext dbContext,
-        TokenService tokenService
+        ITokenService tokenService
         , IRepository<Arduino> arduinoRepository
     )
     {
@@ -417,7 +417,7 @@ public class UserController : ControllerBase
             .FirstOrDefaultAsync(m => m.Id == userClaim.Value);
 
         if (elder?.Caregiver == null)
-            return NotFound("Caregiver details are not available.");
+            return new List<CaregiverDTO>();
 
         return new List<CaregiverDTO>
         {
