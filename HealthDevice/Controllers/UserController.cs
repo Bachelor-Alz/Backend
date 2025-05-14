@@ -493,17 +493,19 @@ public class UserController : ControllerBase
     {
         if (!await _tokenService.ValidateRefreshTokenAsync(token))
             return BadRequest("Invalid refresh token.");
-
-        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
-            return BadRequest("User claim is not available.");
+        
+        var tokenHash = _tokenService.HashToken(token);
+        RefreshToken? userToken = await _dbContext.RefreshToken.FirstOrDefaultAsync(m => m.TokenHash == tokenHash);
+        
+        if (userToken == null)
+            return BadRequest("Invalid refresh token.");
         
         string ip = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
 
-        if (_elderRepository.Query().Any(m => m.Id == userClaim.Value))
+        if (_elderRepository.Query().Any(m => m.Id == userToken.userId))
         {
             Elder? elder = await _elderRepository.Query()
-                .FirstOrDefaultAsync(m => m.Id == userClaim.Value);
+                .FirstOrDefaultAsync(m => m.Id == userToken.userId);
             if (elder == null)
                 return NotFound("Elder not found.");
 
@@ -512,14 +514,14 @@ public class UserController : ControllerBase
             {
                 Token = _tokenService.GenerateAccessToken(elder, "Elder"),
                 Role = Roles.Elder,
-                userId = userClaim.Value,
+                userId = userToken.userId,
                 RefreshToken = refreshToken.Token
             };
         }
 
-        if(_caregiverRepository.Query().Any(m => m.Id == userClaim.Value))
+        if(_caregiverRepository.Query().Any(m => m.Id == userToken.userId))
         {
-            Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(c => c.Id == userClaim.Value);
+            Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(c => c.Id == userToken.userId);
             if (caregiver == null)
                 return NotFound("Caregiver not found");
             
@@ -528,7 +530,7 @@ public class UserController : ControllerBase
             {
                 Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"),
                 Role = Roles.Caregiver,
-                userId = userClaim.Value,
+                userId = userToken.userId,
                 RefreshToken = refreshToken.Token
             };
         }

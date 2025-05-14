@@ -51,7 +51,7 @@ public class UserService : IUserService
                 return new UnauthorizedObjectResult("Wrong password.");
             }
 
-            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(elder.Email, ipAdress);
+            RefreshTokenResult refreshTokenResult = await _tokenService.IssueRefreshTokenAsync(elder.Id, ipAdress);
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.",
                 userLoginDto.Email, ipAdress, timestamp);
             return new LoginResponseDTO
@@ -76,7 +76,7 @@ public class UserService : IUserService
             _logger.LogInformation("Login successful for Email: {Email} from IP: {IpAddress} at {Timestamp}.",
                 userLoginDto.Email, ipAdress, timestamp);
             RefreshTokenResult refreshTokenResult =
-                await _tokenService.IssueRefreshTokenAsync(caregiver.Email, ipAdress);
+                await _tokenService.IssueRefreshTokenAsync(caregiver.Id, ipAdress);
             return new LoginResponseDTO
             {
                 Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"), Role = Roles.Caregiver,
