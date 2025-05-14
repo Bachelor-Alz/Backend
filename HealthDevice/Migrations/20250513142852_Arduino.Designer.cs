@@ -3,6 +3,7 @@ using System;
 using HealthDevice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthDevice.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250513142852_Arduino")]
+    partial class Arduino
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,29 +24,6 @@ namespace HealthDevice.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("HealthDevice.DTO.Sensor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("MacAddress")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MacAddress");
-
-                    b.ToTable("Sensors", (string)null);
-
-                    b.UseTptMappingStrategy();
-                });
 
             modelBuilder.Entity("HealthDevice.Models.Arduino", b =>
                 {
@@ -112,6 +92,29 @@ namespace HealthDevice.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Caregiver");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.DistanceInfo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<float>("Distance")
+                        .HasColumnType("real");
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Distance");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
@@ -195,6 +198,89 @@ namespace HealthDevice.Migrations
                         .IsUnique();
 
                     b.ToTable("Elder");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("LocationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("FallInfo");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.GPSData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GPSData");
+                });
+
+            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Avgrate")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Lastrate")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Maxrate")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Minrate")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Heartrate");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Location", b =>
@@ -291,63 +377,13 @@ namespace HealthDevice.Migrations
                     b.ToTable("RefreshToken");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.DistanceInfo", b =>
-                {
-                    b.HasBaseType("HealthDevice.DTO.Sensor");
-
-                    b.Property<float>("Distance")
-                        .HasColumnType("real");
-
-                    b.ToTable("DistanceInfo", (string)null);
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
-                {
-                    b.HasBaseType("HealthDevice.DTO.Sensor");
-
-                    b.Property<int?>("LocationId")
-                        .HasColumnType("integer");
-
-                    b.HasIndex("LocationId");
-
-                    b.ToTable("FallInfo", (string)null);
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.GPSData", b =>
-                {
-                    b.HasBaseType("HealthDevice.DTO.Sensor");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.ToTable("GPSData", (string)null);
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
-                {
-                    b.HasBaseType("HealthDevice.DTO.Sensor");
-
-                    b.Property<int>("Avgrate")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Lastrate")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Maxrate")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Minrate")
-                        .HasColumnType("integer");
-
-                    b.ToTable("Heartrates", (string)null);
-                });
-
             modelBuilder.Entity("HealthDevice.Models.Spo2", b =>
                 {
-                    b.HasBaseType("HealthDevice.DTO.Sensor");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<float>("AvgSpO2")
                         .HasColumnType("real");
@@ -355,32 +391,45 @@ namespace HealthDevice.Migrations
                     b.Property<float>("LastSpO2")
                         .HasColumnType("real");
 
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<float>("MaxSpO2")
                         .HasColumnType("real");
 
                     b.Property<float>("MinSpO2")
                         .HasColumnType("real");
 
-                    b.ToTable("SpO2", (string)null);
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SpO2");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Steps", b =>
                 {
-                    b.HasBaseType("HealthDevice.DTO.Sensor");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("StepsCount")
                         .HasColumnType("integer");
 
-                    b.ToTable("Steps", (string)null);
-                });
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
 
-            modelBuilder.Entity("HealthDevice.DTO.Sensor", b =>
-                {
-                    b.HasOne("HealthDevice.Models.Arduino", "Arduino")
-                        .WithMany("Sensors")
-                        .HasForeignKey("MacAddress");
+                    b.HasKey("Id");
 
-                    b.Navigation("Arduino");
+                    b.ToTable("Steps");
                 });
 
             modelBuilder.Entity("HealthDevice.Models.Elder", b =>
@@ -407,23 +456,8 @@ namespace HealthDevice.Migrations
                     b.Navigation("InvitedCaregiver");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.DistanceInfo", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.DistanceInfo", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("HealthDevice.Models.FallInfo", b =>
                 {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.FallInfo", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("HealthDevice.Models.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
@@ -431,46 +465,8 @@ namespace HealthDevice.Migrations
                     b.Navigation("Location");
                 });
 
-            modelBuilder.Entity("HealthDevice.Models.GPSData", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.GPSData", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Heartrate", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Heartrate", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Spo2", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Spo2", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("HealthDevice.Models.Steps", b =>
-                {
-                    b.HasOne("HealthDevice.DTO.Sensor", null)
-                        .WithOne()
-                        .HasForeignKey("HealthDevice.Models.Steps", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("HealthDevice.Models.Arduino", b =>
                 {
-                    b.Navigation("Sensors");
-
                     b.Navigation("elder");
                 });
 

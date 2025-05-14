@@ -309,6 +309,7 @@ public class HealthService : IHealthService
             {
                 Email = elder.Email,
                 Name = elder.Name,
+                userId = elder.Id,
                 Latitude = location.Latitude,
                 Longitude = location.Longitude,
                 LastUpdated = location.Timestamp,

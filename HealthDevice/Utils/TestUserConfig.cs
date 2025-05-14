@@ -31,11 +31,23 @@ public static class TestUserConfig
         {
             return;
         }
+
+        
+        
         IRepository<Elder> elderRepository = scopedServices.GetRequiredService<IRepository<Elder>>();
         Elder? elderEntity = await elderRepository.Query().FirstOrDefaultAsync(e => e.Email == elder.Email);
         if (elderEntity == null) return;
 
-        elderEntity.MacAddress = "00:00:00:00:00:00";
+        IRepository<Arduino> arduinoRepository = scopedServices.GetRequiredService<IRepository<Arduino>>();
+        
+        Arduino arduino = new Arduino
+        {
+            MacAddress = "00:00:00:00:00:00",
+            isClaim = true,
+            elder = elderEntity
+        };
+        await arduinoRepository.Add(arduino);
+        
         await elderRepository.Update(elderEntity);
 
         var testController = scopedServices.GetRequiredService<TestController>();

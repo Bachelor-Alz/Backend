@@ -98,7 +98,7 @@ namespace HealthDevice.Controllers
         [HttpGet("Dashboard")]
         public async Task<ActionResult<DashBoard>> GetDashBoardInfo(string elderId)
         {
-            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderId);
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == elderId);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder not found or Arduino not set for Email: {ElderEmail}", elderId);
@@ -157,7 +157,7 @@ namespace HealthDevice.Controllers
         [HttpGet("Address")]
         public async Task<ActionResult<string>> GetAddress(string elderId)
         {
-            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Email == elderId);
+            Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.Id == elderId);
             if (elder is null || string.IsNullOrEmpty(elder.MacAddress))
             {
                 _logger.LogError("Elder not found with: {ElderEmail} and Arduino: {mac}", elderId, elder?.MacAddress);

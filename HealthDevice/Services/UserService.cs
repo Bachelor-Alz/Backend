@@ -20,11 +20,11 @@ public class UserService : IUserService
     private readonly IRepository<GPSData> _gpsRepository;
     private readonly GeoService _geoService;
     private readonly ITokenService _tokenService;
-
+    private readonly IRepository<Arduino> _arduinoRepository;
     public UserService(ILogger<UserService> logger, UserManager<Elder> elderManager,
         UserManager<Caregiver> caregiverManager, IRepository<Elder> elderRepository,
         IRepository<Caregiver> caregiverRepository, IRepository<GPSData> gpsRepository,
-        GeoService geoService, ITokenService tokenService)
+        GeoService geoService, ITokenService tokenService, IRepository<Arduino> arduinoRepository)
     {
         _logger = logger;
         _elderManager = elderManager;
@@ -34,6 +34,7 @@ public class UserService : IUserService
         _gpsRepository = gpsRepository;
         _geoService = geoService;
         _tokenService = tokenService;
+        _arduinoRepository = arduinoRepository;
     }
 
     public async Task<ActionResult<LoginResponseDTO>> HandleLogin(UserLoginDTO userLoginDto, string ipAdress)
@@ -119,11 +120,14 @@ public class UserService : IUserService
             Latitude = elder.Latitude,
             Longitude = elder.Longitude
         };
-        List<Elder> elders = await _elderRepository.Query().ToListAsync();
-        List<GPSData> gpsData = await _gpsRepository.Query().ToListAsync();
-        List<GPSData> filteredGpsData = gpsData.Where(g => elders.All(e => e.MacAddress != g.MacAddress)).ToList();
-        List<ArduinoInfoDTO> addressNotAssociated = [];
-        foreach (GPSData gps in filteredGpsData)
+        List<Arduino> unusedArduinos = await _arduinoRepository.Query()
+            .Where(m => m.isClaim == false).ToListAsync();
+        List<GPSData> unusedArduinosGps = await _gpsRepository.Query()
+            .Where(m => unusedArduinos.Select(a => a.MacAddress).Contains(m.MacAddress)).ToListAsync();
+        
+        List<ArduinoInfoDTO> addressNotAssociated = new List<ArduinoInfoDTO>();
+        
+        foreach (var gps in unusedArduinosGps)
         {
             string GpsAddress = await _geoService.GetAddressFromCoordinates(gps.Latitude, gps.Longitude);
             float distance =

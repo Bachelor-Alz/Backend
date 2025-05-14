@@ -16,6 +16,7 @@ public class UserServiceTests
     private readonly Mock<IRepository<Elder>> _mockElderRepository;
     private readonly Mock<IRepository<Caregiver>> _mockCaregiverRepository;
     private readonly Mock<IRepository<GPSData>> _mockGpsRepository;
+    private readonly Mock<IRepository<Arduino>> _mockArduinoRepository;
 
     private readonly Mock<HttpClient> _mockHttpClient;
     private readonly Mock<ILogger<GeoService>> _mockGeoServiceLogger;
@@ -59,6 +60,7 @@ public class UserServiceTests
         _mockElderRepository = new Mock<IRepository<Elder>>();
         _mockCaregiverRepository = new Mock<IRepository<Caregiver>>();
         _mockGpsRepository = new Mock<IRepository<GPSData>>();
+        _mockArduinoRepository = new Mock<IRepository<Arduino>>();
         _mockTokenService = new Mock<ITokenService>();
 
         _mockTokenService.Setup(ts => ts.GenerateAccessToken(It.IsAny<IdentityUser>(), It.IsAny<string>()))
@@ -78,7 +80,8 @@ public class UserServiceTests
             _mockCaregiverRepository.Object,
             _mockGpsRepository.Object,
             _mockGeoService.Object,
-            _mockTokenService.Object
+            _mockTokenService.Object, 
+            _mockArduinoRepository.Object
         );
     }
 
