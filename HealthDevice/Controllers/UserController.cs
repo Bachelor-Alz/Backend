@@ -124,8 +124,15 @@ public class UserController : ControllerBase
         Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(e => e.Id == userClaim.Value);
         if (elder == null)
             return NotFound("Elder not found.");
-
-
+        if (caregiver.Elders != null)
+        {
+            if(caregiver.Elders.Any(e => e.Id == elder.Id))
+            {
+                _logger.LogInformation("Elder {elder.Email} is already assigned to Caregiver {caregiver.Name}.", elder.Email,
+                    caregiver.Name);
+                return BadRequest("Elder is already assigned to this caregiver.");
+            }
+        }
         if (caregiver.Invites != null && caregiver.Invites.Any(e => e.Id == elder.Id))
         {
             _logger.LogInformation("Elder {elder.Email} is already invited by Caregiver {caregiver.Name}.", elder.Email,
@@ -485,5 +492,55 @@ public class UserController : ControllerBase
             var accessToken = _tokenService.GenerateAccessToken(elder, "Elder");
             return Ok(new RefreshAndAccessTokenResult { AccessToken = accessToken, RefreshToken = refreshToken.Token });
         }
+    }
+
+    [HttpPost("login/token")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponseDTO>> LoginWithToken(string token)
+    {
+        if (!await _tokenService.ValidateRefreshTokenAsync(token))
+            return BadRequest("Invalid refresh token.");
+        
+        var tokenHash = _tokenService.HashToken(token);
+        RefreshToken? userToken = await _dbContext.RefreshToken.FirstOrDefaultAsync(m => m.TokenHash == tokenHash);
+        
+        if (userToken == null)
+            return BadRequest("Invalid refresh token.");
+        
+        string ip = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+
+        if (_elderRepository.Query().Any(m => m.Id == userToken.userId))
+        {
+            Elder? elder = await _elderRepository.Query()
+                .FirstOrDefaultAsync(m => m.Id == userToken.userId);
+            if (elder == null)
+                return NotFound("Elder not found.");
+
+            RefreshTokenResult refreshToken = await _tokenService.IssueRefreshTokenAsync(elder.Id, ip);
+            return new LoginResponseDTO
+            {
+                Token = _tokenService.GenerateAccessToken(elder, "Elder"),
+                Role = Roles.Elder,
+                userId = userToken.userId,
+                RefreshToken = refreshToken.Token
+            };
+        }
+
+        if(_caregiverRepository.Query().Any(m => m.Id == userToken.userId))
+        {
+            Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(c => c.Id == userToken.userId);
+            if (caregiver == null)
+                return NotFound("Caregiver not found");
+            
+            RefreshTokenResult refreshToken = await _tokenService.IssueRefreshTokenAsync(caregiver.Id, ip);
+            return new LoginResponseDTO
+            {
+                Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"),
+                Role = Roles.Caregiver,
+                userId = userToken.userId,
+                RefreshToken = refreshToken.Token
+            };
+        }
+        return BadRequest("User not found.");
     }
 }

@@ -10,4 +10,5 @@ public interface ITokenService
     Task<RefreshTokenResult?> RotateRefreshTokenAsync(string oldRawToken, string? createdByIp = null);
     Task<bool> RevokeRefreshTokenAsync(string rawToken, string? revokedByIp = null);
     Task<bool> ValidateRefreshTokenAsync(string rawToken);
+    string HashToken(string token);
 }
