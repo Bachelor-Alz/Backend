@@ -16,12 +16,12 @@ public static class PeriodUtil
         switch (period)
         {
             case Period.Hour:
-                return new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59, 999).ToUniversalTime();
+                return new DateTime(date.Year, date.Month, date.Day, date.Hour, 59, 59).ToUniversalTime();
             case Period.Day:
-                 return new DateTime(date.Year, date.Month, date.Day, 23, 59, 59, 999).ToUniversalTime();
+                 return new DateTime(date.Year, date.Month, date.Day, 23, 59, 59).ToUniversalTime();
             case Period.Week:
                  DateTime sunday = date.Date.AddDays((7 - (int)date.DayOfWeek) % 7);
-                 return new DateTime(sunday.Year, sunday.Month, sunday.Day, 23, 59, 59, 999).ToUniversalTime();
+                 return new DateTime(sunday.Year, sunday.Month, sunday.Day, 23, 59, 59).ToUniversalTime();
             default:
                 throw new ArgumentOutOfRangeException(nameof(period), "Invalid period specified. Valid values are 'Hour', 'Day', or 'Week'.");
         }

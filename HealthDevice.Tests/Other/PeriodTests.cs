@@ -16,7 +16,7 @@ public class PeriodTests
     {
         // Arrange
         var input = new DateTime(2025, 5, 12, 10, 30, 0);
-        var expected = new DateTime(2025, 5, 12, 10, 59, 59,999).ToUniversalTime();
+        var expected = new DateTime(2025, 5, 12, 10, 59, 59).ToUniversalTime();
 
         // Act
         var result = PeriodUtil.GetEndDate(Period.Hour, input);
@@ -30,7 +30,7 @@ public class PeriodTests
     {
         // Arrange
         var input = new DateTime(2025, 5, 12, 10, 30, 0);
-        var expected = new DateTime(2025, 5, 12, 23, 59, 59,999).ToUniversalTime();
+        var expected = new DateTime(2025, 5, 12, 23, 59, 59).ToUniversalTime();
 
         // Act
         var result = PeriodUtil.GetEndDate(Period.Day, input);
@@ -44,7 +44,7 @@ public class PeriodTests
     {
         // Arrange
         var input = new DateTime(2025, 5, 12, 10, 30, 0); // Monday
-        var expected = new DateTime(2025, 5, 18, 23, 59, 59,999).ToUniversalTime(); // Sunday
+        var expected = new DateTime(2025, 5, 18, 23, 59, 59).ToUniversalTime(); // Sunday
 
         // Act
         var result = PeriodUtil.GetEndDate(Period.Week, input);
