@@ -486,4 +486,52 @@ public class UserController : ControllerBase
             return Ok(new RefreshAndAccessTokenResult { AccessToken = accessToken, RefreshToken = refreshToken.Token });
         }
     }
+
+    [HttpGet("login/token")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponseDTO>> LoginWithToken(string token)
+    {
+        if (!await _tokenService.ValidateRefreshTokenAsync(token))
+            return BadRequest("Invalid refresh token.");
+
+        Claim? userClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userClaim == null || string.IsNullOrEmpty(userClaim.Value))
+            return BadRequest("User claim is not available.");
+        
+        string ip = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+
+        if (_elderRepository.Query().Any(m => m.Id == userClaim.Value))
+        {
+            Elder? elder = await _elderRepository.Query()
+                .FirstOrDefaultAsync(m => m.Id == userClaim.Value);
+            if (elder == null)
+                return NotFound("Elder not found.");
+
+            RefreshTokenResult refreshToken = await _tokenService.IssueRefreshTokenAsync(elder.Id, ip);
+            return new LoginResponseDTO
+            {
+                Token = _tokenService.GenerateAccessToken(elder, "Elder"),
+                Role = Roles.Elder,
+                userId = userClaim.Value,
+                RefreshToken = refreshToken.Token
+            };
+        }
+
+        if(_caregiverRepository.Query().Any(m => m.Id == userClaim.Value))
+        {
+            Caregiver? caregiver = await _caregiverRepository.Query().FirstOrDefaultAsync(c => c.Id == userClaim.Value);
+            if (caregiver == null)
+                return NotFound("Caregiver not found");
+            
+            RefreshTokenResult refreshToken = await _tokenService.IssueRefreshTokenAsync(caregiver.Id, ip);
+            return new LoginResponseDTO
+            {
+                Token = _tokenService.GenerateAccessToken(caregiver, "Caregiver"),
+                Role = Roles.Caregiver,
+                userId = userClaim.Value,
+                RefreshToken = refreshToken.Token
+            };
+        }
+        return BadRequest("User not found.");
+    }
 }
