@@ -69,8 +69,8 @@ public class TestController : ControllerBase
         const float distanceMax = 0.25F; //Corresponds to 328 Steps
         const int fallMin = 0;
         const int fallMax = 20;
-
-        for (int i = -1500; i < 1500; i++)
+        //3 weeks == 6048 minutes
+        for (int i = -6048; i < 6048; i++)
         {
             DateTime timestamp = currentDate + TimeSpan.FromMinutes(i * 5);
             int preHeartrateMin = Random.Shared.Next(20, 45);

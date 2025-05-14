@@ -285,13 +285,14 @@ public class HealthService : IHealthService
         if (caregiver == null)
             return new BadRequestObjectResult("Caregiver not found.");
 
+        List<ElderLocationDTO> elderLocations = [];
         List<Elder>? elders = caregiver.Elders;
         if (elders == null || elders.Count == 0)
-            return new BadRequestObjectResult("No elders found for the caregiver.");
+            return elderLocations;
 
         _logger.LogInformation("Found {ElderCount} elders for caregiver: {CaregiverEmail}", elders.Count,
             caregiver.Email);
-        List<ElderLocationDTO> elderLocations = [];
+   
         foreach (Elder elder in elders)
         {
             if (string.IsNullOrEmpty(elder.MacAddress))
