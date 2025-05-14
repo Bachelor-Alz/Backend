@@ -487,7 +487,7 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpGet("login/token")]
+    [HttpPost("login/token")]
     [AllowAnonymous]
     public async Task<ActionResult<LoginResponseDTO>> LoginWithToken(string token)
     {
