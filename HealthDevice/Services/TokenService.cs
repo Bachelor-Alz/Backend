@@ -80,6 +80,7 @@ public class TokenService : ITokenService
             rt.IsRevoked = true;
             rt.RevokedAt = DateTime.UtcNow;
             rt.RevokedByIp = createdByIp;
+            rt.ReplacedByTokenHash = tokenHash;
         }
 
         _dbContext.RefreshToken.Add(refreshToken);
@@ -153,7 +154,7 @@ public class TokenService : ITokenService
         return storedToken != null && !storedToken.IsRevoked && !storedToken.IsExpired;
     }
 
-    private string HashToken(string token)
+    public string HashToken(string token)
     {
         var bytes = Encoding.UTF8.GetBytes(token);
         var hash = SHA256.HashData(bytes);
