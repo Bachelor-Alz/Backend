@@ -94,8 +94,8 @@ public class UserService : IUserService
     {
         DateTime timestamp = DateTime.UtcNow;
 
-        if (await userManager.Users.FirstOrDefaultAsync(m =>
-                m.Email != null && m.Email.ToLower() == userRegisterDto.Email.ToLower()) != null)
+        if (await userManager.Users.Where(m =>
+                m.Email != null && m.Email.ToLower() == userRegisterDto.Email.ToLower()).DefaultIfEmpty(null).FirstAsync() != null)
         {
             _logger.LogWarning(
                 "{timestamp}: Registration failed for Email: {Email} from IP: {IpAddress} - Email exists.",
