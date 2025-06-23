@@ -24,6 +24,7 @@ public class HealthService : IHealthService
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Heartrate> _heartrateRepository;
     private readonly IRepository<Spo2> _spo2Repository;
+    private readonly IRepository<GPSData> _gpsRepository;
     private readonly IGeoService _geoService;
 
     public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory,
@@ -32,7 +33,7 @@ public class HealthService : IHealthService
         IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository,
         IRepository<Steps> stepsRepository, IRepository<DistanceInfo> distanceInfoRepository,
         IRepository<FallInfo> fallInfoRepository, IRepository<Heartrate> heartrateRepository,
-        IRepository<Spo2> spo2Repository, IGeoService geoService)
+        IRepository<Spo2> spo2Repository, IGeoService geoService, IRepository<GPSData> gpsRepository)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
@@ -49,6 +50,7 @@ public class HealthService : IHealthService
         _heartrateRepository = heartrateRepository;
         _spo2Repository = spo2Repository;
         _geoService = geoService;
+        _gpsRepository = gpsRepository;
     }
 
     public async Task<DistanceInfo> CalculateDistanceWalked(DateTime currentDate, string arduino)
@@ -301,8 +303,9 @@ public class HealthService : IHealthService
                 continue;
             }
 
-            Location? location =
-                await _locationRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
+            GPSData? location =
+                await _gpsRepository.Query().Where(m => m.MacAddress == elder.MacAddress)
+                    .OrderByDescending(m => m.Timestamp).FirstOrDefaultAsync();
             if (location == null || elder.Email == null) continue;
             Perimeter? perimeter = await _perimeterRepository.Query()
                 .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);

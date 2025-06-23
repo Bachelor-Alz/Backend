@@ -22,6 +22,7 @@ public class HealthServiceTests
     private readonly Mock<IRepository<DistanceInfo>> _mockDistanceInfoRepository;
     private readonly Mock<IRepository<FallInfo>> _mockFallInfoRepository;
     private readonly Mock<IRepository<Caregiver>> _mockCaregiverRepository;
+    private readonly Mock<IRepository<GPSData>> _mockGpsDataRepository;
     private readonly HealthService _healthService;
     private readonly Mock<IGeoService> _mockGeoService;
 
@@ -43,6 +44,7 @@ public class HealthServiceTests
         _mockFallInfoRepository = new Mock<IRepository<FallInfo>>();
         _mockCaregiverRepository = new Mock<IRepository<Caregiver>>();
         _mockGeoService = new Mock<IGeoService>();
+        _mockGpsDataRepository = new Mock<IRepository<GPSData>>();
 
         _healthService = new HealthService(
             _mockLogger.Object,
@@ -59,7 +61,8 @@ public class HealthServiceTests
             _mockFallInfoRepository.Object,
             _mockHeartrateRepository.Object,
             _mockSpo2Repository.Object,
-            _mockGeoService.Object
+            _mockGeoService.Object,
+            _mockGpsDataRepository.Object
         );
     }
 
