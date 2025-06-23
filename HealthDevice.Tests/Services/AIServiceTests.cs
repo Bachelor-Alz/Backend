@@ -13,6 +13,7 @@ public class AIServiceTests
     private readonly Mock<IRepository<Caregiver>> _mockCaregiverRepository;
     private readonly Mock<IRepository<FallInfo>> _mockFallInfoRepository;
     private readonly Mock<IRepository<Location>> _mockLocationRepository;
+    private readonly Mock<IRepository<GPSData>> _mockGpsDataRepository;
     private readonly AiService _aiService;
 
     public AIServiceTests()
@@ -24,6 +25,7 @@ public class AIServiceTests
         _mockCaregiverRepository = new Mock<IRepository<Caregiver>>();
         _mockFallInfoRepository = new Mock<IRepository<FallInfo>>();
         _mockLocationRepository = new Mock<IRepository<Location>>();
+        _mockGpsDataRepository = new Mock<IRepository<GPSData>>();
 
         _aiService = new AiService(
             _mockLogger.Object,
@@ -32,7 +34,8 @@ public class AIServiceTests
             _mockElderRepository.Object,
             _mockCaregiverRepository.Object,
             _mockFallInfoRepository.Object,
-            _mockLocationRepository.Object
+            _mockLocationRepository.Object,
+            _mockGpsDataRepository.Object
         );
     }
 

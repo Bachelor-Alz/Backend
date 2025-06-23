@@ -15,10 +15,11 @@ public class AiService : IAIService
     private readonly IRepository<Caregiver> _caregiverRepository;
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Location> _locationRepository;
+    private readonly IRepository<GPSData> _gpsDataRepository;
 
     public AiService(ILogger<AiService> logger, IEmailService emailService, IGeoService geoService,
         IRepository<Elder> elderRepository, IRepository<Caregiver> caregiverRepository,
-        IRepository<FallInfo> fallInfoRepository, IRepository<Location> locationRepository)
+        IRepository<FallInfo> fallInfoRepository, IRepository<Location> locationRepository, IRepository<GPSData> gpsDataRepository)
     {
         _logger = logger;
         _emailService = emailService;
@@ -27,6 +28,7 @@ public class AiService : IAIService
         _caregiverRepository = caregiverRepository;
         _fallInfoRepository = fallInfoRepository;
         _locationRepository = locationRepository;
+        _gpsDataRepository = gpsDataRepository;
     }
 
     public async Task HandleAiRequest([FromBody] List<int> request, string address)
@@ -59,22 +61,32 @@ public class AiService : IAIService
             MacAddress = macAddress
         };
         await _fallInfoRepository.Add(fallInfo);
+
         try
         {
+            _logger.LogInformation("Handling fall for elder with MacAddress: {MacAddress}", macAddress);
             Elder? elder = await _elderRepository.Query().FirstOrDefaultAsync(m => m.MacAddress == macAddress);
             if (elder == null)
+            {
                 return;
+            }
+             
 
             List<Caregiver> caregivers = await _caregiverRepository.Query()
                 .Where(e => e.Elders != null && e.Elders.Contains(elder)).ToListAsync();
-            Location? location = await _locationRepository.Query().Where(a => a.MacAddress == elder.MacAddress)
+            GPSData? location = await _gpsDataRepository.Query().Where(a => a.MacAddress == elder.MacAddress)
                 .OrderByDescending(a => a.Timestamp).FirstOrDefaultAsync();
+            _logger.LogInformation("{location}", location);
             if (location == null || caregivers.Count == 0)
+            {
                 return;
+            }
+               
 
             string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
             await _emailService.SendEmail("Fall detected",
                 $"Fall detected for elder {elder.Name} at location {address}.", elder);
+            _logger.LogInformation("Fall email sent to elder: {ElderEmail}", elder.Email);
         }
         catch
         {
