@@ -244,7 +244,7 @@ public class HealthService : IHealthService
 
         await _emailService.SendEmail(
             "Perimeter set",
-            $"Perimeter set for elder {elder.Name} with radius {radius} meters.", elder);
+            $"Perimeter set for elder {elder.Name} with radius {radius} kilometers.", elder);
 
         return new OkObjectResult("Perimeter set successfully");
     }
