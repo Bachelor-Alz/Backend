@@ -24,6 +24,7 @@ public class HealthService : IHealthService
     private readonly IRepository<FallInfo> _fallInfoRepository;
     private readonly IRepository<Heartrate> _heartrateRepository;
     private readonly IRepository<Spo2> _spo2Repository;
+    private readonly IGeoService _geoService;
 
     public HealthService(ILogger<HealthService> logger, IRepositoryFactory repositoryFactory,
         IEmailService emailService, IGetHealthData getHealthDataService, ITimeZoneService timeZoneService,
@@ -31,7 +32,7 @@ public class HealthService : IHealthService
         IRepository<Perimeter> perimeterRepository, IRepository<Location> locationRepository,
         IRepository<Steps> stepsRepository, IRepository<DistanceInfo> distanceInfoRepository,
         IRepository<FallInfo> fallInfoRepository, IRepository<Heartrate> heartrateRepository,
-        IRepository<Spo2> spo2Repository)
+        IRepository<Spo2> spo2Repository, IGeoService geoService)
     {
         _logger = logger;
         _repositoryFactory = repositoryFactory;
@@ -47,6 +48,7 @@ public class HealthService : IHealthService
         _fallInfoRepository = fallInfoRepository;
         _heartrateRepository = heartrateRepository;
         _spo2Repository = spo2Repository;
+        _geoService = geoService;
     }
 
     public async Task<DistanceInfo> CalculateDistanceWalked(DateTime currentDate, string arduino)
@@ -180,6 +182,12 @@ public class HealthService : IHealthService
         {
             _logger.LogInformation("Elder {Email} is out of perimeter", elder.Email);
             elder.OutOfPerimeter = true;
+            
+            string address = await _geoService.GetAddressFromCoordinates(location.Latitude, location.Longitude);
+            
+            await _emailService.SendEmail(
+                "Out of Perimeter",
+                $"Elder {elder.Name} is out of Perimeter at {address}", elder);
             await _elderRepository.Update(elder);
         }
     }
