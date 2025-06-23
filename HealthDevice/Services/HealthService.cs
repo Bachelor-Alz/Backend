@@ -256,15 +256,7 @@ public class HealthService : IHealthService
             .FirstOrDefaultAsync(m => m.Id == elderId);
         if (elder == null)
             return new BadRequestObjectResult("Elder not found.");
-
-        if (string.IsNullOrEmpty(elder.MacAddress))
-            return new PerimeterDTO();
-
-        Location? location = await _locationRepository.Query()
-            .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
-        if (location == null)
-            return new PerimeterDTO();
-
+        
         Perimeter? perimeter = await _perimeterRepository.Query()
             .FirstOrDefaultAsync(m => m.MacAddress == elder.MacAddress);
 
